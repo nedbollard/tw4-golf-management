@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TW4 Golf Management System - Structure Chart</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .chart { font-family: monospace; white-space: pre; line-height: 1.2; }
+        .section { margin: 20px 0; }
+        .title { font-size: 18px; font-weight: bold; margin: 15px 0; }
+        .subtitle { font-size: 14px; font-weight: bold; margin: 10px 0; }
+        .flow { font-family: monospace; background: #f0f0f0; padding: 10px; }
+        .comparison { display: flex; justify-content: space-between; }
+        .col { width: 48%; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>TW4 Golf Management System - Structure Chart</h1>
+    
+    <div class="section">
+        <div class="title">System Architecture Overview</div>
+        <div class="chart">
+                    TW4 GOLF MANAGEMENT SYSTEM
+                    =========================
+                            |
+                    ┌───────┴───────┐
+                    |  Application  |
+                    |   (Entry)     |
+                    └───────┬───────┘
+                            |
+                    ┌───────┴───────┐
+                    |     Router    |  ← URL Routing
+                    |   (Dispatcher)|
+                    └───────┬───────┘
+                            |
+        ┌───────────────────┼───────────────────┐
+        |                   |                   |
+┌───────┴───────┐  ┌───────┴───────┐  ┌───────┴───────┐
+|   Controllers |  |    Services   |  |     Views     |
+|   (Logic)     |  |  (Business)   |  |  (Presentation)|
+└───────┬───────┘  └───────┬───────┘  └───────┬───────┘
+        |                   |                   |
+┌───────┴───────┐  ┌───────┴───────┐  ┌───────┴───────┐
+|  HomeController|  | ConfigService |  |  home/index   |
+| AuthController |  | AuthService   |  | auth/login    |
+| AdminController|  | PlayerService |  | admin/menu    |
+| ScorerController|  |               |  | scorer/menu   |
+| ConfigController|  |               |  | config/index  |
+| PlayerController|  |               |  | players/index |
+| RoleSwitchCtrl  |  |               |  | common/404    |
+└───────┬───────┘  └───────┬───────┘  └───────┬───────┘
+        |                   |                   |
+        └───────────────────┼───────────────────┘
+                            |
+                    ┌───────┴───────┐
+                    |   BaseController|
+                    |  (Common Func)  |
+                    └───────┬───────┘
+                            |
+                    ┌───────┴───────┐
+                    |     Core      |
+                    |   (Database)  |
+                    └───────┬───────┘
+                            |
+                    ┌───────┴───────┐
+                    |   Database    |
+                    |   (MySQL)     |
+                    └───────────────┘
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="title">Data Flow Diagram</div>
+        <div class="flow">
+USER REQUEST → ROUTER → CONTROLLER → SERVICE → DATABASE → SERVICE → CONTROLLER → VIEW → USER
+     ↓              ↓         ↓          ↓         ↓          ↓         ↓        ↓
+  HTTP URL      Match     Execute    Business   SQL       Results   Render   HTML
+  /login        Route     Method     Logic      Query     Data      Template Response
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="title">Component Relationships</div>
+        
+        <div class="subtitle">APPLICATION LAYER (Top Level)</div>
+        <ul>
+            <li><strong>Router</strong> (Traffic Cop)</li>
+            <li><strong>Controllers</strong> (Department Managers)</li>
+            <li><strong>Services</strong> (Workers)</li>
+            <li><strong>Views</strong> (Display Screens)</li>
+            <li><strong>Database</strong> (File Cabinet)</li>
+        </ul>
+
+        <div class="subtitle">CONTROLLER HIERARCHY</div>
+        <ul>
+            <li><strong>BaseController</strong> (Parent Class)
+                <ul>
+                    <li>Common Functions (render, redirect, auth)</li>
+                    <li>Child Controllers (Inherit)
+                        <ul>
+                            <li><strong>HomeController</strong> (Main Menu)</li>
+                            <li><strong>AuthController</strong> (Login/Logout)</li>
+                            <li><strong>AdminController</strong> (Admin Functions)</li>
+                            <li><strong>ScorerController</strong> (Scorer Functions)</li>
+                            <li><strong>ConfigController</strong> (System Config)</li>
+                            <li><strong>PlayerController</strong> (Player Management)</li>
+                            <li><strong>RoleSwitchController</strong> (Role Switching)</li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+
+        <div class="subtitle">SERVICE LAYER (Business Logic)</div>
+        <ul>
+            <li><strong>ConfigService</strong> (System Settings)</li>
+            <li><strong>AuthService</strong> (User Authentication)</li>
+            <li><strong>PlayerService</strong> (Player Data)</li>
+            <li><strong>Database</strong> (Data Access)</li>
+        </ul>
+
+        <div class="subtitle">VIEW LAYER (Presentation)</div>
+        <ul>
+            <li><strong>home/</strong> (Main Menu)</li>
+            <li><strong>auth/</strong> (Login Forms)</li>
+            <li><strong>admin/</strong> (Admin Interface)</li>
+            <li><strong>scorer/</strong> (Scorer Interface)</li>
+            <li><strong>config/</strong> (Configuration)</li>
+            <li><strong>players/</strong> (Player Lists)</li>
+            <li><strong>common/</strong> (Shared Components)</li>
+            <li><strong>errors/</strong> (Error Pages)</li>
+        </ul>
+
+        <div class="subtitle">DATABASE LAYER (Data Storage)</div>
+        <ul>
+            <li><strong>staff</strong> (User Accounts)</li>
+            <li><strong>config_application</strong> (System Settings)</li>
+            <li><strong>player</strong> (Player Records)</li>
+            <li><strong>[Other Tables]</strong></li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <div class="title">COBOL vs MVC Comparison</div>
+        <table>
+            <tr><th>COBOL STRUCTURE</th><th>MVC STRUCTURE</th></tr>
+            <tr><td>PROGRAM DIVISION</td><td>Application Class</td></tr>
+            <tr><td>PERFORM PARAGRAPH</td><td>Router → Controller</td></tr>
+            <tr><td>CALL SUBPROGRAM</td><td>Service Class</td></tr>
+            <tr><td>DISPLAY SCREEN</td><td>View Template</td></tr>
+            <tr><td>FILE I/O</td><td>Database Service</td></tr>
+            <tr><td>WORKING-STORAGE</td><td>Service Properties</td></tr>
+            <tr><td>PROCEDURE DIVISION</td><td>Controller Methods</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="title">Key Differences from COBOL</div>
+        <ol>
+            <li><strong>Separation of Concerns</strong>: Unlike COBOL's monolithic structure, MVC separates:
+                <ul>
+                    <li><strong>Controllers</strong> (like COBOL paragraphs)</li>
+                    <li><strong>Services</strong> (like COBOL subprograms)</li>
+                    <li><strong>Views</strong> (like COBOL DISPLAY statements)</li>
+                </ul>
+            </li>
+            <li><strong>Dependency Injection</strong>: Controllers get services injected (like COBOL CALL but automatic)</li>
+            <li><strong>Routing</strong>: URL patterns map to controllers (like COBOL program selection)</li>
+            <li><strong>Database Abstraction</strong>: Service layer handles all data access (like COBOL file I/O)</li>
+            <li><strong>Inheritance</strong>: BaseController provides common functions (like COBOL copybooks)</li>
+        </ol>
+    </div>
+
+    <div class="section">
+        <div class="title">Flow Analogy to COBOL</div>
+        <table>
+            <tr><th>COBOL</th><th>MVC</th></tr>
+            <tr><td>MAIN SECTION</td><td>Application Class</td></tr>
+            <tr><td>PERFORM INIT</td><td>Router initialization</td></tr>
+            <tr><td>PERFORM PROCESS</td><td>Controller execution</td></tr>
+            <tr><td>PERFORM DISPLAY</td><td>View rendering</td></tr>
+            <tr><td>GOBACK</td><td>Response sent</td></tr>
+            <tr><td></td><td></td></tr>
+            <tr><td>SUBPROGRAM</td><td>Service Class</td></tr>
+            <tr><td>CALL SUBPROG</td><td>Service instantiation</td></tr>
+            <tr><td>USING DATA</td><td>Method parameters</td></tr>
+            <tr><td>RETURN</td><td>Method return value</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="title">File Structure</div>
+        <div style="font-family: monospace;">
+TW4/<br>
+├── src/<br>
+│   ├── Controllers/          # Business Logic<br>
+│   │   ├── BaseController.php<br>
+│   │   ├── HomeController.php<br>
+│   │   ├── AuthController.php<br>
+│   │   ├── AdminController.php<br>
+│   │   ├── ScorerController.php<br>
+│   │   ├── ConfigController.php<br>
+│   │   ├── PlayerController.php<br>
+│   │   └── RoleSwitchController.php<br>
+│   ├── Services/             # Business Services<br>
+│   │   ├── ConfigService.php<br>
+│   │   ├── AuthService.php<br>
+│   │   └── PlayerService.php<br>
+│   ├── Views/                # Presentation<br>
+│   │   ├── home/<br>
+│   │   ├── auth/<br>
+│   │   ├── admin/<br>
+│   │   ├── scorer/<br>
+│   │   ├── config/<br>
+│   │   ├── players/<br>
+│   │   ├── common/<br>
+│   │   └── errors/<br>
+│   ├── Core/                  # System Core<br>
+│   │   ├── Application.php<br>
+│   │   ├── Router.php<br>
+│   │   └── Database.php<br>
+│   └── config/                # Configuration<br>
+│       ├── routes.php<br>
+│       └── config.php<br>
+└── public/<br>
+    └── index.php             # Entry Point
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="title">Request Processing Flow</div>
+        <ol>
+            <li><strong>User Action</strong> → HTTP Request to URL</li>
+            <li><strong>Router</strong> → Matches URL to Controller/Method</li>
+            <li><strong>Controller</strong> → Executes business logic</li>
+            <li><strong>Service</strong> → Handles data operations</li>
+            <li><strong>Database</strong> → Stores/retrieves data</li>
+            <li><strong>Service</strong> → Returns results to Controller</li>
+            <li><strong>Controller</strong> → Passes data to View</li>
+            <li><strong>View</strong> → Renders HTML response</li>
+            <li><strong>User</strong> → Sees rendered page</li>
+        </ol>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px; font-style: italic;">
+        This structure provides the same logical organization you're used to in COBOL,<br>
+        but with modern separation of concerns and web capabilities!
+    </div>
+</body>
+</html>

@@ -1,0 +1,53 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8084:80"
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - db
+    networks:
+      - tw4-network
+    environment:
+      - DB_HOST=db
+      - DB_NAME=TW4
+      - DB_USER=root
+      - DB_PASSWORD=secretpassword
+
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:        
+      MYSQL_DATABASE: TW4
+      MYSQL_ROOT_PASSWORD: secretpassword
+    ports:
+      - "3307:3306"
+    volumes:
+      - tw4_data:/var/lib/mysql
+    networks:
+      - tw4-network
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    restart: always
+    ports:
+      - "8085:80"
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: secretpassword
+      PMA_ARBITRARY: 1
+    depends_on:
+      - db
+    networks:
+      - tw4-network
+
+volumes:
+  tw4_data:
+
+networks:
+  tw4-network:
+    driver: bridge

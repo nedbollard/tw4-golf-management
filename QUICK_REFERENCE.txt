@@ -1,0 +1,43 @@
+🖥️ QUICK REFERENCE CARD 🖥️
+
+═══════════════════════════════════════════════════════════
+
+🔐 CONNECTION DETAILS:
+┌─────────────────────────────────────────────────────────────────────┐
+│ Linux IP:      192.168.1.92                        │
+│ SSH Port:       22                                     │
+│ VNC Port:       5901 (tunneled)                     │
+│ VNC Password:   vncpass                                │
+│ Method:         SSH Tunnel + VNC                      │
+└─────────────────────────────────────────────────────────────────────┘
+
+📋 STEP-BY-STEP:
+1️⃣ Install PuTTY: https://www.putty.org/
+2️⃣ Install VNC Viewer: https://www.realvnc.com/
+3️⃣ PuTTY → Connection → SSH → Tunnels
+4️⃣ Add: Source 5901 → Destination localhost:5901
+5️⃣ Save session: "Linux-Dev"
+6️⃣ Connect PuTTY (keep open!)
+7️⃣ VNC Viewer → localhost:5901
+8️⃣ Password: vncpass
+
+⚠️ IMPORTANT:
+• Keep PuTTY running while using VNC
+• Connect VNC to localhost (NOT Linux IP)
+• First connection may show warnings - accept them
+
+🛠️ TROUBLESHOOTING:
+• "Connection refused"? → Check VNC server status
+• "Auth failed"? → Verify password: vncpass
+• "No desktop"? → Restart VNC: vncserver :1
+
+🔒 SECURITY BENEFITS:
+✅ Only SSH port (22) exposed to internet
+✅ All VNC traffic encrypted through SSH
+✅ No direct VNC exposure
+✅ Secure remote development
+
+═══════════════════════════════════════════════════════
+
+📄 Full Guide: SSH_TUNNELING_GUIDE.pdf
+🎯 Ready for secure remote development!

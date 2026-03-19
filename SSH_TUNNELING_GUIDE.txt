@@ -1,0 +1,179 @@
+SSH TUNNELING & REMOTE DESKTOP SETUP GUIDE
+===============================================
+
+This guide shows how to securely connect from Windows 11 to your Linux 
+development environment using SSH tunneling.
+
+OVERVIEW
+--------
+
+This setup provides a secure way to access your Linux desktop from Windows 11 
+without exposing VNC ports directly to the internet.
+
+SECURITY BENEFITS
+------------------
+
+✅ Secure: Only SSH port (22) exposed to internet
+✅ Encrypted: All VNC traffic travels through SSH tunnel  
+✅ Protected: No direct VNC exposure to internet
+✅ Audit Trail: SSH connections logged
+
+PREREQUISITES
+-------------
+
+- Windows 11 machine
+- Linux development environment (Ubuntu/Debian)
+- Internet connection
+- Administrator access on Windows 11
+
+STEP 1: INSTALL REQUIRED SOFTWARE
+-----------------------------------
+
+### On Windows 11:
+
+1. PuTTY (SSH Client)
+   • Download: https://www.putty.org/
+   • Install: Run installer as Administrator
+   
+2. VNC Viewer (Desktop Client)
+   • Option A: RealVNC Viewer - https://www.realvnc.com/en/connect/download/viewer/
+   • Option B: TightVNC Viewer - https://www.tightvnc.com/download.php
+   • Install on Windows 11
+
+### On Linux (Already Done):
+✅ VNC Server installed
+✅ SSH server running  
+✅ VNC password set: `vncpass`
+✅ VNC server running on port 5901
+
+STEP 2: CONFIGURE PUTTY SSH TUNNEL
+------------------------------------
+
+### Basic Connection Settings:
+Host Name: 192.168.1.92
+Port: 22
+Connection Type: SSH
+
+### SSH Tunnel Configuration:
+1. Open PuTTY
+2. Navigate: Connection → SSH → Tunnels
+3. Add new tunnel:
+   • Source port: 5901
+   • Destination: localhost:5901
+   • Click "Add"
+4. Result should show:
+   L5901 localhost:5901
+
+### Save Session:
+1. Go back to Session tab
+2. Saved Sessions: Enter "Linux-Dev"
+3. Click "Save"
+4. Click "Open" to connect
+
+STEP 3: ESTABLISH SSH CONNECTION
+------------------------------------
+
+1. Click "Open" in PuTTY
+2. Enter Linux username when prompted
+3. Enter Linux password when prompted
+4. IMPORTANT: Leave PuTTY window open (minimize it)
+
+STEP 4: CONNECT VNC VIEWER
+------------------------------------
+
+### Using RealVNC Viewer:
+1. Open RealVNC Viewer
+2. Enter: localhost:5901
+3. Click "Connect"
+4. Enter password: vncpass
+5. Your Linux desktop appears!
+
+### Using TightVNC Viewer:
+1. Open TightVNC Viewer
+2. Enter: localhost:5901
+3. Click "Connect"
+4. Enter password: vncpass
+5. Your Linux desktop appears!
+
+CONNECTION SUMMARY
+------------------
+
+| Component      | Details                    |
+|---------------|----------------------------|
+| Linux IP       | 192.168.1.92              |
+| SSH Port       | 22                         |
+| VNC Port       | 5901 (tunneled)          |
+| VNC Password   | vncpass                    |
+| Connection Method| SSH Tunnel + VNC            |
+
+TROUBLESHOOTING
+---------------
+
+### Common Issues:
+
+"Connection Refused"
+• Check Linux IP address
+• Ensure VNC server is running
+• Verify SSH tunnel is established
+
+"Authentication Failed"  
+• Verify VNC password: vncpass
+• Check Linux user credentials
+• Ensure PuTTY is still running
+
+"Desktop Not Loading"
+• Restart VNC server: vncserver :1
+• Check VNC log: ~/.vnc/*.log
+• Verify tunnel is active
+
+### Quick Commands:
+# Check VNC status
+ps aux | grep vnc
+
+# Restart VNC server
+vncserver -kill :1
+vncserver :1 -geometry 1920x1080
+
+# Check listening ports
+netstat -tulpn | grep 5901
+
+ALTERNATIVE METHODS
+------------------
+
+### SSH Command Line (Windows PowerShell):
+ssh -L 5901:localhost:5901 nedbollard@192.168.1.92
+
+### Windows OpenSSH (Built-in):
+ssh -L 5901:localhost:5901 nedbollard@192.168.1.92
+
+SECURITY BEST PRACTICES
+---------------------
+
+✅ Keep PuTTY Updated: Use latest version
+✅ Strong Passwords: Change default VNC password
+✅ Network Security: Use firewall rules if needed
+✅ Session Management: Save PuTTY sessions for convenience
+✅ Backup: Document connection settings
+
+SUPPORT
+-------
+
+For issues or questions:
+1. Check VNC server logs: ~/.vnc/*.log
+2. Verify SSH tunnel: Check PuTTY event log
+3. Test basic connectivity: ping 192.168.1.92
+4. Restart services if needed
+
+IMPORTANT REMINDERS
+------------------
+
+⚠️ Keep PuTTY running while using VNC
+⚠️ Connect VNC to localhost (NOT Linux IP)
+⚠️ First connection may show warnings - accept them
+⚠️ Use strong passwords for VNC access
+
+READY FOR SECURE REMOTE DEVELOPMENT!
+=====================================
+
+This setup provides a secure, encrypted connection to your Linux development 
+environment while keeping your system protected from internet exposure.
