@@ -5,9 +5,9 @@ namespace App\Services;
 use App\Core\Database;
 
 /**
- * Player Service - Handle all player-related operations
+ * Roster Service - Handle all roster-related operations
  */
-class PlayerService
+class RosterService
 {
     private Database $db;
 
@@ -32,7 +32,7 @@ class PlayerService
             throw new \InvalidArgumentException(implode(', ', $errors));
         }
 
-        return $this->db->insert('players', $data);
+        return $this->db->insert('roster', $data);
     }
 
     public function updatePlayer(int $playerId, array $data): bool
@@ -63,13 +63,13 @@ class PlayerService
             }
         }
 
-        return $this->db->update('players', $data, ['row_id' => $playerId]) > 0;
+        return $this->db->update('roster', $data, ['row_id' => $playerId]) > 0;
     }
 
     public function getPlayer(int $playerId): ?array
     {
         return $this->db->fetchOne(
-            'SELECT * FROM players WHERE row_id = ? AND status = "active"',
+            'SELECT * FROM roster WHERE row_id = ? AND status = "active"',
             [$playerId]
         );
     }
@@ -77,7 +77,7 @@ class PlayerService
     public function getPlayerByIdentifier(string $identifier): ?array
     {
         return $this->db->fetchOne(
-            'SELECT * FROM players WHERE player_identifier = ? AND status = "active"',
+            'SELECT * FROM roster WHERE player_identifier = ? AND status = "active"',
             [$identifier]
         );
     }
@@ -85,7 +85,7 @@ class PlayerService
     public function getPlayerByAlias(string $alias): ?array
     {
         return $this->db->fetchOne(
-            'SELECT * FROM players WHERE alias = ? AND status = "active"',
+            'SELECT * FROM roster WHERE alias = ? AND status = "active"',
             [$alias]
         );
     }
@@ -95,7 +95,7 @@ class PlayerService
         $searchTerm = "%{$query}%";
         
         return $this->db->fetchAll(
-            'SELECT * FROM players WHERE 
+            'SELECT * FROM roster WHERE 
              (player_identifier LIKE ? OR alias LIKE ? OR first_name LIKE ? OR last_name LIKE ?)
              AND status = "active" ORDER BY first_name, last_name',
             [$searchTerm, $searchTerm, $searchTerm, $searchTerm]
@@ -107,7 +107,7 @@ class PlayerService
         return $this->db->fetchAll(
             'SELECT row_id, player_identifier, first_name, last_name, 
                     alias, gender, handicap, status
-             FROM players WHERE status = "active" ORDER BY first_name, last_name'
+             FROM roster WHERE status = "active" ORDER BY first_name, last_name'
         );
     }
 
@@ -119,18 +119,18 @@ class PlayerService
     public function getAllPlayersIncludingInactive(): array
     {
         return $this->db->fetchAll(
-            'SELECT * FROM players ORDER BY first_name, last_name'
+            'SELECT * FROM roster ORDER BY first_name, last_name'
         );
     }
 
     public function deletePlayer(int $playerId): bool
     {
-        return $this->db->update('players', ['status' => 'inactive'], ['row_id' => $playerId]) > 0;
+        return $this->db->update('roster', ['status' => 'inactive'], ['row_id' => $playerId]) > 0;
     }
 
     public function activatePlayer(int $playerId): bool
     {
-        return $this->db->update('players', ['status' => 'active'], ['row_id' => $playerId]) > 0;
+        return $this->db->update('roster', ['status' => 'active'], ['row_id' => $playerId]) > 0;
     }
 
     public function getDisplayName(array $player): string
@@ -162,7 +162,7 @@ class PlayerService
 
     private function isPlayerIdentifierAvailable(string $identifier, ?int $excludePlayerId = null): bool
     {
-        $sql = 'SELECT COUNT(*) FROM players WHERE player_identifier = ? AND status = "active"';
+        $sql = 'SELECT COUNT(*) FROM roster WHERE player_identifier = ? AND status = "active"';
         $params = [$identifier];
         
         if ($excludePlayerId !== null) {
@@ -177,7 +177,7 @@ class PlayerService
     private function isAliasAvailable(string $alias, ?int $excludePlayerId = null): bool
     {
         // Check against both aliases and player identifiers
-        $sql = 'SELECT COUNT(*) FROM players WHERE 
+        $sql = 'SELECT COUNT(*) FROM roster WHERE 
                 (alias = ? OR player_identifier = ?) AND status = "active"';
         $params = [$alias, $alias];
         

@@ -23,19 +23,19 @@ return [
             'controller' => 'App\\Controllers\\AuthController',
             'method' => 'showRegister'
         ],
-        '/players' => [
-            'path' => '/players',
-            'controller' => 'App\\Controllers\\PlayerController',
+        '/roster' => [
+            'path' => '/roster',
+            'controller' => 'App\Controllers\RosterController',
             'method' => 'index'
         ],
-        '/players/{id}' => [
-            'path' => '/players/{id}',
-            'controller' => 'App\\Controllers\\PlayerController',
+        '/roster/{id}' => [
+            'path' => '/roster/{id}',
+            'controller' => 'App\Controllers\RosterController',
             'method' => 'show'
         ],
-        '/players/{id}/edit' => [
-            'path' => '/players/{id}/edit',
-            'controller' => 'App\\Controllers\\PlayerController',
+        '/roster/{id}/edit' => [
+            'path' => '/roster/{id}/edit',
+            'controller' => 'App\Controllers\RosterController',
             'method' => 'edit'
         ],
         '/admin/menu' => [
@@ -166,14 +166,14 @@ return [
             'controller' => 'App\\Controllers\\AuthController',
             'method' => 'logout'
         ],
-        '/players/{id}/update' => [
-            'path' => '/players/{id}/update',
-            'controller' => 'App\\Controllers\\PlayerController',
+        '/roster/{id}/update' => [
+            'path' => '/roster/{id}/update',
+            'controller' => 'App\Controllers\RosterController',
             'method' => 'update'
         ],
-        '/players/{id}/delete' => [
-            'path' => '/players/{id}/delete',
-            'controller' => 'App\\Controllers\\PlayerController',
+        '/roster/{id}/delete' => [
+            'path' => '/roster/{id}/delete',
+            'controller' => 'App\Controllers\RosterController',
             'method' => 'delete'
         ],
         '/rounds' => [

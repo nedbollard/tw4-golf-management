@@ -5,9 +5,9 @@ namespace App\Models;
 use App\Core\Database;
 
 /**
- * Player Model - Represents a player in the system
+ * Roster Model - Represents a player in the golf roster
  */
-class Player
+class Roster
 {
     private ?int $playerId = null;
     private string $playerIdentifier;
@@ -28,9 +28,9 @@ class Player
         string $status = 'active',
         int $handicap = 0,
         ?string $alias = null,
-        ?int $playerId = null
+        ?int $rosterId = null
     ) {
-        $this->playerId = $playerId;
+        $this->playerId = $rosterId;
         $this->playerIdentifier = $playerIdentifier;
         $this->firstName = $firstName;
         $this->lastName = $lastName;
@@ -167,12 +167,12 @@ class Player
         ];
 
         if ($this->playerId === null) {
-            // Insert new player
-            $this->playerId = $db->insert('players', $data);
+            // Insert new roster entry
+            $this->playerId = $db->insert('roster', $data);
             return $this->playerId;
         } else {
             // Update existing player
-            $db->update('players', $data, ['row_id' => $this->playerId]);
+            $db->update('roster', $data, ['row_id' => $this->playerId]);
             return $this->playerId;
         }
     }
@@ -184,7 +184,7 @@ class Player
         }
 
         $this->status = 'inactive';
-        return $db->update('players', ['status' => 'inactive'], ['row_id' => $this->playerId]) > 0;
+        return $db->update('roster', ['status' => 'inactive'], ['row_id' => $this->playerId]) > 0;
     }
 
     public function activate(Database $db): bool
@@ -194,15 +194,15 @@ class Player
         }
 
         $this->status = 'active';
-        return $db->update('players', ['status' => 'active'], ['row_id' => $this->playerId]) > 0;
+        return $db->update('roster', ['status' => 'active'], ['row_id' => $this->playerId]) > 0;
     }
 
     // Static methods for data access
-    public static function findById(Database $db, int $playerId): ?self
+    public static function findById(Database $db, int $rosterId): ?self
     {
         $data = $db->fetchOne(
-            'SELECT * FROM players WHERE row_id = ? AND status = "active"',
-            [$playerId]
+            'SELECT * FROM roster WHERE row_id = ? AND status = "active"",
+            [$rosterId]
         );
 
         if (!$data) {
@@ -215,7 +215,7 @@ class Player
     public static function findByIdentifier(Database $db, string $identifier): ?self
     {
         $data = $db->fetchOne(
-            'SELECT * FROM players WHERE player_identifier = ? AND status = "active"",
+            'SELECT * FROM roster WHERE player_identifier = ? AND status = "active"',
             [$identifier]
         );
 
@@ -229,7 +229,7 @@ class Player
     public static function findByAlias(Database $db, string $alias): ?self
     {
         $data = $db->fetchOne(
-            'SELECT * FROM players WHERE alias = ? AND status = "active"',
+            'SELECT * FROM roster WHERE alias = ? AND status = "active"',
             [$alias]
         );
 
@@ -243,7 +243,7 @@ class Player
     public static function findAll(Database $db): array
     {
         $data = $db->fetchAll(
-            'SELECT * FROM players WHERE status = "active" ORDER BY first_name, last_name'
+            'SELECT * FROM roster WHERE status = "active" ORDER BY first_name, last_name'
         );
 
         return array_map([self::class, 'fromArray'], $data);
@@ -254,7 +254,7 @@ class Player
         $searchTerm = "%{$query}%";
         
         $data = $db->fetchAll(
-            'SELECT * FROM players WHERE 
+            'SELECT * FROM roster WHERE 
              (player_identifier LIKE ? OR alias LIKE ? OR first_name LIKE ? OR last_name LIKE ?)
              AND status = "active" ORDER BY first_name, last_name',
             [$searchTerm, $searchTerm, $searchTerm, $searchTerm]
@@ -265,7 +265,7 @@ class Player
 
     private static function fromArray(array $data): self
     {
-        $player = new self(
+        $roster = new self(
             $data['player_identifier'],
             $data['first_name'],
             $data['last_name'],
@@ -277,14 +277,14 @@ class Player
         );
 
         if (isset($data['created_at'])) {
-            $player->createdAt = new \DateTime($data['created_at']);
+            $roster->createdAt = new \DateTime($data['created_at']);
         }
 
         if (isset($data['updated_at'])) {
-            $player->updatedAt = new \DateTime($data['updated_at']);
+            $roster->updatedAt = new \DateTime($data['updated_at']);
         }
 
-        return $player;
+        return $roster;
     }
 
     public function toArray(): array

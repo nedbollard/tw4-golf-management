@@ -4,19 +4,19 @@ namespace App\Controllers;
 
 use App\Controllers\BaseController;
 use App\Core\Application;
-use App\Services\PlayerService;
+use App\Services\RosterService;
 
 /**
- * Player Controller - Handle all player-related operations
+ * Roster Controller - Handle all roster-related operations
  */
-class PlayerController extends BaseController
+class RosterController extends BaseController
 {
-    private PlayerService $playerService;
+    private RosterService $rosterService;
 
-    public function __construct(Application $app, PlayerService $playerService)
+    public function __construct(Application $app, RosterService $rosterService)
     {
         parent::__construct($app);
-        $this->playerService = $playerService;
+        $this->rosterService = $rosterService;
     }
 
     public function index(): void
@@ -24,11 +24,11 @@ class PlayerController extends BaseController
         $this->requireRole('scorer');
         
         try {
-            $players = $this->playerService->getAllPlayers();
+            $roster = $this->playerService->getAllPlayers();
             
-            $this->render('players/index', [
+            $this->render('roster/index', [
                 'title' => 'Players - TW4 Golf Management',
-                'players' => $players
+                'roster' => $roster
             ]);
         } catch (\Exception $e) {
             // Show error if database fails
@@ -51,11 +51,11 @@ class PlayerController extends BaseController
         $player = $this->playerService->getPlayer($playerId);
         
         if (!$player) {
-            $this->redirect('/players');
+            $this->redirect('/roster');
             return;
         }
         
-        $this->render('players/show', [
+        $this->render('roster/show', [
             'title' => 'Player Details - ' . $this->playerService->getDisplayName($player),
             'player' => $player
         ]);
@@ -65,7 +65,7 @@ class PlayerController extends BaseController
     {
         $this->requireAuth();
         
-        $this->render('players/create', [
+        $this->render('roster/create', [
             'title' => 'Add New Player - TW4 Golf Management',
             'errors' => $_SESSION['errors'] ?? [],
             'old' => $_SESSION['old'] ?? []
@@ -86,18 +86,18 @@ class PlayerController extends BaseController
         if (!empty($errors)) {
             $_SESSION['errors'] = $errors;
             $_SESSION['old'] = $data;
-            $this->redirect('/players/create');
+            $this->redirect('/roster/create');
             return;
         }
         
         try {
             $playerId = $this->playerService->createPlayer($data);
             $_SESSION['success'] = 'Player created successfully!';
-            $this->redirect('/players/' . $playerId);
+            $this->redirect('/roster/' . $playerId);
         } catch (\InvalidArgumentException $e) {
             $_SESSION['errors'] = ['general' => $e->getMessage()];
             $_SESSION['old'] = $data;
-            $this->redirect('/players/create');
+            $this->redirect('/roster/create');
         }
     }
 
@@ -108,11 +108,11 @@ class PlayerController extends BaseController
         $player = $this->playerService->getPlayer($playerId);
         
         if (!$player) {
-            $this->redirect('/players');
+            $this->redirect('/roster');
             return;
         }
         
-        $this->render('players/edit', [
+        $this->render('roster/edit', [
             'title' => 'Edit Player - ' . $this->playerService->getDisplayName($player),
             'player' => $player,
             'errors' => $_SESSION['errors'] ?? []
@@ -132,7 +132,7 @@ class PlayerController extends BaseController
         
         if (!empty($errors)) {
             $_SESSION['errors'] = $errors;
-            $this->redirect('/players/' . $playerId . '/edit');
+            $this->redirect('/roster/' . $playerId . '/edit');
             return;
         }
         
@@ -145,10 +145,10 @@ class PlayerController extends BaseController
                 $_SESSION['errors'] = ['general' => 'No changes made'];
             }
             
-            $this->redirect('/players/' . $playerId);
+            $this->redirect('/roster/' . $playerId);
         } catch (\InvalidArgumentException $e) {
             $_SESSION['errors'] = ['general' => $e->getMessage()];
-            $this->redirect('/players/' . $playerId . '/edit');
+            $this->redirect('/roster/' . $playerId . '/edit');
         }
     }
 
@@ -159,11 +159,11 @@ class PlayerController extends BaseController
         $player = $this->playerService->getPlayer($playerId);
         
         if (!$player) {
-            $this->redirect('/players');
+            $this->redirect('/roster');
             return;
         }
         
-        $this->render('players/delete', [
+        $this->render('roster/delete', [
             'title' => 'Delete Player - ' . $this->playerService->getDisplayName($player),
             'player' => $player
         ]);
@@ -181,7 +181,7 @@ class PlayerController extends BaseController
             $_SESSION['errors'] = ['general' => 'Failed to deactivate player'];
         }
         
-        $this->redirect('/players');
+        $this->redirect('/roster');
     }
 
     public function search(): void
@@ -189,15 +189,15 @@ class PlayerController extends BaseController
         $this->requireAuth();
         
         $query = $_GET['q'] ?? '';
-        $players = [];
+        $roster = [];
         
         if (!empty($query)) {
-            $players = $this->playerService->searchPlayers($query);
+            $roster = $this->playerService->searchPlayers($query);
         }
         
-        $this->render('players/search', [
+        $this->render('roster/search', [
             'title' => 'Search Players - TW4 Golf Management',
-            'players' => $players,
+            'roster' => $roster,
             'query' => $query
         ]);
     }
@@ -214,7 +214,7 @@ class PlayerController extends BaseController
             $_SESSION['errors'] = ['general' => 'Failed to activate player'];
         }
         
-        $this->redirect('/players');
+        $this->redirect('/roster');
     }
 
     private function validatePlayerData(array $data, ?int $excludePlayerId = null): array
