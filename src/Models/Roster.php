@@ -127,6 +127,18 @@ class Roster
         $this->status = $status;
     }
 
+    private ?\DateTime $dateFirstPlayed;
+
+    public function getDateFirstPlayed(): ?\DateTime
+    {
+        return $this->dateFirstPlayed;
+    }
+
+    public function setDateFirstPlayed(?\DateTime $dateFirstPlayed): void
+    {
+        $this->dateFirstPlayed = $dateFirstPlayed;
+    }
+
     // Business logic methods
     public function getDisplayName(): string
     {
@@ -303,7 +315,7 @@ class Roster
             'is_active' => $this->isActive(),
             'created_at' => $this->createdAt?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updatedAt?->format('Y-m-d H:i:s'),
-            'first_play_date' => $this->firstPlayDate?->format('Y-m-d')
+            'date_first_played' => $this->dateFirstPlayed?->format('Y-m-d')
         ];
     }
 }

@@ -36,8 +36,11 @@
                                             <th>Alias</th>
                                             <th>Gender</th>
                                             <th>Handicap</th>
+                                            <th>Date First Played</th>
                                             <th>Status</th>
+                                            <th>Created By</th>
                                             <th>Updated By</th>
+                                            <th>Last Updated</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
@@ -60,13 +63,30 @@
                                                 </td>
                                                 <td><?php echo htmlspecialchars($player['handicap']); ?></td>
                                                 <td>
+                                                    <?php if (!empty($player['date_first_played'])): ?>
+                                                        <?php echo date('M j, Y', strtotime($player['date_first_played'])); ?>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">-</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
                                                     <span class="badge bg-<?php echo $player['status'] === 'active' ? 'success' : 'secondary'; ?>">
                                                         <?php echo ucfirst($player['status']); ?>
                                                     </span>
                                                 </td>
                                                 <td>
+                                                    <span class="text-muted">-</span>
+                                                </td>
+                                                <td>
                                                     <?php if (!empty($player['updated_by'])): ?>
                                                         <?php echo htmlspecialchars($player['updated_by']); ?>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">-</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <?php if (!empty($player['updated_at'])): ?>
+                                                        <?php echo date('M j, Y g:i A', strtotime($player['updated_at'])); ?>
                                                     <?php else: ?>
                                                         <span class="text-muted">-</span>
                                                     <?php endif; ?>

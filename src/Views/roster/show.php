@@ -59,10 +59,10 @@
                                         <td><strong>Handicap:</strong></td>
                                         <td><?php echo htmlspecialchars($player['handicap']); ?></td>
                                     </tr>
-                                    <?php if (!empty($player['first_play_date'])): ?>
+                                    <?php if (!empty($player['date_first_played'])): ?>
                                     <tr>
-                                        <td><strong>First Play Date:</strong></td>
-                                        <td><?php echo htmlspecialchars($player['first_play_date']); ?></td>
+                                        <td><strong>Date First Played:</strong></td>
+                                        <td><?php echo htmlspecialchars($player['date_first_played']); ?></td>
                                     </tr>
                                     <?php endif; ?>
                                     <tr>
