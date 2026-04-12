@@ -35,6 +35,7 @@
                                             <th>Name</th>
                                             <th>Alias</th>
                                             <th>Gender</th>
+                                            <th>Status</th>
                                             <th>Handicap</th>
                                             <th>Date First Played</th>
                                             <th>Status</th>
@@ -59,6 +60,11 @@
                                                 <td>
                                                     <span class="badge bg-<?php echo $player['gender'] === 'male' ? 'primary' : 'pink'; ?>">
                                                         <?php echo ucfirst($player['gender']); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-<?php echo $player['status'] === 'active' ? 'success' : 'secondary'; ?>">
+                                                        <?php echo ucfirst($player['status']); ?>
                                                     </span>
                                                 </td>
                                                 <td><?php echo htmlspecialchars($player['handicap']); ?></td>
