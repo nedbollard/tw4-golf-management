@@ -70,6 +70,16 @@
                                         <td><?php echo htmlspecialchars($player['created_at'] ?? 'N/A'); ?></td>
                                     </tr>
                                     <tr>
+                                        <td><strong>Updated By:</strong></td>
+                                        <td>
+                                            <?php if (!empty($player['updated_by'])): ?>
+                                                <?php echo htmlspecialchars($player['updated_by']); ?>
+                                            <?php else: ?>
+                                                <span class="text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                    <tr>
                                         <td><strong>Last Updated:</strong></td>
                                         <td><?php echo htmlspecialchars($player['updated_at'] ?? 'N/A'); ?></td>
                                     </tr>
