@@ -167,6 +167,12 @@ class RosterServiceTest extends TestCase
             'handicap' => 12
         ];
 
+        // Mock the validation check for player identifier availability
+        $this->mockDatabase
+            ->expects($this->any())
+            ->method('fetchOne')
+            ->willReturn(['COUNT(*)' => 0]);
+
         $this->mockDatabase
             ->expects($this->once())
             ->method('insert')
