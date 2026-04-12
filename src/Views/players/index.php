@@ -31,7 +31,7 @@
                                 <table class="table table-striped">
                                     <thead>
                                         <tr>
-                                            <th>Member ID</th>
+                                            <th>Player ID</th>
                                             <th>Name</th>
                                             <th>Alias</th>
                                             <th>Gender</th>
@@ -43,7 +43,7 @@
                                     <tbody>
                                         <?php foreach ($players as $player): ?>
                                             <tr>
-                                                <td><?php echo htmlspecialchars($player['member_identifier']); ?></td>
+                                                <td><?php echo htmlspecialchars($player['player_identifier']); ?></td>
                                                 <td><?php echo htmlspecialchars($player['first_name'] . ' ' . $player['last_name']); ?></td>
                                                 <td>
                                                     <?php if (!empty($player['alias'])): ?>

@@ -18,9 +18,9 @@ class PlayerService
 
     public function createPlayer(array $data): int
     {
-        // Generate member identifier if not provided
-        if (empty($data['member_identifier'])) {
-            $data['member_identifier'] = $this->generateMemberIdentifier(
+        // Generate player identifier if not provided
+        if (empty($data['player_identifier'])) {
+            $data['player_identifier'] = $this->generatePlayerIdentifier(
                 $data['first_name'],
                 $data['last_name']
             );
@@ -37,7 +37,7 @@ class PlayerService
 
     public function updatePlayer(int $playerId, array $data): bool
     {
-        // If name changed, regenerate member identifier
+        // If name changed, regenerate player identifier
         if (isset($data['first_name']) || isset($data['last_name'])) {
             $currentPlayer = $this->getPlayer($playerId);
             if ($currentPlayer) {
@@ -47,7 +47,7 @@ class PlayerService
                 // Only regenerate if names actually changed
                 if ($firstName !== $currentPlayer['first_name'] || 
                     $lastName !== $currentPlayer['last_name']) {
-                    $data['member_identifier'] = $this->generateMemberIdentifier(
+                    $data['player_identifier'] = $this->generatePlayerIdentifier(
                         $firstName,
                         $lastName,
                         $playerId // Exclude current player from uniqueness check
@@ -77,7 +77,7 @@ class PlayerService
     public function getPlayerByIdentifier(string $identifier): ?array
     {
         return $this->db->fetchOne(
-            'SELECT * FROM players WHERE member_identifier = ? AND status = "active"',
+            'SELECT * FROM players WHERE player_identifier = ? AND status = "active"',
             [$identifier]
         );
     }
@@ -96,7 +96,7 @@ class PlayerService
         
         return $this->db->fetchAll(
             'SELECT * FROM players WHERE 
-             (member_identifier LIKE ? OR alias LIKE ? OR first_name LIKE ? OR last_name LIKE ?)
+             (player_identifier LIKE ? OR alias LIKE ? OR first_name LIKE ? OR last_name LIKE ?)
              AND status = "active" ORDER BY first_name, last_name',
             [$searchTerm, $searchTerm, $searchTerm, $searchTerm]
         );
@@ -105,7 +105,7 @@ class PlayerService
     public function getAllPlayers(): array
     {
         return $this->db->fetchAll(
-            'SELECT player_id, member_identifier, first_name, last_name, 
+            'SELECT player_id, player_identifier, first_name, last_name, 
                     alias, gender, handicap, status
              FROM players WHERE status = "active" ORDER BY first_name, last_name'
         );
@@ -135,18 +135,18 @@ class PlayerService
 
     public function getDisplayName(array $player): string
     {
-        // Return alias if present, otherwise member identifier
-        return !empty($player['alias']) ? $player['alias'] : $player['member_identifier'];
+        // Return alias if present, otherwise player identifier
+        return !empty($player['alias']) ? $player['alias'] : $player['player_identifier'];
     }
 
-    private function generateMemberIdentifier(string $firstName, string $lastName, ?int $excludePlayerId = null): string
+    private function generatePlayerIdentifier(string $firstName, string $lastName, ?int $excludePlayerId = null): string
     {
         // Base identifier: first name + first character of last name
         $baseIdentifier = ucfirst(strtolower(trim($firstName))) . 
                          strtoupper(substr(trim($lastName), 0, 1));
         
         // Check if base identifier is available
-        if ($this->isMemberIdentifierAvailable($baseIdentifier, $excludePlayerId)) {
+        if ($this->isPlayerIdentifierAvailable($baseIdentifier, $excludePlayerId)) {
             return $baseIdentifier;
         }
 
@@ -155,14 +155,14 @@ class PlayerService
         do {
             $identifier = $baseIdentifier . $counter;
             $counter++;
-        } while (!$this->isMemberIdentifierAvailable($identifier, $excludePlayerId));
+        } while (!$this->isPlayerIdentifierAvailable($identifier, $excludePlayerId));
 
         return $identifier;
     }
 
-    private function isMemberIdentifierAvailable(string $identifier, ?int $excludePlayerId = null): bool
+    private function isPlayerIdentifierAvailable(string $identifier, ?int $excludePlayerId = null): bool
     {
-        $sql = 'SELECT COUNT(*) FROM players WHERE member_identifier = ? AND status = "active"';
+        $sql = 'SELECT COUNT(*) FROM players WHERE player_identifier = ? AND status = "active"';
         $params = [$identifier];
         
         if ($excludePlayerId !== null) {
@@ -176,9 +176,9 @@ class PlayerService
 
     private function isAliasAvailable(string $alias, ?int $excludePlayerId = null): bool
     {
-        // Check against both aliases and member identifiers
+        // Check against both aliases and player identifiers
         $sql = 'SELECT COUNT(*) FROM players WHERE 
-                (alias = ? OR member_identifier = ?) AND status = "active"';
+                (alias = ? OR player_identifier = ?) AND status = "active"';
         $params = [$alias, $alias];
         
         if ($excludePlayerId !== null) {
@@ -206,17 +206,17 @@ class PlayerService
             $errors[] = 'Gender must be male or female';
         }
 
-        // Validate member identifier uniqueness
-        if (!empty($data['member_identifier'])) {
-            if (!$this->isMemberIdentifierAvailable($data['member_identifier'])) {
-                $errors[] = 'Member identifier is already taken';
+        // Validate player identifier uniqueness
+        if (!empty($data['player_identifier'])) {
+            if (!$this->isPlayerIdentifierAvailable($data['player_identifier'])) {
+                $errors[] = 'Player identifier is already taken';
             }
         }
 
-        // Validate alias uniqueness against both aliases and member identifiers
+        // Validate alias uniqueness against both aliases and player identifiers
         if (!empty($data['alias'])) {
             if (!$this->isAliasAvailable($data['alias'])) {
-                $errors[] = 'Alias is already taken (conflicts with existing member identifier or alias)';
+                $errors[] = 'Alias is already taken (conflicts with existing player identifier or alias)';
             }
         }
 

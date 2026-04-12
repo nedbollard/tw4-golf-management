@@ -10,7 +10,7 @@ use App\Core\Database;
 class Player
 {
     private ?int $playerId = null;
-    private string $memberIdentifier;
+    private string $playerIdentifier;
     private string $firstName;
     private string $lastName;
     private ?string $alias = null;
@@ -21,7 +21,7 @@ class Player
     private ?\DateTime $updatedAt = null;
 
     public function __construct(
-        string $memberIdentifier,
+        string $playerIdentifier,
         string $firstName,
         string $lastName,
         string $gender,
@@ -31,7 +31,7 @@ class Player
         ?int $playerId = null
     ) {
         $this->playerId = $playerId;
-        $this->memberIdentifier = $memberIdentifier;
+        $this->playerIdentifier = $playerIdentifier;
         $this->firstName = $firstName;
         $this->lastName = $lastName;
         $this->alias = $alias;
@@ -46,9 +46,9 @@ class Player
         return $this->playerId;
     }
 
-    public function getMemberIdentifier(): string
+    public function getPlayerIdentifier(): string
     {
-        return $this->memberIdentifier;
+        return $this->playerIdentifier;
     }
 
     public function getFirstName(): string
@@ -157,7 +157,7 @@ class Player
     public function save(Database $db): int
     {
         $data = [
-            'member_identifier' => $this->memberIdentifier,
+            'player_identifier' => $this->playerIdentifier,
             'first_name' => $this->firstName,
             'last_name' => $this->lastName,
             'alias' => $this->alias,
@@ -215,7 +215,7 @@ class Player
     public static function findByIdentifier(Database $db, string $identifier): ?self
     {
         $data = $db->fetchOne(
-            'SELECT * FROM players WHERE member_identifier = ? AND status = "active"',
+            'SELECT * FROM players WHERE player_identifier = ? AND status = "active"",
             [$identifier]
         );
 
@@ -255,7 +255,7 @@ class Player
         
         $data = $db->fetchAll(
             'SELECT * FROM players WHERE 
-             (member_identifier LIKE ? OR alias LIKE ? OR first_name LIKE ? OR last_name LIKE ?)
+             (player_identifier LIKE ? OR alias LIKE ? OR first_name LIKE ? OR last_name LIKE ?)
              AND status = "active" ORDER BY first_name, last_name',
             [$searchTerm, $searchTerm, $searchTerm, $searchTerm]
         );
@@ -266,7 +266,7 @@ class Player
     private static function fromArray(array $data): self
     {
         $player = new self(
-            $data['member_identifier'],
+            $data['player_identifier'],
             $data['first_name'],
             $data['last_name'],
             $data['gender'],
@@ -291,7 +291,7 @@ class Player
     {
         return [
             'player_id' => $this->playerId,
-            'member_identifier' => $this->memberIdentifier,
+            'player_identifier' => $this->playerIdentifier,
             'first_name' => $this->firstName,
             'last_name' => $this->lastName,
             'alias' => $this->alias,
@@ -302,7 +302,8 @@ class Player
             'full_name' => $this->getFullName(),
             'is_active' => $this->isActive(),
             'created_at' => $this->createdAt?->format('Y-m-d H:i:s'),
-            'updated_at' => $this->updatedAt?->format('Y-m-d H:i:s')
+            'updated_at' => $this->updatedAt?->format('Y-m-d H:i:s'),
+            'first_play_date' => $this->firstPlayDate?->format('Y-m-d')
         ];
     }
 }
