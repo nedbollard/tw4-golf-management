@@ -76,14 +76,6 @@
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-<?php echo $player['status'] === 'active' ? 'success' : 'secondary'; ?>">
-                                                        <?php echo ucfirst($player['status']); ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <span class="text-muted">-</span>
-                                                </td>
-                                                <td>
                                                     <?php if (!empty($player['updated_by'])): ?>
                                                         <?php echo htmlspecialchars($player['updated_by']); ?>
                                                     <?php else: ?>
