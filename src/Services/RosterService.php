@@ -63,6 +63,17 @@ class RosterService
             }
         }
 
+        // Validate player_identifier uniqueness if provided and date_first_played is null
+        if (isset($data['player_identifier']) && !empty($data['player_identifier'])) {
+            $currentPlayer = $this->getPlayer($playerId);
+            if ($currentPlayer && empty($currentPlayer['date_first_played'])) {
+                // Only allow player_identifier change if date_first_played is null
+                if (!$this->isPlayerIdentifierAvailable($data['player_identifier'], $playerId)) {
+                    throw new \InvalidArgumentException("Player identifier '{$data['player_identifier']}' is already taken or conflicts with an existing alias");
+                }
+            }
+        }
+
         // Validate alias uniqueness if provided
         if (isset($data['alias']) && !empty($data['alias'])) {
             if (!$this->isAliasAvailable($data['alias'], $playerId)) {
@@ -174,7 +185,22 @@ class RosterService
 
     private function isPlayerIdentifierAvailable(string $identifier, ?int $excludePlayerId = null): bool
     {
+        // Check if identifier conflicts with existing player identifiers
         $sql = 'SELECT COUNT(*) FROM roster WHERE player_identifier = ? AND status = "active"';
+        $params = [$identifier];
+        
+        if ($excludePlayerId !== null) {
+            $sql .= ' AND row_id != ?';
+            $params[] = $excludePlayerId;
+        }
+        
+        $count = $this->db->fetchOne($sql, $params)['COUNT(*)'];
+        if ($count > 0) {
+            return false;
+        }
+        
+        // Check if identifier conflicts with existing aliases
+        $sql = 'SELECT COUNT(*) FROM roster WHERE alias = ? AND status = "active"';
         $params = [$identifier];
         
         if ($excludePlayerId !== null) {

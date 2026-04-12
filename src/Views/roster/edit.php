@@ -67,8 +67,15 @@
                             <div class="mb-3">
                                 <label for="player_identifier" class="form-label">Player Identifier</label>
                                 <input type="text" class="form-control" id="player_identifier" name="player_identifier" 
-                                       value="<?php echo htmlspecialchars($player['player_identifier']); ?>" readonly>
-                                <div class="form-text">Player identifier cannot be changed after creation.</div>
+                                       value="<?php echo htmlspecialchars($player['player_identifier']); ?>" 
+                                       <?php echo !empty($player['date_first_played']) ? 'readonly' : ''; ?>>
+                                <div class="form-text">
+                                    <?php if (!empty($player['date_first_played'])): ?>
+                                        Player identifier cannot be changed after first game played.
+                                    <?php else: ?>
+                                        Player identifier can be edited until first game is played. Must be unique among all players and aliases.
+                                    <?php endif; ?>
+                                </div>
                             </div>
 
                             <div class="mb-3">
