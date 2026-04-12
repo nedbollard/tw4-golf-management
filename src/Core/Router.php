@@ -89,6 +89,9 @@ class Router
         } elseif ($controllerClass === 'App\\Controllers\\LogController') {
             $logger = new \App\Services\Logger($this->app->getDatabase());
             $controller = new $controllerClass($this->app, $logger);
+        } elseif ($controllerClass === 'App\\Controllers\\RosterController') {
+            $rosterService = new \App\Services\RosterService($this->app->getDatabase());
+            $controller = new $controllerClass($this->app, $rosterService);
         } elseif ($controllerClass === 'App\\Controllers\\AdminController') {
             $controller = new $controllerClass($this->app);
         } elseif ($controllerClass === 'App\\Controllers\\ScorerController') {
