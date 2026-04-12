@@ -24,13 +24,13 @@
                         <p class="text-center text-muted">Competition scoring functions</p>
                         
                         <div class="d-grid gap-3">
-                            <!-- View Players -->
+                            <!-- View Roster -->
                             <div class="card">
                                 <div class="card-body text-center">
                                     <i class="fas fa-users fa-3x text-success mb-3"></i>
-                                    <h6 class="card-title">View Players</h6>
-                                    <p class="card-text text-muted">View player details and statistics</p>
-                                    <a href="/players" class="btn btn-success">View Players</a>
+                                    <h6 class="card-title">View Roster</h6>
+                                    <p class="card-text text-muted">View roster details and statistics</p>
+                                    <a href="/roster" class="btn btn-success">View Roster</a>
                                 </div>
                             </div>
                             
