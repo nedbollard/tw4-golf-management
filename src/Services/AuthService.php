@@ -93,8 +93,14 @@ class AuthService
 
     public function requireRole(string $role): void
     {
+        if (!$this->isLoggedIn()) {
+            header('Location: /login');
+            exit;
+        }
+
         if (!$this->hasRole($role)) {
-            throw new \RuntimeException("Access denied. Role {$role} required.");
+            header('Location: /error?code=403&message=Access denied. Role ' . $role . ' required.');
+            exit;
         }
     }
 
