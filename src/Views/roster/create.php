@@ -64,14 +64,6 @@
                                 <div class="form-text">This will be displayed instead of the player identifier if provided.</div>
                             </div>
 
-                            <div class="mb-3">
-                                <label for="player_identifier" class="form-label">Player Identifier</label>
-                                <input type="text" class="form-control" id="player_identifier" name="player_identifier" 
-                                       value="<?php echo htmlspecialchars($old['player_identifier'] ?? ''); ?>" 
-                                       placeholder="Leave blank to auto-generate">
-                                <div class="form-text">Unique identifier (e.g., JohnD). Will be auto-generated if left blank.</div>
-                            </div>
-
                             <div class="d-flex justify-content-between">
                                 <a href="/roster" class="btn btn-secondary">Cancel</a>
                                 <button type="submit" class="btn btn-success">Add to Roster</button>
