@@ -65,8 +65,8 @@
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <?php if (!empty($player['updated_by'])): ?>
-                                                        <?php echo htmlspecialchars($player['updated_by']); ?>
+                                                    <?php if (!empty($player['updated_by_name'])): ?>
+                                                        <?php echo htmlspecialchars($player['updated_by_name']); ?>
                                                     <?php else: ?>
                                                         <span class="text-muted">-</span>
                                                     <?php endif; ?>
