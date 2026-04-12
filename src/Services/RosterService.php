@@ -35,7 +35,7 @@ class RosterService
         // Add updated_by field with logged-in staff ID
         $auth = $this->db->getAuth();
         if ($auth->isLoggedIn()) {
-            $currentUser = $auth->getCurrentUser();
+            $currentUser = $auth->getUser();
             $data['updated_by'] = $currentUser['user_id'] ?? null;
         }
         
@@ -73,7 +73,7 @@ class RosterService
         // Add updated_by field with logged-in staff ID
         $auth = $this->db->getAuth();
         if ($auth->isLoggedIn()) {
-            $currentUser = $auth->getCurrentUser();
+            $currentUser = $auth->getUser();
             $data['updated_by'] = $currentUser['user_id'] ?? null;
         }
         
