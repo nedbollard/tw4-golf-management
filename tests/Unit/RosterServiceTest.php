@@ -157,6 +157,123 @@ class RosterServiceTest extends TestCase
         $this->assertEquals('JohnD', $result['player_identifier']);
     }
 
+    public function testGetPlayerByAlias(): void
+    {
+        $expectedPlayer = [
+            'row_id' => 1,
+            'player_identifier' => 'JohnD',
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'alias' => 'JD',
+            'gender' => 'male',
+            'handicap' => 12,
+            'status' => 'active'
+        ];
+
+        $this->mockDatabase
+            ->expects($this->once())
+            ->method('fetchOne')
+            ->with(
+                $this->equalTo('SELECT * FROM roster WHERE alias = ? AND status = "active"'),
+                $this->equalTo(['JD'])
+            )
+            ->willReturn($expectedPlayer);
+
+        $result = $this->rosterService->getPlayerByAlias('JD');
+
+        $this->assertIsArray($result);
+        $this->assertEquals('JD', $result['alias']);
+    }
+
+    public function testGetPlayerByAliasReturnsNull(): void
+    {
+        $this->mockDatabase
+            ->expects($this->once())
+            ->method('fetchOne')
+            ->with(
+                $this->equalTo('SELECT * FROM roster WHERE alias = ? AND status = "active"'),
+                $this->equalTo(['NonExistent'])
+            )
+            ->willReturn(null);
+
+        $result = $this->rosterService->getPlayerByAlias('NonExistent');
+
+        $this->assertNull($result);
+    }
+
+    public function testGetActivePlayers(): void
+    {
+        $expectedRoster = [
+            [
+                'row_id' => 1,
+                'player_identifier' => 'JohnD',
+                'first_name' => 'John',
+                'last_name' => 'Doe',
+                'alias' => 'JD',
+                'gender' => 'male',
+                'handicap' => 12,
+                'status' => 'active'
+            ]
+        ];
+
+        $this->mockDatabase
+            ->expects($this->once())
+            ->method('fetchAll')
+            ->with(
+                $this->equalTo('SELECT row_id, player_identifier, first_name, last_name, 
+                    alias, gender, handicap, status
+             FROM roster WHERE status = "active" ORDER BY first_name, last_name')
+            )
+            ->willReturn($expectedRoster);
+
+        $result = $this->rosterService->getActivePlayers();
+
+        $this->assertIsArray($result);
+        $this->assertCount(1, $result);
+        $this->assertEquals('JohnD', $result[0]['player_identifier']);
+    }
+
+    public function testGetAllPlayersIncludingInactive(): void
+    {
+        $expectedRoster = [
+            [
+                'row_id' => 1,
+                'player_identifier' => 'JohnD',
+                'first_name' => 'John',
+                'last_name' => 'Doe',
+                'alias' => 'JD',
+                'gender' => 'male',
+                'handicap' => 12,
+                'status' => 'active'
+            ],
+            [
+                'row_id' => 2,
+                'player_identifier' => 'JaneS',
+                'first_name' => 'Jane',
+                'last_name' => 'Smith',
+                'alias' => null,
+                'gender' => 'female',
+                'handicap' => 8,
+                'status' => 'inactive'
+            ]
+        ];
+
+        $this->mockDatabase
+            ->expects($this->once())
+            ->method('fetchAll')
+            ->with(
+                $this->equalTo('SELECT * FROM roster ORDER BY first_name, last_name')
+            )
+            ->willReturn($expectedRoster);
+
+        $result = $this->rosterService->getAllPlayersIncludingInactive();
+
+        $this->assertIsArray($result);
+        $this->assertCount(2, $result);
+        $this->assertEquals('active', $result[0]['status']);
+        $this->assertEquals('inactive', $result[1]['status']);
+    }
+
     public function testCreatePlayer(): void
     {
         $playerData = [
@@ -308,5 +425,118 @@ class RosterServiceTest extends TestCase
         $this->assertIsArray($result);
         $this->assertCount(1, $result);
         $this->assertEquals('JohnD', $result[0]['player_identifier']);
+    }
+
+    public function testCreatePlayerGeneratesIdentifierWhenNotProvided(): void
+    {
+        $playerData = [
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'gender' => 'male',
+            'handicap' => 12
+        ];
+
+        // Mock validation check
+        $this->mockDatabase
+            ->expects($this->any())
+            ->method('fetchOne')
+            ->willReturn(['COUNT(*)' => 0]);
+
+        $this->mockDatabase
+            ->expects($this->once())
+            ->method('insert')
+            ->with(
+                $this->equalTo('roster'),
+                $this->callback(function ($data) {
+                    return isset($data['player_identifier']) && 
+                           !empty($data['player_identifier']);
+                })
+            )
+            ->willReturn(1);
+
+        $result = $this->rosterService->createPlayer($playerData);
+
+        $this->assertEquals(1, $result);
+    }
+
+    public function testCreatePlayerFailsWithInvalidGender(): void
+    {
+        $playerData = [
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'gender' => 'invalid',
+            'handicap' => 12
+        ];
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Gender must be male or female');
+
+        $this->rosterService->createPlayer($playerData);
+    }
+
+    public function testCreatePlayerFailsWithMissingRequiredFields(): void
+    {
+        $playerData = [
+            'first_name' => '',
+            'last_name' => '',
+            'gender' => 'male'
+        ];
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('First name is required, Last name is required');
+
+        $this->rosterService->createPlayer($playerData);
+    }
+
+    public function testUpdatePlayerReturnsFalseWhenNoChanges(): void
+    {
+        $playerId = 1;
+        $updateData = [
+            'first_name' => 'John',
+            'last_name' => 'Doe'
+        ];
+
+        // Mock update call that returns 0 (no rows affected)
+        $this->mockDatabase
+            ->expects($this->once())
+            ->method('update')
+            ->willReturn(0);
+
+        $result = $this->rosterService->updatePlayer($playerId, $updateData);
+
+        $this->assertFalse($result);
+    }
+
+    public function testGetDisplayNameReturnsAliasWhenPresent(): void
+    {
+        $playerWithAlias = [
+            'player_identifier' => 'JohnD',
+            'alias' => 'JD'
+        ];
+
+        $result = $this->rosterService->getDisplayName($playerWithAlias);
+        $this->assertEquals('JD', $result);
+    }
+
+    public function testGetDisplayNameReturnsIdentifierWhenNoAlias(): void
+    {
+        $playerWithoutAlias = [
+            'player_identifier' => 'JaneS',
+            'alias' => null
+        ];
+
+        $result = $this->rosterService->getDisplayName($playerWithoutAlias);
+        $this->assertEquals('JaneS', $result);
+    }
+
+    public function testGetDisplayNameReturnsIdentifierWhenEmptyAlias(): void
+    {
+        $playerWithEmptyAlias = [
+            'player_identifier' => 'BobS',
+            'alias' => ''
+        ];
+
+        $result = $this->rosterService->getDisplayName($playerWithEmptyAlias);
+        $this->assertEquals('BobS', $result);
     }
 }
