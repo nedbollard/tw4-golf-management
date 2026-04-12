@@ -63,12 +63,16 @@
                                         <td><strong>Created:</strong></td>
                                         <td><?php echo htmlspecialchars($player['created_at'] ?? 'N/A'); ?></td>
                                     </tr>
-                                    <?php if (!empty($player['date_first_played'])): ?>
                                     <tr>
                                         <td><strong>Date First Played:</strong></td>
-                                        <td><?php echo htmlspecialchars($player['date_first_played']); ?></td>
+                                        <td>
+                                            <?php if (!empty($player['date_first_played'])): ?>
+                                                <?php echo htmlspecialchars($player['date_first_played']); ?>
+                                            <?php else: ?>
+                                                <span class="text-muted">Not yet played</span>
+                                            <?php endif; ?>
+                                        </td>
                                     </tr>
-                                    <?php endif; ?>
                                     <tr>
                                         <td><strong>Updated By:</strong></td>
                                         <td>
