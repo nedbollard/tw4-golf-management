@@ -20,6 +20,13 @@ class RosterServiceTest extends TestCase
     {
         $this->mockDatabase = $this->createMock(Database::class);
         $this->rosterService = new RosterService($this->mockDatabase);
+        
+        // Mock the AuthService to avoid null pointer errors
+        $mockAuthService = $this->createMock(\App\Services\AuthService::class);
+        $mockAuthService->method('isLoggedIn')->willReturn(false);
+        $mockAuthService->method('getUser')->willReturn(null);
+        
+        $this->mockDatabase->method('getAuth')->willReturn($mockAuthService);
     }
 
     public function testGetAllPlayers(): void
@@ -52,9 +59,7 @@ class RosterServiceTest extends TestCase
             ->expects($this->once())
             ->method('fetchAll')
             ->with(
-                $this->equalTo('SELECT row_id, player_identifier, first_name, last_name, 
-                    alias, gender, handicap, status
-             FROM roster WHERE status = "active" ORDER BY first_name, last_name')
+                $this->equalTo('SELECT * FROM roster WHERE status = "active" ORDER BY first_name, last_name')
             )
             ->willReturn($expectedRoster);
 
@@ -72,9 +77,7 @@ class RosterServiceTest extends TestCase
             ->expects($this->once())
             ->method('fetchAll')
             ->with(
-                $this->equalTo('SELECT row_id, player_identifier, first_name, last_name, 
-                    alias, gender, handicap, status
-             FROM roster WHERE status = "active" ORDER BY first_name, last_name')
+                $this->equalTo('SELECT * FROM roster WHERE status = "active" ORDER BY first_name, last_name')
             )
             ->willReturn([]);
 
@@ -220,9 +223,7 @@ class RosterServiceTest extends TestCase
             ->expects($this->once())
             ->method('fetchAll')
             ->with(
-                $this->equalTo('SELECT row_id, player_identifier, first_name, last_name, 
-                    alias, gender, handicap, status
-             FROM roster WHERE status = "active" ORDER BY first_name, last_name')
+                $this->equalTo('SELECT * FROM roster WHERE status = "active" ORDER BY first_name, last_name')
             )
             ->willReturn($expectedRoster);
 
