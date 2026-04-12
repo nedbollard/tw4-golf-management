@@ -38,6 +38,11 @@ return [
             'controller' => 'App\Controllers\RosterController',
             'method' => 'edit'
         ],
+        '/roster/create' => [
+            'path' => '/roster/create',
+            'controller' => 'App\Controllers\RosterController',
+            'method' => 'create'
+        ],
         '/admin/menu' => [
             'path' => '/admin/menu',
             'controller' => 'App\\Controllers\\AdminController',
@@ -160,6 +165,11 @@ return [
             'path' => '/staff/delete/{id}',
             'controller' => 'App\\Controllers\\StaffController',
             'method' => 'delete'
+        ],
+        '/roster/create' => [
+            'path' => '/roster/create',
+            'controller' => 'App\Controllers\RosterController',
+            'method' => 'store'
         ],
         '/logout' => [
             'path' => '/logout',
