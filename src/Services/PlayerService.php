@@ -105,10 +105,9 @@ class PlayerService
     public function getAllPlayers(): array
     {
         return $this->db->fetchAll(
-            'SELECT row_id as player_id, ident_player as member_identifier, 
-                    name_first as first_name, name_last as last_name, 
-                    ident_public as alias, gender, handicap, status
-             FROM player WHERE status = "A" ORDER BY name_first, name_last'
+            'SELECT player_id, member_identifier, first_name, last_name, 
+                    alias, gender, handicap, status
+             FROM players WHERE status = "active" ORDER BY first_name, last_name'
         );
     }
 
