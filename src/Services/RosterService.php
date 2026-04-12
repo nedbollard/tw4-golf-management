@@ -32,11 +32,11 @@ class RosterService
             throw new \InvalidArgumentException(implode(', ', $errors));
         }
 
-        // Add updated_by field with logged-in staff ID
+        // Add updated_by field with logged-in staff username
         $auth = $this->db->getAuth();
         if ($auth->isLoggedIn()) {
             $currentUser = $auth->getUser();
-            $data['updated_by'] = $currentUser['user_id'] ?? null;
+            $data['updated_by'] = $currentUser['username'] ?? null;
         }
         
         return $this->db->insert('roster', $data);
@@ -70,11 +70,11 @@ class RosterService
             }
         }
 
-        // Add updated_by field with logged-in staff ID
+        // Add updated_by field with logged-in staff username
         $auth = $this->db->getAuth();
         if ($auth->isLoggedIn()) {
             $currentUser = $auth->getUser();
-            $data['updated_by'] = $currentUser['user_id'] ?? null;
+            $data['updated_by'] = $currentUser['username'] ?? null;
         }
         
         return $this->db->update('roster', $data, ['row_id' => $playerId]) > 0;
@@ -83,10 +83,7 @@ class RosterService
     public function getPlayer(int $playerId): ?array
     {
         return $this->db->fetchOne(
-            'SELECT r.*, s.username as updated_by_name
-             FROM roster r
-             LEFT JOIN staff s ON r.updated_by = s.row_id
-             WHERE r.row_id = ? AND r.status = "active"',
+            'SELECT * FROM roster WHERE row_id = ? AND status = "active"',
             [$playerId]
         );
     }
@@ -94,10 +91,7 @@ class RosterService
     public function getPlayerByIdentifier(string $identifier): ?array
     {
         return $this->db->fetchOne(
-            'SELECT r.*, s.username as updated_by_name
-             FROM roster r
-             LEFT JOIN staff s ON r.updated_by = s.row_id
-             WHERE r.player_identifier = ? AND r.status = "active"',
+            'SELECT * FROM roster WHERE player_identifier = ? AND status = "active"',
             [$identifier]
         );
     }
@@ -105,10 +99,7 @@ class RosterService
     public function getPlayerByAlias(string $alias): ?array
     {
         return $this->db->fetchOne(
-            'SELECT r.*, s.username as updated_by_name
-             FROM roster r
-             LEFT JOIN staff s ON r.updated_by = s.row_id
-             WHERE r.alias = ? AND r.status = "active"',
+            'SELECT * FROM roster WHERE alias = ? AND status = "active"',
             [$alias]
         );
     }
@@ -128,10 +119,7 @@ class RosterService
     public function getAllPlayers(): array
     {
         return $this->db->fetchAll(
-            'SELECT r.*, s.username as updated_by_name
-             FROM roster r
-             LEFT JOIN staff s ON r.updated_by = s.row_id
-             WHERE r.status = "active" ORDER BY r.first_name, r.last_name'
+            'SELECT * FROM roster WHERE status = "active" ORDER BY first_name, last_name'
         );
     }
 
