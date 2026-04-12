@@ -37,6 +37,7 @@
                                             <th>Gender</th>
                                             <th>Handicap</th>
                                             <th>Status</th>
+                                            <th>Updated By</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
@@ -62,6 +63,13 @@
                                                     <span class="badge bg-<?php echo $player['status'] === 'active' ? 'success' : 'secondary'; ?>">
                                                         <?php echo ucfirst($player['status']); ?>
                                                     </span>
+                                                </td>
+                                                <td>
+                                                    <?php if (!empty($player['updated_by'])): ?>
+                                                        <?php echo htmlspecialchars($player['updated_by']); ?>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">-</span>
+                                                    <?php endif; ?>
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">

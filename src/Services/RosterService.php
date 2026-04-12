@@ -32,6 +32,13 @@ class RosterService
             throw new \InvalidArgumentException(implode(', ', $errors));
         }
 
+        // Add updated_by field with logged-in staff ID
+        $auth = $this->db->getAuth();
+        if ($auth->isLoggedIn()) {
+            $currentUser = $auth->getCurrentUser();
+            $data['updated_by'] = $currentUser['user_id'] ?? null;
+        }
+        
         return $this->db->insert('roster', $data);
     }
 
@@ -63,6 +70,13 @@ class RosterService
             }
         }
 
+        // Add updated_by field with logged-in staff ID
+        $auth = $this->db->getAuth();
+        if ($auth->isLoggedIn()) {
+            $currentUser = $auth->getCurrentUser();
+            $data['updated_by'] = $currentUser['user_id'] ?? null;
+        }
+        
         return $this->db->update('roster', $data, ['row_id' => $playerId]) > 0;
     }
 
@@ -105,9 +119,10 @@ class RosterService
     public function getAllPlayers(): array
     {
         return $this->db->fetchAll(
-            'SELECT row_id, player_identifier, first_name, last_name, 
-                    alias, gender, handicap, status
-             FROM roster WHERE status = "active" ORDER BY first_name, last_name'
+            'SELECT r.*, s.username as updated_by_name
+             FROM roster r
+             LEFT JOIN staff s ON r.updated_by = s.row_id
+             WHERE r.status = "active" ORDER BY r.first_name, r.last_name'
         );
     }
 
