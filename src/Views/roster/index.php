@@ -21,7 +21,7 @@
                             <a href="/roster/create" class="btn btn-primary">Add New Player</a>
                         </div>
                         
-                        <?php if (empty($players)): ?>
+                        <?php if (empty($roster)): ?>
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle"></i>
                                 No players found. <a href="/roster/create">Add your first player</a>.
@@ -42,7 +42,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($players as $player): ?>
+                                        <?php foreach ($roster as $player): ?>
                                             <tr>
                                                 <td><?php echo htmlspecialchars($player['player_identifier']); ?></td>
                                                 <td><?php echo htmlspecialchars($player['first_name'] . ' ' . $player['last_name']); ?></td>
