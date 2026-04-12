@@ -5,3 +5,4 @@ composer.lock
 *.log
 logs/
 private/logs/
+/nbproject/private/

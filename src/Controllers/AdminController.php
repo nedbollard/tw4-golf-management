@@ -7,6 +7,8 @@ use App\Core\Application;
 
 /**
  * Admin Controller - Admin-only functions
+ * 
+ * reviewed? Yes
  */
 class AdminController extends BaseController
 {

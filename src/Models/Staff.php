@@ -205,24 +205,14 @@ class Staff
         return $this->rowId;
     }
 
-    public function deactivate(Database $db): bool
+    public function deactivate(): void
     {
-        if ($this->rowId === null) {
-            return false;
-        }
-
         $this->isActive = false;
-        return $db->update('staff', ['is_active' => 0], ['row_id' => $this->rowId]) > 0;
     }
 
-    public function activate(Database $db): bool
+    public function activate(): void
     {
-        if ($this->rowId === null) {
-            return false;
-        }
-
         $this->isActive = true;
-        return $db->update('staff', ['is_active' => 1], ['row_id' => $this->rowId]) > 0;
     }
 
     // Static methods for data access
@@ -273,7 +263,12 @@ class Staff
         return array_map([self::class, 'fromArray'], $data);
     }
 
-    private static function fromArray(array $data): self
+    public function hasRole(string $role): bool
+    {
+        return $this->role === $role;
+    }
+
+    public static function fromArray(array $data): self
     {
         $staff = new self(
             $data['username'],
@@ -305,8 +300,10 @@ class Staff
         return [
             'row_id' => $this->rowId,
             'username' => $this->username,
+            'first_name' => $this->firstName,
+            'last_name' => $this->lastName,
             'role' => $this->role,
-            'is_active' => $this->isActive,
+            'is_active' => $this->isActive ? 1 : 0,
             'full_name' => $this->getFullName(),
             'is_admin' => $this->isAdmin(),
             'is_scorer' => $this->isScorer(),
