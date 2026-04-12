@@ -63,13 +63,13 @@ class PlayerService
             }
         }
 
-        return $this->db->update('players', $data, ['player_id' => $playerId]) > 0;
+        return $this->db->update('players', $data, ['row_id' => $playerId]) > 0;
     }
 
     public function getPlayer(int $playerId): ?array
     {
         return $this->db->fetchOne(
-            'SELECT * FROM players WHERE player_id = ? AND status = "active"',
+            'SELECT * FROM players WHERE row_id = ? AND status = "active"',
             [$playerId]
         );
     }
@@ -105,7 +105,7 @@ class PlayerService
     public function getAllPlayers(): array
     {
         return $this->db->fetchAll(
-            'SELECT player_id, player_identifier, first_name, last_name, 
+            'SELECT row_id, player_identifier, first_name, last_name, 
                     alias, gender, handicap, status
              FROM players WHERE status = "active" ORDER BY first_name, last_name'
         );
@@ -125,12 +125,12 @@ class PlayerService
 
     public function deletePlayer(int $playerId): bool
     {
-        return $this->db->update('players', ['status' => 'inactive'], ['player_id' => $playerId]) > 0;
+        return $this->db->update('players', ['status' => 'inactive'], ['row_id' => $playerId]) > 0;
     }
 
     public function activatePlayer(int $playerId): bool
     {
-        return $this->db->update('players', ['status' => 'active'], ['player_id' => $playerId]) > 0;
+        return $this->db->update('players', ['status' => 'active'], ['row_id' => $playerId]) > 0;
     }
 
     public function getDisplayName(array $player): string
@@ -166,7 +166,7 @@ class PlayerService
         $params = [$identifier];
         
         if ($excludePlayerId !== null) {
-            $sql .= ' AND player_id != ?';
+            $sql .= ' AND row_id != ?';
             $params[] = $excludePlayerId;
         }
         
@@ -182,7 +182,7 @@ class PlayerService
         $params = [$alias, $alias];
         
         if ($excludePlayerId !== null) {
-            $sql .= ' AND player_id != ?';
+            $sql .= ' AND row_id != ?';
             $params[] = $excludePlayerId;
         }
         

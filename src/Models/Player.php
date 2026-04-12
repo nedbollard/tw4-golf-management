@@ -172,7 +172,7 @@ class Player
             return $this->playerId;
         } else {
             // Update existing player
-            $db->update('players', $data, ['player_id' => $this->playerId]);
+            $db->update('players', $data, ['row_id' => $this->playerId]);
             return $this->playerId;
         }
     }
@@ -184,7 +184,7 @@ class Player
         }
 
         $this->status = 'inactive';
-        return $db->update('players', ['status' => 'inactive'], ['player_id' => $this->playerId]) > 0;
+        return $db->update('players', ['status' => 'inactive'], ['row_id' => $this->playerId]) > 0;
     }
 
     public function activate(Database $db): bool
@@ -194,14 +194,14 @@ class Player
         }
 
         $this->status = 'active';
-        return $db->update('players', ['status' => 'active'], ['player_id' => $this->playerId]) > 0;
+        return $db->update('players', ['status' => 'active'], ['row_id' => $this->playerId]) > 0;
     }
 
     // Static methods for data access
     public static function findById(Database $db, int $playerId): ?self
     {
         $data = $db->fetchOne(
-            'SELECT * FROM players WHERE player_id = ? AND status = "active"',
+            'SELECT * FROM players WHERE row_id = ? AND status = "active"',
             [$playerId]
         );
 
@@ -273,7 +273,7 @@ class Player
             $data['status'],
             $data['handicap'],
             $data['alias'] ?? null,
-            $data['player_id'] ?? null
+            $data['row_id'] ?? null
         );
 
         if (isset($data['created_at'])) {
@@ -290,7 +290,7 @@ class Player
     public function toArray(): array
     {
         return [
-            'player_id' => $this->playerId,
+            'row_id' => $this->playerId,
             'player_identifier' => $this->playerIdentifier,
             'first_name' => $this->firstName,
             'last_name' => $this->lastName,
