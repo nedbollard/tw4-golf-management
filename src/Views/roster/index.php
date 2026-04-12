@@ -18,13 +18,13 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="mb-0">Player List</h6>
-                            <a href="/players/create" class="btn btn-primary">Add New Player</a>
+                            <a href="/roster/create" class="btn btn-primary">Add New Player</a>
                         </div>
                         
                         <?php if (empty($players)): ?>
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle"></i>
-                                No players found. <a href="/players/create">Add your first player</a>.
+                                No players found. <a href="/roster/create">Add your first player</a>.
                             </div>
                         <?php else: ?>
                             <div class="table-responsive">
@@ -65,8 +65,8 @@
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
-                                                        <a href="/players/<?php echo $player['player_id']; ?>" class="btn btn-sm btn-outline-primary">View</a>
-                                                        <a href="/players/<?php echo $player['player_id']; ?>/edit" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                                        <a href="/roster/<?php echo $player['row_id']; ?>" class="btn btn-sm btn-outline-primary">View</a>
+                                                        <a href="/roster/<?php echo $player['row_id']; ?>/edit" class="btn btn-sm btn-outline-secondary">Edit</a>
                                                     </div>
                                                 </td>
                                             </tr>
