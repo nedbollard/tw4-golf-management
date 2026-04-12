@@ -83,7 +83,10 @@ class RosterService
     public function getPlayer(int $playerId): ?array
     {
         return $this->db->fetchOne(
-            'SELECT * FROM roster WHERE row_id = ? AND status = "active"',
+            'SELECT r.*, s.username as updated_by_name
+             FROM roster r
+             LEFT JOIN staff s ON r.updated_by = s.row_id
+             WHERE r.row_id = ? AND r.status = "active"',
             [$playerId]
         );
     }
@@ -91,7 +94,10 @@ class RosterService
     public function getPlayerByIdentifier(string $identifier): ?array
     {
         return $this->db->fetchOne(
-            'SELECT * FROM roster WHERE player_identifier = ? AND status = "active"',
+            'SELECT r.*, s.username as updated_by_name
+             FROM roster r
+             LEFT JOIN staff s ON r.updated_by = s.row_id
+             WHERE r.player_identifier = ? AND r.status = "active"',
             [$identifier]
         );
     }
@@ -99,7 +105,10 @@ class RosterService
     public function getPlayerByAlias(string $alias): ?array
     {
         return $this->db->fetchOne(
-            'SELECT * FROM roster WHERE alias = ? AND status = "active"',
+            'SELECT r.*, s.username as updated_by_name
+             FROM roster r
+             LEFT JOIN staff s ON r.updated_by = s.row_id
+             WHERE r.alias = ? AND r.status = "active"',
             [$alias]
         );
     }
