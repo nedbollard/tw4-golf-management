@@ -28,6 +28,11 @@ return [
             'controller' => 'App\Controllers\RosterController',
             'method' => 'index'
         ],
+        '/roster/create' => [
+            'path' => '/roster/create',
+            'controller' => 'App\Controllers\RosterController',
+            'method' => 'create'
+        ],
         '/roster/{id}' => [
             'path' => '/roster/{id}',
             'controller' => 'App\Controllers\RosterController',
@@ -37,11 +42,6 @@ return [
             'path' => '/roster/{id}/edit',
             'controller' => 'App\Controllers\RosterController',
             'method' => 'edit'
-        ],
-        '/roster/create' => [
-            'path' => '/roster/create',
-            'controller' => 'App\Controllers\RosterController',
-            'method' => 'create'
         ],
         '/admin/menu' => [
             'path' => '/admin/menu',
