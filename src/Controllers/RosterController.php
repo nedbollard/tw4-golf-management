@@ -24,7 +24,7 @@ class RosterController extends BaseController
         $this->requireRole('scorer');
         
         try {
-            $roster = $this->playerService->getAllPlayers();
+            $roster = $this->rosterService->getAllPlayers();
             
             $this->render('roster/index', [
                 'title' => 'Players - TW4 Golf Management',
@@ -48,7 +48,7 @@ class RosterController extends BaseController
     {
         $this->requireAuth();
         
-        $player = $this->playerService->getPlayer($playerId);
+        $player = $this->rosterService->getPlayer($playerId);
         
         if (!$player) {
             $this->redirect('/roster');
@@ -56,7 +56,7 @@ class RosterController extends BaseController
         }
         
         $this->render('roster/show', [
-            'title' => 'Player Details - ' . $this->playerService->getDisplayName($player),
+            'title' => 'Player Details - ' . $this->rosterService->getDisplayName($player),
             'player' => $player
         ]);
     }
@@ -91,7 +91,7 @@ class RosterController extends BaseController
         }
         
         try {
-            $playerId = $this->playerService->createPlayer($data);
+            $playerId = $this->rosterService->createPlayer($data);
             $_SESSION['success'] = 'Player created successfully!';
             $this->redirect('/roster/' . $playerId);
         } catch (\InvalidArgumentException $e) {
@@ -105,7 +105,7 @@ class RosterController extends BaseController
     {
         $this->requireAuth();
         
-        $player = $this->playerService->getPlayer($playerId);
+        $player = $this->rosterService->getPlayer($playerId);
         
         if (!$player) {
             $this->redirect('/roster');
@@ -113,7 +113,7 @@ class RosterController extends BaseController
         }
         
         $this->render('roster/edit', [
-            'title' => 'Edit Player - ' . $this->playerService->getDisplayName($player),
+            'title' => 'Edit Player - ' . $this->rosterService->getDisplayName($player),
             'player' => $player,
             'errors' => $_SESSION['errors'] ?? []
         ]);
@@ -137,7 +137,7 @@ class RosterController extends BaseController
         }
         
         try {
-            $success = $this->playerService->updatePlayer($playerId, $data);
+            $success = $this->rosterService->updatePlayer($playerId, $data);
             
             if ($success) {
                 $_SESSION['success'] = 'Player updated successfully!';
@@ -156,7 +156,7 @@ class RosterController extends BaseController
     {
         $this->requireAuth();
         
-        $player = $this->playerService->getPlayer($playerId);
+        $player = $this->rosterService->getPlayer($playerId);
         
         if (!$player) {
             $this->redirect('/roster');
@@ -164,7 +164,7 @@ class RosterController extends BaseController
         }
         
         $this->render('roster/delete', [
-            'title' => 'Delete Player - ' . $this->playerService->getDisplayName($player),
+            'title' => 'Delete Player - ' . $this->rosterService->getDisplayName($player),
             'player' => $player
         ]);
     }
@@ -173,7 +173,7 @@ class RosterController extends BaseController
     {
         $this->requireAuth();
         
-        $success = $this->playerService->deletePlayer($playerId);
+        $success = $this->rosterService->deletePlayer($playerId);
         
         if ($success) {
             $_SESSION['success'] = 'Player deactivated successfully!';
@@ -192,7 +192,7 @@ class RosterController extends BaseController
         $roster = [];
         
         if (!empty($query)) {
-            $roster = $this->playerService->searchPlayers($query);
+            $roster = $this->rosterService->searchPlayers($query);
         }
         
         $this->render('roster/search', [
@@ -206,7 +206,7 @@ class RosterController extends BaseController
     {
         $this->requireAuth();
         
-        $success = $this->playerService->activatePlayer($playerId);
+        $success = $this->rosterService->activatePlayer($playerId);
         
         if ($success) {
             $_SESSION['success'] = 'Player activated successfully!';
