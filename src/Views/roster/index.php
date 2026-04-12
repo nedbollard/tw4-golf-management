@@ -53,14 +53,14 @@
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-<?php echo $player['gender'] === 'M' ? 'primary' : 'pink'; ?>">
-                                                        <?php echo $player['gender'] === 'M' ? 'Male' : 'Female'; ?>
+                                                    <span class="badge bg-<?php echo $player['gender'] === 'male' ? 'primary' : 'pink'; ?>">
+                                                        <?php echo ucfirst($player['gender']); ?>
                                                     </span>
                                                 </td>
                                                 <td><?php echo htmlspecialchars($player['handicap']); ?></td>
                                                 <td>
-                                                    <span class="badge bg-<?php echo $player['status'] === 'A' ? 'success' : 'secondary'; ?>">
-                                                        <?php echo $player['status'] === 'A' ? 'Active' : 'Inactive'; ?>
+                                                    <span class="badge bg-<?php echo $player['status'] === 'active' ? 'success' : 'secondary'; ?>">
+                                                        <?php echo ucfirst($player['status']); ?>
                                                     </span>
                                                 </td>
                                                 <td>
