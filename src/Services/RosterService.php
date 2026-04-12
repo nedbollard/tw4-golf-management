@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Core\Database;
+use App\Utility\NameHelper;
 
 /**
  * Roster Service - Handle all roster-related operations
@@ -18,6 +19,14 @@ class RosterService
 
     public function createPlayer(array $data): int
     {
+        // Capitalize names properly
+        if (isset($data['first_name'])) {
+            $data['first_name'] = NameHelper::capitalizeName($data['first_name']);
+        }
+        if (isset($data['last_name'])) {
+            $data['last_name'] = NameHelper::capitalizeName($data['last_name']);
+        }
+        
         // Generate player identifier if not provided
         if (empty($data['player_identifier'])) {
             $data['player_identifier'] = $this->generatePlayerIdentifier(
@@ -44,6 +53,14 @@ class RosterService
 
     public function updatePlayer(int $playerId, array $data): bool
     {
+        // Capitalize names properly
+        if (isset($data['first_name'])) {
+            $data['first_name'] = NameHelper::capitalizeName($data['first_name']);
+        }
+        if (isset($data['last_name'])) {
+            $data['last_name'] = NameHelper::capitalizeName($data['last_name']);
+        }
+        
         // If name changed, regenerate player identifier
         if (isset($data['first_name']) || isset($data['last_name'])) {
             $currentPlayer = $this->getPlayer($playerId);
