@@ -7,6 +7,7 @@ use App\Core\Application;
 use App\Services\Database;
 use App\Models\Staff;
 use App\Services\Logger;
+use App\Utility\NameHelper;
 
 /**
  * Staff Controller - Admin-only staff management
@@ -75,12 +76,16 @@ class StaffController extends BaseController
             // Hash password
             $passwordHash = password_hash($data['password'], PASSWORD_DEFAULT);
             
+            // Capitalize names properly
+            $firstName = NameHelper::capitalizeName($data['first_name'] ?? $data['username']);
+            $lastName = NameHelper::capitalizeName($data['last_name'] ?? '');
+            
             // Create new staff member
             $newStaff = new Staff(
                 $data['username'],
                 $passwordHash,
-                $data['first_name'] ?? $data['username'], // Use username as first_name if not provided
-                $data['last_name'] ?? '', // Default empty for last_name
+                $firstName,
+                $lastName,
                 $data['role'],
                 true,
                 null
@@ -190,10 +195,10 @@ class StaffController extends BaseController
             
             // Update first and last name if provided
             if (!empty($data['first_name'])) {
-                $staff->setFirstName($data['first_name']);
+                $staff->setFirstName(NameHelper::capitalizeName($data['first_name']));
             }
             if (!empty($data['last_name'])) {
-                $staff->setLastName($data['last_name']);
+                $staff->setLastName(NameHelper::capitalizeName($data['last_name']));
             }
             
             // Update password if provided
