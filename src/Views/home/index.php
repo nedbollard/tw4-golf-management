@@ -23,10 +23,27 @@
                             <!-- Staff Login -->
                             <div class="card">
                                 <div class="card-body text-center">
-                                    <i class="fas fa-user-lock fa-3x text-primary mb-3"></i>
-                                    <h6 class="card-title">Staff Login</h6>
-                                    <p class="card-text text-muted">For administrators and scorers</p>
-                                    <a href="/login" class="btn btn-primary">Login</a>
+                                    <?php if ($isLoggedIn): ?>
+                                        <i class="fas fa-user-check fa-3x text-success mb-3"></i>
+                                        <h6 class="card-title">Logged In</h6>
+                                        <p class="card-text text-muted">
+                                            Welcome back, <?php echo htmlspecialchars($user['username']); ?>!<br>
+                                            Role: <?php echo ucfirst(htmlspecialchars($user['user_role'])); ?>
+                                        </p>
+                                        <div class="d-grid gap-2">
+                                            <?php if ($user['user_role'] === 'admin'): ?>
+                                                <a href="/admin/menu" class="btn btn-danger">Admin Menu</a>
+                                            <?php elseif ($user['user_role'] === 'scorer'): ?>
+                                                <a href="/scorer/menu" class="btn btn-success">Scorer Menu</a>
+                                            <?php endif; ?>
+                                            <a href="/logout" class="btn btn-secondary">Logout</a>
+                                        </div>
+                                    <?php else: ?>
+                                        <i class="fas fa-user-lock fa-3x text-primary mb-3"></i>
+                                        <h6 class="card-title">Staff Login</h6>
+                                        <p class="card-text text-muted">For administrators and scorers</p>
+                                        <a href="/login" class="btn btn-primary">Login</a>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                             

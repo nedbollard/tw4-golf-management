@@ -12,11 +12,8 @@
         <div class="row justify-content-center">
             <div class="col-md-8 col-lg-6">
                 <div class="card shadow">
-                    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                    <div class="card-header bg-danger text-white">
                         <h4 class="mb-0">Admin Menu</h4>
-                        <div>
-                            <a href="/logout" class="btn btn-sm btn-secondary">Logout</a>
-                        </div>
                     </div>
                     <div class="card-body">
                         <h5 class="card-title text-center mb-4">Administrator Options</h5>
