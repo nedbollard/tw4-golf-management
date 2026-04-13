@@ -28,7 +28,6 @@ class AuthService
         }
         
         if (password_verify($password, $staff['password_hash'])) {
-            $_SESSION['logged_in'] = true;
             $_SESSION['user_id'] = $staff['row_id'];
             $_SESSION['username'] = $staff['username'];
             $_SESSION['user_role'] = $staff['role'];
@@ -58,7 +57,7 @@ class AuthService
 
     public function isLoggedIn(): bool
     {
-        return isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
+        return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
     }
 
     public function getUser(): ?array
