@@ -15,7 +15,6 @@
                     <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                         <h4 class="mb-0">Scorer Menu</h4>
                         <div>
-                            <a href="/switch/admin" class="btn btn-sm btn-danger me-2">Switch to Admin</a>
                             <a href="/logout" class="btn btn-sm btn-secondary">Logout</a>
                         </div>
                     </div>
