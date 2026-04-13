@@ -20,12 +20,14 @@ class HomeController extends BaseController
     public function index(): void
     {
         // Check if user is logged in
-        $user = $this->app->getDatabase()->getAuth()->getUser();
+        $auth = $this->app->getDatabase()->getAuth();
+        $user = $auth->getUser();
+        $isLoggedIn = $auth->isLoggedIn();
         
         // Show main menu - use render to get config data
         $this->render('home/index', [
             'user' => $user,
-            'isLoggedIn' => $user !== null
+            'isLoggedIn' => $isLoggedIn
         ]);
     }
 

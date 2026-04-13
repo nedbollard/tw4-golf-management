@@ -27,7 +27,7 @@ class Auth
     {
         if ($this->user === null && isset($_SESSION['user_id'])) {
             $this->user = $this->db->fetchOne(
-                'SELECT row_id, user_name, user_role, email FROM users WHERE row_id = ?',
+                'SELECT row_id, username, role FROM staff WHERE row_id = ?',
                 [$_SESSION['user_id']]
             );
         }
@@ -38,15 +38,17 @@ class Auth
     public function login(string $username, string $password): bool
     {
         $user = $this->db->fetchOne(
-            'SELECT row_id, user_name, user_role, password FROM users WHERE user_name = ?',
+            'SELECT row_id, username, role, password_hash FROM staff WHERE username = ?',
             [$username]
         );
 
-        if (!$user || !password_verify($password, $user['password'])) {
+        if (!$user || !password_verify($password, $user['password_hash'])) {
             return false;
         }
 
         $_SESSION['user_id'] = $user['row_id'];
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['user_role'] = $user['role'];
         $this->user = $user;
 
         return true;
