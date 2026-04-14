@@ -99,7 +99,7 @@
                             </div>
                             
                             <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                                <a href="/logout" class="btn btn-secondary me-md-2">Cancel</a>
+                                <a href="/admin/menu" class="btn btn-secondary me-md-2">Cancel</a>
                                 <button type="submit" class="btn btn-danger">Save Configuration</button>
                             </div>
                         </form>
