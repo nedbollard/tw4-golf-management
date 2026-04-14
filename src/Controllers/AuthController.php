@@ -129,6 +129,10 @@ class AuthController extends BaseController
             $errors['password'] = 'Password is required';
         }
         
+        // Debug: Log validation attempts
+        error_log("AuthController: Login attempt - Username: '" . ($data['username'] ?? 'empty') . "', Password: '" . ($data['password'] ?? 'empty') . "'");
+        error_log("AuthController: Validation errors: " . json_encode($errors));
+        
         return $errors;
     }
 

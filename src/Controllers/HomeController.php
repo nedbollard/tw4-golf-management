@@ -19,6 +19,15 @@ class HomeController extends BaseController
 
     public function index(): void
     {
+        // Start session if not already started
+        if (session_status() === PHP_SESSION_NONE) {
+            // Ensure session save path is configured
+            if (!session_save_path()) {
+                session_save_path('/tmp');
+            }
+            session_start();
+        }
+        
         // Check if user is logged in
         $auth = $this->app->getDatabase()->getAuth();
         $user = $auth->getUser();
