@@ -22,9 +22,21 @@ class HomeController extends BaseController
         // Start session if not already started
         if (session_status() === PHP_SESSION_NONE) {
             // Ensure session save path is configured
-            if (!session_save_path()) {
+            $savePath = session_save_path();
+            if (empty($savePath)) {
                 session_save_path('/tmp');
             }
+            
+            // Set session cookie parameters for proper session handling
+            session_set_cookie_params([
+                'lifetime' => 0,
+                'path' => '/',
+                'domain' => '',
+                'secure' => false,
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]);
+            
             session_start();
         }
         
