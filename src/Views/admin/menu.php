@@ -52,7 +52,7 @@
                         </div>
                         
                         <div class="text-center mt-4">
-                            <a href="/logout" class="btn btn-secondary">← Back to Main Menu</a>
+                            <a href="/" class="btn btn-secondary">← Back to Main Menu</a>
                         </div>
                     </div>
                 </div>
