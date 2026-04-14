@@ -7,6 +7,7 @@ services:
       - "8084:80"
     volumes:
       - .:/var/www/html
+      - tw4_sessions:/tmp   # Added persistent volume for PHP sessions
     depends_on:
       - db
     networks:
@@ -47,6 +48,7 @@ services:
 
 volumes:
   tw4_data:
+  tw4_sessions:   # New volume for session storage
 
 networks:
   tw4-network:

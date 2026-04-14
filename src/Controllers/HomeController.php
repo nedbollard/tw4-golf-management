@@ -32,12 +32,19 @@ class HomeController extends BaseController
                 'lifetime' => 0,
                 'path' => '/',
                 'domain' => '',
-                'secure' => false,
+                'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on', // True if HTTPS
                 'httponly' => true,
                 'samesite' => 'Lax'
             ]);
             
-            session_start();
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            
+            // Optional: Regenerate session ID after login to prevent fixation attacks
+            
+            session_regenerate_id(true);
+            
         }
         
         // Check if user is logged in
