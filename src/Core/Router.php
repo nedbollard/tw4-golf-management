@@ -26,11 +26,20 @@ class Router
         $method = $_SERVER['REQUEST_METHOD'];
         $path = $this->getPath();
         
+        // Debug: Store routing info in session
+        $_SESSION['router_debug'] = [
+            'method' => $method,
+            'path' => $path,
+            'timestamp' => date('Y-m-d H:i:s')
+        ];
+        
         // Get routes for this HTTP method
         $methodRoutes = $this->routes[$method] ?? [];
         
         foreach ($methodRoutes as $route) {
+            $_SESSION['router_debug']['checking_route'] = $route;
             if ($this->matchesRoute($route, $method, $path)) {
+                $_SESSION['router_debug']['matched_route'] = $route;
                 $this->executeRoute($route, $method, $path);
                 return;
             }
@@ -98,6 +107,9 @@ class Router
             $controller = new $controllerClass($this->app);
         } elseif ($controllerClass === 'App\\Controllers\\RoleSwitchController') {
             $controller = new $controllerClass($this->app);
+        } elseif ($controllerClass === 'App\\Controllers\\CourseClubController') {
+            $logger = new \App\Services\Logger($this->app->getDatabase());
+            $controller = new $controllerClass($this->app, $logger);
         } else {
             $controller = new $controllerClass($this->app);
         }

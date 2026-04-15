@@ -28,6 +28,21 @@ return [
             'controller' => 'App\Controllers\RosterController',
             'method' => 'index'
         ],
+        '/course-club' => [
+            'path' => '/course-club',
+            'controller' => 'App\Controllers\CourseClubController',
+            'method' => 'index'
+        ],
+        '/course-club/{club}-{gender}' => [
+            'path' => '/course-club/{club}-{gender}',
+            'controller' => 'App\Controllers\CourseClubController',
+            'method' => 'index'
+        ],
+        '/course-club/create' => [
+            'path' => '/course-club/create',
+            'controller' => 'App\Controllers\CourseClubController',
+            'method' => 'create'
+        ],
         '/roster/create' => [
             'path' => '/roster/create',
             'controller' => 'App\Controllers\RosterController',
@@ -97,6 +112,31 @@ return [
             'path' => '/staff/delete/{id}',
             'controller' => 'App\\Controllers\\StaffController',
             'method' => 'delete'
+        ],
+        '/course-club/store' => [
+            'path' => '/course-club/store',
+            'controller' => 'App\Controllers\CourseClubController',
+            'method' => 'store'
+        ],
+        '/course-club/{id}/edit' => [
+            'path' => '/course-club/{id}/edit',
+            'controller' => 'App\Controllers\CourseClubController',
+            'method' => 'edit'
+        ],
+        '/course-club/{id}/update' => [
+            'path' => '/course-club/{id}/update',
+            'controller' => 'App\Controllers\CourseClubController',
+            'method' => 'update'
+        ],
+        '/course-club/{id}/delete' => [
+            'path' => '/course-club/{id}/delete',
+            'controller' => 'App\Controllers\CourseClubController',
+            'method' => 'delete'
+        ],
+        '/course-club/batch-update' => [
+            'path' => '/course-club/batch-update',
+            'controller' => 'App\Controllers\CourseClubController',
+            'method' => 'batchUpdate'
         ],
         '/logs' => [
             'path' => '/logs',
@@ -195,6 +235,26 @@ return [
             'path' => '/scores',
             'controller' => 'App\\Controllers\\ScoreController',
             'method' => 'store'
+        ],
+        '/course-club/store' => [
+            'path' => '/course-club/store',
+            'controller' => 'App\Controllers\CourseClubController',
+            'method' => 'store'
+        ],
+        '/course-club/{id}/update' => [
+            'path' => '/course-club/{id}/update',
+            'controller' => 'App\Controllers\CourseClubController',
+            'method' => 'update'
+        ],
+        '/course-club/{id}/delete' => [
+            'path' => '/course-club/{id}/delete',
+            'controller' => 'App\Controllers\CourseClubController',
+            'method' => 'delete'
+        ],
+        '/course-club/batch-update' => [
+            'path' => '/course-club/batch-update',
+            'controller' => 'App\Controllers\CourseClubController',
+            'method' => 'batchUpdate'
         ],
     ],
 ];

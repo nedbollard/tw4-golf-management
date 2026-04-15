@@ -40,6 +40,16 @@
                                 </div>
                             </div>
                             
+                            <!-- Course Club Management -->
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-golf-ball fa-3x text-warning mb-3"></i>
+                                    <h6 class="card-title">Course Club Management</h6>
+                                    <p class="card-text text-muted">Manage course holes and club configuration</p>
+                                    <a href="/course-club" class="btn btn-warning">Manage Course</a>
+                                </div>
+                            </div>
+                            
                             <!-- View Logs -->
                             <div class="card">
                                 <div class="card-body text-center">

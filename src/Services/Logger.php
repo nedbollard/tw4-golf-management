@@ -304,4 +304,31 @@ class Logger
     {
         $this->log(self::LEVEL_CRITICAL, self::EVENT_ERROR, $message, $context, $username);
     }
+    
+    public function logCourseClubCreate(string $clubName, int $holeNumber, string $username): void
+    {
+        $this->log(self::LEVEL_INFO, self::EVENT_CONFIG, 
+            "Course club hole created: {$clubName} hole {$holeNumber}", 
+            ['club_name' => $clubName, 'hole_number' => $holeNumber], 
+            $username
+        );
+    }
+    
+    public function logCourseClubUpdate(string $clubName, int $holeNumber, string $username): void
+    {
+        $this->log(self::LEVEL_INFO, self::EVENT_CONFIG, 
+            "Course club hole updated: {$clubName} hole {$holeNumber}", 
+            ['club_name' => $clubName, 'hole_number' => $holeNumber], 
+            $username
+        );
+    }
+    
+    public function logCourseClubDelete(string $clubName, int $holeNumber, string $username): void
+    {
+        $this->log(self::LEVEL_WARNING, self::EVENT_CONFIG, 
+            "Course club hole deleted: {$clubName} hole {$holeNumber}", 
+            ['club_name' => $clubName, 'hole_number' => $holeNumber], 
+            $username
+        );
+    }
 }
