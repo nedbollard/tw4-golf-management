@@ -56,6 +56,7 @@ class Auth
 
     public function logout(): void
     {
+        $_SESSION = [];
         session_destroy();
         $this->user = null;
     }
@@ -67,7 +68,7 @@ class Auth
         }
 
         $user = $this->getUser();
-        if ($user['user_role'] !== $role) {
+        if ($user['role'] !== $role) {
             $this->redirect('/unauthorized');
         }
     }
@@ -82,7 +83,7 @@ class Auth
     public function hasRole(string $role): bool
     {
         $user = $this->getUser();
-        return $user && $user['user_role'] === $role;
+        return $user && $user['role'] === $role;
     }
 
     private function startSession(): void

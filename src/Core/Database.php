@@ -36,6 +36,72 @@ class Database
         }
     }
 
+    public function find(string $table, array $where = [], string $orderBy = ''): ?array
+    {
+        $whereClause = '';
+        $params = [];
+
+        if (!empty($where)) {
+            $clauses = [];
+            foreach ($where as $column => $value) {
+                $clauses[] = "{$column} = ?";
+                $params[] = $value;
+            }
+            $whereClause = ' WHERE ' . implode(' AND ', $clauses);
+        }
+
+        if (!empty($orderBy)) {
+            $orderBy = ' ORDER BY ' . $orderBy;
+        }
+
+        $sql = "SELECT * FROM {$table}{$whereClause}{$orderBy} LIMIT 1";
+        $result = $this->query($sql, $params)->fetch(\PDO::FETCH_ASSOC);
+
+        return $result ?: null;
+    }
+
+    public function findAll(string $table, array $where = [], string $orderBy = ''): array
+    {
+        $whereClause = '';
+        $params = [];
+
+        if (!empty($where)) {
+            $clauses = [];
+            foreach ($where as $column => $value) {
+                $clauses[] = "{$column} = ?";
+                $params[] = $value;
+            }
+            $whereClause = ' WHERE ' . implode(' AND ', $clauses);
+        }
+
+        if (!empty($orderBy)) {
+            $orderBy = ' ORDER BY ' . $orderBy;
+        }
+
+        $sql = "SELECT * FROM {$table}{$whereClause}{$orderBy}";
+        return $this->query($sql, $params)->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function count(string $table, array $where = []): int
+    {
+        $whereClause = '';
+        $params = [];
+
+        if (!empty($where)) {
+            $clauses = [];
+            foreach ($where as $column => $value) {
+                $clauses[] = "{$column} = ?";
+                $params[] = $value;
+            }
+            $whereClause = ' WHERE ' . implode(' AND ', $clauses);
+        }
+
+        $sql = "SELECT COUNT(*) as count FROM {$table}{$whereClause}";
+        $result = $this->query($sql, $params)->fetch(\PDO::FETCH_ASSOC);
+
+        return isset($result['count']) ? (int)$result['count'] : 0;
+    }
+
     public function fetchAll(string $sql, array $params = []): array
     {
         return $this->query($sql, $params)->fetchAll(\PDO::FETCH_ASSOC);

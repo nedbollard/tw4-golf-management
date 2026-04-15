@@ -211,7 +211,8 @@ class RosterService
             $params[] = $excludePlayerId;
         }
         
-        $count = $this->db->fetchOne($sql, $params)['COUNT(*)'];
+        $result = $this->db->fetchOne($sql, $params);
+        $count = isset($result['COUNT(*)']) ? (int)$result['COUNT(*)'] : 0;
         if ($count > 0) {
             return false;
         }
@@ -225,7 +226,8 @@ class RosterService
             $params[] = $excludePlayerId;
         }
         
-        $count = $this->db->fetchOne($sql, $params)['COUNT(*)'];
+        $result = $this->db->fetchOne($sql, $params);
+        $count = isset($result['COUNT(*)']) ? (int)$result['COUNT(*)'] : 0;
         return $count == 0;
     }
 
@@ -241,7 +243,8 @@ class RosterService
             $params[] = $excludePlayerId;
         }
         
-        $count = $this->db->fetchOne($sql, $params)['COUNT(*)'];
+        $result = $this->db->fetchOne($sql, $params);
+        $count = isset($result['COUNT(*)']) ? (int)$result['COUNT(*)'] : 0;
         return $count == 0;
     }
 

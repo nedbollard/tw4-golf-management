@@ -47,7 +47,9 @@ abstract class BaseController
         header('Content-Type: application/json');
         http_response_code($statusCode);
         echo json_encode($data);
-        exit;
+        if (php_sapi_name() !== 'cli') {
+            exit;
+        }
     }
 
     protected function redirect(string $url, int $statusCode = 302): void

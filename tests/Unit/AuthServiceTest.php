@@ -2,19 +2,24 @@
 
 namespace Tests\Unit;
 
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use App\Core\Database;
 use App\Services\AuthService;
 
 class AuthServiceTest extends TestCase
 {
     private AuthService $authService;
+    private Database|MockObject $dbMock;
 
     protected function setUp(): void
     {
         parent::setUp();
         // Mock session for testing
         $_SESSION = [];
-        $this->authService = new AuthService();
+
+        $this->dbMock = $this->createMock(Database::class);
+        $this->authService = new AuthService($this->dbMock);
     }
 
     public function testLogin(): void
@@ -98,7 +103,10 @@ class AuthServiceTest extends TestCase
             'role' => 'admin'
         ];
 
-        $errors = $this->authService->validateStaffData($validData);
+        $method = new \ReflectionMethod(\App\Services\AuthService::class, 'validateStaffData');
+        $method->setAccessible(true);
+
+        $errors = $method->invoke($this->authService, $validData);
         $this->assertEmpty($errors);
     }
 
@@ -112,13 +120,16 @@ class AuthServiceTest extends TestCase
             'role' => 'invalid'
         ];
 
-        $errors = $this->authService->validateStaffData($invalidData);
+        $method = new \ReflectionMethod(\App\Services\AuthService::class, 'validateStaffData');
+        $method->setAccessible(true);
+
+        $errors = $method->invoke($this->authService, $invalidData);
         
         $this->assertIsArray($errors);
         $this->assertNotEmpty($errors);
         // Check for specific validation errors
-        $this->assertArrayHasKey('username', $errors);
-        $this->assertArrayHasKey('password', $errors);
-        $this->assertArrayHasKey('role', $errors);
+        $this->assertContains('Username is required', $errors);
+        $this->assertContains('Password must be at least 8 characters', $errors);
+        $this->assertContains('Role must be admin or scorer', $errors);
     }
 }

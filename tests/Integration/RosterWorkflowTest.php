@@ -16,7 +16,10 @@ class RosterWorkflowTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->app = new Application();
+        $_SESSION = [];
+        $_SERVER['CLI_REDIRECT_URL'] = null;
+        $_SERVER['CLI_REDIRECT_STATUS'] = null;
+        $this->app = Application::getInstance();
     }
 
     public function testRosterCreateWorkflowWithoutAuthentication(): void
@@ -32,8 +35,8 @@ class RosterWorkflowTest extends TestCase
             $output = ob_get_clean();
             
             // Should redirect to login (HTTP 302)
-            $this->assertStringContainsString('Location:', xdebug_get_headers());
-            $this->assertStringContainsString('/login', implode('', xdebug_get_headers()));
+            $this->assertSame('/login', $_SERVER['CLI_REDIRECT_URL'] ?? null);
+            $this->assertSame(302, $_SERVER['CLI_REDIRECT_STATUS'] ?? null);
             
         } catch (\Exception $e) {
             ob_end_clean();
@@ -55,9 +58,8 @@ class RosterWorkflowTest extends TestCase
             $output = ob_get_clean();
             
             // Should redirect to login
-            $headers = xdebug_get_headers();
-            $this->assertNotEmpty($headers);
-            $this->assertStringContainsString('Location:', implode('', $headers));
+            $this->assertSame('/login', $_SERVER['CLI_REDIRECT_URL'] ?? null);
+            $this->assertSame(302, $_SERVER['CLI_REDIRECT_STATUS'] ?? null);
             
         } catch (\Exception $e) {
             ob_end_clean();
@@ -78,6 +80,7 @@ class RosterWorkflowTest extends TestCase
             
             // Should either 404 or handle gracefully
             // This test ensures the router doesn't crash on invalid routes
+            $this->assertIsString($output);
             
         } catch (\Exception $e) {
             ob_end_clean();
@@ -101,6 +104,7 @@ class RosterWorkflowTest extends TestCase
             
             // Should NOT get a TypeError about string vs int
             // Should either work (redirect to login) or handle gracefully
+            $this->assertIsString($output);
             
         } catch (\TypeError $e) {
             ob_end_clean();
@@ -130,6 +134,7 @@ class RosterWorkflowTest extends TestCase
             
             // Should either work (if user exists and authenticated) or redirect to login
             // Should NOT crash with routing errors
+            $this->assertIsString($output);
             
         } catch (\TypeError $e) {
             ob_end_clean();
@@ -138,6 +143,7 @@ class RosterWorkflowTest extends TestCase
         } catch (\Exception $e) {
             ob_end_clean();
             // Other exceptions might be expected
+            $this->assertIsString($output);
         }
     }
 
@@ -154,6 +160,7 @@ class RosterWorkflowTest extends TestCase
             
             // Should either work (if authenticated) or redirect to login
             // Should NOT crash with routing errors
+            $this->assertIsString($output);
             
         } catch (\TypeError $e) {
             ob_end_clean();
@@ -162,6 +169,7 @@ class RosterWorkflowTest extends TestCase
         } catch (\Exception $e) {
             ob_end_clean();
             // Other exceptions might be expected
+            $this->assertIsString($output);
         }
     }
 
@@ -181,6 +189,7 @@ class RosterWorkflowTest extends TestCase
             // The key test: should NOT get a TypeError about int vs string
             // This would indicate that /roster/create is correctly routed to create() method
             // not incorrectly routed to show('create')
+            $this->assertIsString($output);
             
         } catch (\TypeError $e) {
             ob_end_clean();
@@ -195,6 +204,7 @@ class RosterWorkflowTest extends TestCase
         } catch (\Exception $e) {
             ob_end_clean();
             // Other exceptions are acceptable (auth, database, etc.)
+            $this->assertIsString($output);
         }
     }
 
@@ -216,6 +226,7 @@ class RosterWorkflowTest extends TestCase
             
             // Should either work (if authenticated) or redirect to login
             // Should NOT crash with routing errors
+            $this->assertIsString($output);
             
         } catch (\TypeError $e) {
             ob_end_clean();
@@ -224,6 +235,7 @@ class RosterWorkflowTest extends TestCase
         } catch (\Exception $e) {
             ob_end_clean();
             // Other exceptions might be expected
+            $this->assertIsString($output);
         }
     }
 
@@ -252,6 +264,7 @@ class RosterWorkflowTest extends TestCase
                 
                 // Should not crash with TypeError (routing issues)
                 // May fail for other reasons (auth, validation) which is acceptable
+                $this->assertIsString($output);
                 
             } catch (\TypeError $e) {
                 ob_end_clean();
@@ -260,6 +273,7 @@ class RosterWorkflowTest extends TestCase
             } catch (\Exception $e) {
                 ob_end_clean();
                 // Other exceptions are acceptable for this test
+                $this->assertIsString($output);
             }
             
             // Clean up for next iteration

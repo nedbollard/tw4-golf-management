@@ -147,6 +147,12 @@ class ConfigController extends BaseController
         
         $this->redirect('/config');
     }
+
+    public function delete(): void
+    {
+        $this->requireRole('admin');
+        $this->redirect('/config');
+    }
     
     /**
      * Validate configuration value based on type

@@ -17,9 +17,9 @@ class StaffIntegrationTest extends TestCase
         
         // Use test database
         $config = [
-            'host' => 'localhost',
-            'dbname' => 'tw4_test',
-            'username' => 'root',
+            'host' => 'db',
+            'name' => 'tw4_test',
+            'user' => 'root',
             'password' => 'secretpassword'
         ];
         $this->database = new Database($config);

@@ -86,6 +86,11 @@ class AuthService
     {
         if (!$this->isLoggedIn()) {
             header('Location: /login');
+            if (php_sapi_name() === 'cli') {
+                $_SERVER['CLI_REDIRECT_URL'] = '/login';
+                $_SERVER['CLI_REDIRECT_STATUS'] = 302;
+                return;
+            }
             exit;
         }
     }
@@ -94,11 +99,21 @@ class AuthService
     {
         if (!$this->isLoggedIn()) {
             header('Location: /login');
+            if (php_sapi_name() === 'cli') {
+                $_SERVER['CLI_REDIRECT_URL'] = '/login';
+                $_SERVER['CLI_REDIRECT_STATUS'] = 302;
+                return;
+            }
             exit;
         }
 
         if (!$this->hasRole($role)) {
             header('Location: /error?code=403&message=Access denied. Role ' . $role . ' required.');
+            if (php_sapi_name() === 'cli') {
+                $_SERVER['CLI_REDIRECT_URL'] = '/error?code=403&message=Access denied. Role ' . $role . ' required.';
+                $_SERVER['CLI_REDIRECT_STATUS'] = 302;
+                return;
+            }
             exit;
         }
     }

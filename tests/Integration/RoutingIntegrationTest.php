@@ -18,7 +18,10 @@ class RoutingIntegrationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->app = new Application();
+        $_SESSION = [];
+        $_SERVER['CLI_REDIRECT_URL'] = null;
+        $_SERVER['CLI_REDIRECT_STATUS'] = null;
+        $this->app = Application::getInstance();
         $this->router = $this->app->getRouter();
     }
 
@@ -44,7 +47,7 @@ class RoutingIntegrationTest extends TestCase
         $getRoutes = $routes['GET'];
         $this->assertArrayHasKey('/roster/{id}', $getRoutes);
         
-        $showRoute = $getRoutes['roster/{id}'];
+        $showRoute = $getRoutes['/roster/{id}'];
         $this->assertEquals('App\\Controllers\\RosterController', $showRoute['controller']);
         $this->assertEquals('show', $showRoute['method']);
     }
@@ -57,7 +60,7 @@ class RoutingIntegrationTest extends TestCase
         $getRoutes = $routes['GET'];
         $this->assertArrayHasKey('/roster/{id}/edit', $getRoutes);
         
-        $editRoute = $getRoutes['roster/{id}/edit'];
+        $editRoute = $getRoutes['/roster/{id}/edit'];
         $this->assertEquals('App\\Controllers\\RosterController', $editRoute['controller']);
         $this->assertEquals('edit', $editRoute['method']);
     }
@@ -70,7 +73,7 @@ class RoutingIntegrationTest extends TestCase
         $postRoutes = $routes['POST'];
         $this->assertArrayHasKey('/roster/create', $postRoutes);
         
-        $createRoute = $postRoutes['roster/create'];
+        $createRoute = $postRoutes['/roster/create'];
         $this->assertEquals('App\\Controllers\\RosterController', $createRoute['controller']);
         $this->assertEquals('store', $createRoute['method']);
     }
@@ -183,9 +186,9 @@ class RoutingIntegrationTest extends TestCase
         
         // Test that ID parameters are correctly specified
         $showRoute = $getRoutes['/roster/{id}'];
-        $this->assertStringContains('{id}', $showRoute['path']);
+        $this->assertStringContainsString('{id}', $showRoute['path']);
         
         $editRoute = $getRoutes['/roster/{id}/edit'];
-        $this->assertStringContains('{id}', $editRoute['path']);
+        $this->assertStringContainsString('{id}', $editRoute['path']);
     }
 }

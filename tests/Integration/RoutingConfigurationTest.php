@@ -42,6 +42,31 @@ class RoutingConfigurationTest extends TestCase
         $this->assertArrayHasKey('/roster/{id}/delete', $postRoutes, 'Should have POST /roster/{id}/delete route');
     }
 
+    public function testCourseClubRoutesAreCorrectlyConfigured(): void
+    {
+        $routes = require __DIR__ . '/../../src/config/routes.php';
+        $getRoutes = $routes['GET'];
+        $postRoutes = $routes['POST'];
+
+        // Test GET routes
+        $this->assertArrayHasKey('/course-club', $getRoutes, 'Should have /course-club route');
+        $this->assertArrayHasKey('/course-club/{club}-{gender}', $getRoutes, 'Should have /course-club/{club}-{gender} route');
+        $this->assertArrayHasKey('/course-club/create', $getRoutes, 'Should have /course-club/create route');
+        $this->assertArrayHasKey('/course-club/{id}/edit', $getRoutes, 'Should have /course-club/{id}/edit route');
+
+        // Test POST routes
+        $this->assertArrayHasKey('/course-club/store', $postRoutes, 'Should have POST /course-club/store route');
+        $this->assertArrayHasKey('/course-club/{id}/update', $postRoutes, 'Should have POST /course-club/{id}/update route');
+        $this->assertArrayHasKey('/course-club/batch-update', $postRoutes, 'Should have POST /course-club/batch-update route');
+    }
+
+    public function testCourseClubStatsRouteIsRemoved(): void
+    {
+        $routes = require __DIR__ . '/../../src/config/routes.php';
+        $getRoutes = $routes['GET'];
+        $this->assertArrayNotHasKey('/course-club/stats', $getRoutes, 'Stale course club stats route should be removed');
+    }
+
     public function testRosterRouteOrderPreventsConflicts(): void
     {
         $routes = require __DIR__ . '/../../src/config/routes.php';

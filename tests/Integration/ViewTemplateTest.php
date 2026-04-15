@@ -168,8 +168,8 @@ class ViewTemplateTest extends TestCase
         foreach ($rosterViews as $view) {
             $viewContent = file_get_contents(__DIR__ . "/../../src/Views/roster/{$view}");
             
-            // Should use row_id instead of player_id
-            $this->assertStringNotContainsString('player_id', $viewContent, 
+            // Should use row_id instead of old player_id field reference
+            $this->assertDoesNotMatchRegularExpression('/\bplayer_id\b/', $viewContent, 
                 "Roster view {$view} should not contain old player_id field");
         }
     }

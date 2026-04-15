@@ -122,7 +122,9 @@ class LogController extends BaseController
         }
         
         fclose($output);
-        exit;
+        if (php_sapi_name() !== 'cli') {
+            exit;
+        }
     }
     
     /**

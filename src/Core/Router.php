@@ -21,6 +21,11 @@ class Router
         $this->routes = $routes;
     }
 
+    public function getRoutes(): array
+    {
+        return $this->routes;
+    }
+
     public function dispatch(): void
     {
         $method = $_SERVER['REQUEST_METHOD'];
@@ -51,6 +56,13 @@ class Router
     public function redirect(string $url, int $statusCode = 302): void
     {
         header("Location: {$url}", true, $statusCode);
+
+        if (php_sapi_name() === 'cli') {
+            $_SERVER['CLI_REDIRECT_URL'] = $url;
+            $_SERVER['CLI_REDIRECT_STATUS'] = $statusCode;
+            return;
+        }
+
         exit;
     }
 
@@ -61,8 +73,11 @@ class Router
 
     private function pathMatches(string $routePath, string $requestPath): bool
     {
-        // Convert route parameters to regex
-        $pattern = preg_replace('/\{[^}]+\}/', '([^/]+)', $routePath);
+        $pattern = preg_replace_callback('/\{([^}]+)\}/', function ($matches) {
+            $paramName = $matches[1];
+            return $paramName === 'id' ? '(\d+)' : '([^/]+)';
+        }, $routePath);
+
         $pattern = '#^' . $pattern . '$#';
         
         return preg_match($pattern, $requestPath);

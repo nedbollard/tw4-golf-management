@@ -3,85 +3,51 @@
 namespace Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\MockObject\MockObject;
 use App\Controllers\StaffController;
+use App\Core\Application;
+use App\Services\Logger;
 
 class StaffControllerTest extends TestCase
 {
     private StaffController $staffController;
+    private Application|MockObject $appMock;
+    private Logger|MockObject $loggerMock;
 
     protected function setUp(): void
     {
         parent::setUp();
-        // Mock dependencies would go here in a real test setup
-        // For now, we'll test the controller logic without database calls
-        $this->staffController = new StaffController();
+        $this->appMock = $this->createMock(Application::class);
+        $this->loggerMock = $this->createMock(Logger::class);
+        $this->staffController = new StaffController($this->appMock, $this->loggerMock);
     }
 
-    public function testValidateStaffData(): void
+    public function testControllerInstantiatesWithDependencies(): void
     {
-        // This would test the validation logic in the controller
-        // We'll need to make the validation method public or use reflection
-        
-        $validData = [
-            'username' => 'testuser',
-            'password' => 'password123',
-            'first_name' => 'Test',
-            'last_name' => 'User',
-            'role' => 'admin'
-        ];
-
-        // Mock validation method test
-        $this->assertTrue(true); // Placeholder - would test actual validation
+        $this->assertInstanceOf(StaffController::class, $this->staffController);
     }
 
-    public function testValidateStaffDataWithMissingFields(): void
+    public function testControllerHasExpectedMethods(): void
     {
-        $invalidData = [
-            'username' => '',
-            'password' => '',
-            'role' => ''
-        ];
+        $methods = ['index', 'add', 'edit', 'update', 'delete'];
 
-        // Test validation with invalid data
-        $this->assertTrue(true); // Placeholder - would test actual validation
-    }
-
-    public function testRoleValidation(): void
-    {
-        $validRoles = ['admin', 'scorer'];
-        
-        foreach ($validRoles as $role) {
-            $this->assertTrue(in_array($role, $validRoles));
-        }
-        
-        $invalidRoles = ['user', 'manager', 'superadmin'];
-        
-        foreach ($invalidRoles as $role) {
-            $this->assertFalse(in_array($role, $validRoles));
+        foreach ($methods as $method) {
+            $this->assertTrue(
+                method_exists($this->staffController, $method),
+                "StaffController should have method {$method}"
+            );
         }
     }
 
-    public function testPasswordValidation(): void
+    public function testConstructorRequiresApplicationAndLogger(): void
     {
-        // Test password requirements
-        $validPasswords = [
-            'password123',
-            'securepass',
-            'admin123'
-        ];
+        $reflection = new \ReflectionClass(StaffController::class);
+        $constructor = $reflection->getConstructor();
 
-        foreach ($validPasswords as $password) {
-            $this->assertGreaterThanOrEqual(6, strlen($password));
-        }
-
-        $invalidPasswords = [
-            '',
-            '123',
-            'abc'
-        ];
-
-        foreach ($invalidPasswords as $password) {
-            $this->assertLessThan(6, strlen($password));
-        }
+        $this->assertNotNull($constructor);
+        $parameters = $constructor->getParameters();
+        $this->assertCount(2, $parameters);
+        $this->assertEquals('app', $parameters[0]->getName());
+        $this->assertEquals('logger', $parameters[1]->getName());
     }
 }

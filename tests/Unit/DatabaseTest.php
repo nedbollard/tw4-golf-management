@@ -14,9 +14,10 @@ class DatabaseTest extends TestCase
         parent::setUp();
         // Use test database configuration
         $config = [
-            'host' => 'localhost',
-            'dbname' => 'tw4_test',
-            'username' => 'root',
+            'host' => 'db',
+            'port' => 3306,
+            'name' => 'tw4_test',
+            'user' => 'root',
             'password' => 'secretpassword'
         ];
         $this->database = new Database($config);

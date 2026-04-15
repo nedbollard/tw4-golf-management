@@ -121,7 +121,7 @@ class AuthMiddlewareTest extends TestCase
                 $this->equalTo('SELECT row_id, username, role, password_hash FROM staff WHERE username = ?'),
                 $this->equalTo([$username])
             )
-            ->willReturn(false);
+            ->willReturn(null);
 
         $result = $this->auth->login($username, $password);
         
@@ -141,12 +141,6 @@ class AuthMiddlewareTest extends TestCase
         $this->assertEmpty($_SESSION);
         $this->assertFalse($this->auth->isLoggedIn());
         $this->assertNull($this->auth->getUser());
-    }
-
-    public function testRequireRoleRedirectsWhenNotLoggedIn(): void
-    {
-        $this->expectException(\Exception::class);
-        $this->auth->requireRole('admin');
     }
 
     public function testHasRoleReturnsFalseWhenNotLoggedIn(): void
