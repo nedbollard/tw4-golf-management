@@ -1,0 +1,43 @@
+name: Playwright E2E
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start services with docker-compose
+        run: |
+          docker-compose up -d --build
+
+      - name: Wait for app to be healthy
+        run: |
+          for i in {1..60}; do
+            if curl -sSf http://localhost:8084 >/dev/null; then
+              echo 'app available'; exit 0;
+            fi
+            sleep 2
+          done
+          echo 'timeout waiting for app' && exit 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install npm deps
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        run: npm run test:e2e:ci
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: 0
