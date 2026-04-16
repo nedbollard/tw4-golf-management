@@ -44,6 +44,9 @@
                         <div id="headerSection" class="d-flex justify-content-between align-items-center mb-4">
                             <h5 class="mb-0">Course Holes</h5>
                             <div id="buttonContainer">
+                                <a href="/course-club/add-course" class="btn btn-primary me-2" style="padding: 6px 12px; font-size: 14px; line-height: 1;">
+                                    <i class="fas fa-plus"></i> Add Course
+                                </a>
                                 <button type="button" id="applyEditsBtn" class="btn btn-success me-2" style="padding: 6px 12px; font-size: 14px; line-height: 1; display: none;">
                                     <i class="fas fa-check"></i> Apply Edits
                                 </button>

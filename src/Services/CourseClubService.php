@@ -217,4 +217,15 @@ class CourseClubService
         return array_column($results->fetchAll(), 'name_club');
     }
 
+    /**
+     * Check if course/club exists
+     */
+    public function courseExists(string $nameClub): bool
+    {
+        $sql = "SELECT COUNT(*) as count FROM course_club WHERE name_club = ?";
+        $result = $this->db->query($sql, [$nameClub]);
+        $row = $result->fetch();
+        return (int) $row["count"] > 0;
+    }
+
 }

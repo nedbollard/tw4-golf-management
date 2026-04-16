@@ -33,15 +33,25 @@ return [
             'controller' => 'App\Controllers\CourseClubController',
             'method' => 'index'
         ],
-        '/course-club/{club}-{gender}' => [
-            'path' => '/course-club/{club}-{gender}',
-            'controller' => 'App\Controllers\CourseClubController',
-            'method' => 'index'
-        ],
         '/course-club/create' => [
             'path' => '/course-club/create',
             'controller' => 'App\Controllers\CourseClubController',
             'method' => 'create'
+        ],
+        '/course-club/add-course' => [
+            'path' => '/course-club/add-course',
+            'controller' => 'App\Controllers\CourseClubController',
+            'method' => 'addCourse'
+        ],
+        '/course-club/bulk-create' => [
+            'path' => '/course-club/bulk-create',
+            'controller' => 'App\Controllers\CourseClubController',
+            'method' => 'bulkCreate'
+        ],
+        '/course-club/{club}-{gender}' => [
+            'path' => '/course-club/{club}-{gender}',
+            'controller' => 'App\Controllers\CourseClubController',
+            'method' => 'index'
         ],
         '/roster/create' => [
             'path' => '/roster/create',
@@ -240,6 +250,16 @@ return [
             'path' => '/course-club/store',
             'controller' => 'App\Controllers\CourseClubController',
             'method' => 'store'
+        ],
+        '/course-club/store-course' => [
+            'path' => '/course-club/store-course',
+            'controller' => 'App\Controllers\CourseClubController',
+            'method' => 'storeCourse'
+        ],
+        '/course-club/bulk-store' => [
+            'path' => '/course-club/bulk-store',
+            'controller' => 'App\Controllers\CourseClubController',
+            'method' => 'bulkStore'
         ],
         '/course-club/{id}/update' => [
             'path' => '/course-club/{id}/update',

@@ -62,9 +62,16 @@ class CourseClubController extends BaseController
         
         $courseClubService = $this->getCourseClubService();
         $clubNames = $courseClubService->getUniqueClubNames();
+        $newCourse = $_GET['course'] ?? $_SESSION['newCourseAdded'] ?? null;
+        
+        // Clear the one-time new course session variable
+        if (isset($_SESSION['newCourseAdded'])) {
+            unset($_SESSION['newCourseAdded']);
+        }
         
         $this->render('course-club/create', [
             'clubNames' => $clubNames,
+            'newCourse' => $newCourse,
             'user' => $this->app->getDatabase()->getAuth()->getUser()
         ]);
     }
@@ -364,8 +371,240 @@ class CourseClubController extends BaseController
     }
 
     /**
+     * Display add course form
+     */
+    public function addCourse(): void
+    {
+        $this->requireRole('admin');
+        
+        $courseClubService = $this->getCourseClubService();
+        $clubNames = $courseClubService->getUniqueClubNames();
+        
+        $this->render('course-club/add-course', [
+            'clubNames' => $clubNames,
+            'user' => $this->app->getDatabase()->getAuth()->getUser()
+        ]);
+    }
+
+    /**
+     * Store new course
+     */
+    public function storeCourse(): void
+    {
+        $this->requireRole('admin');
+        
+        $data = $this->getPostData();
+        $errors = $this->validateCourseData($data);
+        
+        if (!empty($errors)) {
+            $_SESSION['errors'] = $errors;
+            $_SESSION['old'] = $data;
+            $this->redirect('/course-club/add-course');
+            return;
+        }
+
+        $courseClubService = $this->getCourseClubService();
+        $courseName = trim($data['course_name']);
+        
+        // Check if course already exists
+        if ($courseClubService->courseExists($courseName)) {
+            $_SESSION['errors'] = ['course_name' => 'Course/Club already exists'];
+            $_SESSION['old'] = $data;
+            $this->redirect('/course-club/add-course');
+            return;
+        }
+
+        // Store the new course name in session for redirect
+        $_SESSION['newCourseAdded'] = $courseName;
+        $_SESSION['success'] = "Course '{$courseName}' created successfully. You can now add holes for this course.";
+        
+        // Redirect to bulk create form with the new course selected
+        $this->redirect('/course-club/bulk-create?course=' . urlencode($courseName));
+    }
+
+    /**
+     * Display bulk create form for 18 holes
+     */
+    public function bulkCreate(): void
+    {
+        $this->requireRole('admin');
+        
+        $courseName = urldecode($_GET['course'] ?? $_SESSION['newCourseAdded'] ?? '');
+        $errors = $_SESSION['errors'] ?? [];
+        $old = $_SESSION['old'] ?? [];
+        unset($_SESSION['errors'], $_SESSION['old']);
+        
+        if (empty($courseName)) {
+            $_SESSION['errors'] = ['course' => 'Course name is required'];
+            $this->redirect('/course-club/add-course');
+            return;
+        }
+
+        // Clear the one-time new course session variable
+        if (isset($_SESSION['newCourseAdded'])) {
+            unset($_SESSION['newCourseAdded']);
+        }
+        
+        $this->render('course-club/bulk-create', [
+            'courseName' => $courseName,
+            'errors' => $errors,
+            'old' => $old,
+            'user' => $this->app->getDatabase()->getAuth()->getUser()
+        ]);
+    }
+
+    /**
+     * Store all 18 holes at once
+     */
+    public function bulkStore(): void
+    {
+        $this->requireRole('admin');
+        
+        // Use $_POST directly for form data (not JSON)
+        $courseName = trim($_POST['club_name'] ?? '');
+        $gender = trim($_POST['gender'] ?? '');
+        $holesData = $_POST['holes'] ?? [];
+        
+        // Validate header data
+        if (empty($courseName) || empty($gender) || !in_array($gender, ['M', 'F'])) {
+            $_SESSION['errors'] = ['header' => 'Invalid course name or gender'];
+            $_SESSION['old'] = [
+                'gender' => $gender,
+                'holes' => $holesData
+            ];
+            $this->redirect('/course-club/bulk-create?course=' . urlencode($courseName));
+            return;
+        }
+
+        // Validate we have exactly 18 holes
+        if (empty($holesData) || !is_array($holesData) || count($holesData) !== 18) {
+            $_SESSION['errors'] = ['holes' => 'All 18 holes must be provided. Found: ' . count($holesData)];
+            $_SESSION['old'] = [
+                'gender' => $gender,
+                'holes' => $holesData
+            ];
+            $this->redirect('/course-club/bulk-create?course=' . urlencode($courseName));
+            return;
+        }
+
+        // Validate and prepare holes
+        $courseClubService = $this->getCourseClubService();
+        $errors = [];
+        $strokes = [];
+        $holes = [];
+
+        foreach ($holesData as $holeNumber => $holeData) {
+            $holeNumber = (int) $holeNumber;
+            $name = trim($holeData['name'] ?? '');
+            $par = (int) ($holeData['par'] ?? 0);
+            $stroke = (int) ($holeData['stroke'] ?? 0);
+
+            // Validate each hole
+            if (empty($name) || strlen($name) > 24) {
+                $errors[] = "Hole {$holeNumber}: Name is required and must not exceed 24 characters";
+            }
+            if ($par < 3 || $par > 5) {
+                $errors[] = "Hole {$holeNumber}: Par must be 3, 4, or 5";
+            }
+            if ($stroke < 1 || $stroke > 18) {
+                $errors[] = "Hole {$holeNumber}: Stroke index must be between 1 and 18";
+            }
+
+            // Check for duplicate stroke indices
+                // Only track valid strokes for duplicate checking
+                if ($stroke >= 1 && $stroke <= 18) {
+                    if (isset($strokes[$stroke])) {
+                        $errors[] = "Hole {$holeNumber}: Stroke index {$stroke} is used more than once";
+                    }
+                    $strokes[$stroke] = $holeNumber;
+                }
+
+            // Check if hole already exists
+            if ($courseClubService->holeNumberExists($courseName, $holeNumber, null, $gender)) {
+                $errors[] = "Hole {$holeNumber} already exists for this course and gender";
+            }
+
+            $holes[$holeNumber] = [
+                'number' => $holeNumber,
+                'name' => $name,
+                'par' => $par,
+                'stroke' => $stroke
+            ];
+        }
+
+        // Validate all stroke indices 1-18 are covered
+        $missingStrokes = [];
+        for ($i = 1; $i <= 18; $i++) {
+            if (!isset($strokes[$i])) {
+                $missingStrokes[] = $i;
+            }
+        }
+        if (!empty($missingStrokes)) {
+            $errors[] = "Missing stroke indices: " . implode(', ', $missingStrokes) . ". All must be 1-18, each used once.";
+        }
+
+        if (!empty($errors)) {
+            $_SESSION['errors'] = $errors;
+            $_SESSION['old'] = [
+                'gender' => $gender,
+                'holes' => $holesData
+            ];
+            $this->redirect('/course-club/bulk-create?course=' . urlencode($courseName));
+            return;
+        }
+
+        // Create all holes
+        $user = $this->app->getDatabase()->getAuth()->getUser();
+        $successCount = 0;
+        
+        foreach ($holes as $holeNumber => $holeData) {
+            $courseClub = new \App\Models\CourseClub(
+                $courseName,
+                $holeNumber,
+                $holeData['name'],
+                $gender,
+                $holeData['par'],
+                $holeData['stroke'],
+                $user['username']
+            );
+
+            if ($courseClubService->createCourseClub($courseClub)) {
+                $successCount++;
+            }
+        }
+
+        if ($successCount === 18) {
+            $_SESSION['success'] = "Successfully created all 18 holes for {$courseName}";
+            $this->redirect('/course-club');
+        } else {
+            $_SESSION['errors'] = ["Created {$successCount}/18 holes, but some failed"];
+            $_SESSION['old'] = [
+                'gender' => $gender,
+                'holes' => $holesData
+            ];
+            $this->redirect('/course-club/bulk-create?course=' . urlencode($courseName));
+        }
+    }
+
+    /**
      * Display course club statistics
      */
+    /**
+     * Validate course data
+     */
+    private function validateCourseData(array $data): array
+    {
+        $errors = [];
+        
+        if (empty($data['course_name'])) {
+            $errors['course_name'] = 'Course name is required';
+        } elseif (strlen($data['course_name']) > 16) {
+            $errors['course_name'] = 'Course name must not exceed 16 characters';
+        }
+        
+        return $errors;
+    }
+
     /**
      * Validate course club data
      */

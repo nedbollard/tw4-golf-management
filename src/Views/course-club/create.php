@@ -30,13 +30,19 @@
                             </div>
                         <?php endif; ?>
 
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                            <strong>Need to add a new course first?</strong> 
+                            <a href="/course-club/add-course" class="alert-link">Create a new course/club</a> before adding holes.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+
                         <form method="POST" action="/course-club/store">
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="name_club" class="form-label">Club Name *</label>
                                         <input type="text" class="form-control" id="name_club" name="name_club" 
-                                               value="<?php echo htmlspecialchars($_SESSION['old']['name_club'] ?? ''); ?>" 
+                                               value="<?php echo htmlspecialchars($_SESSION['old']['name_club'] ?? $newCourse ?? ''); ?>" 
                                                maxlength="16" required>
                                         <div class="form-text">Club abbreviation (e.g., OVGC)</div>
                                     </div>
