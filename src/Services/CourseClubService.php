@@ -228,4 +228,15 @@ class CourseClubService
         return (int) $row["count"] > 0;
     }
 
+    /**
+     * Check if course/club already has entries for a gender
+     */
+    public function courseGenderExists(string $nameClub, string $gender): bool
+    {
+        $sql = "SELECT COUNT(*) as count FROM course_club WHERE name_club = ? AND gender = ?";
+        $result = $this->db->query($sql, [$nameClub, $gender]);
+        $row = $result->fetch();
+        return (int) $row["count"] > 0;
+    }
+
 }

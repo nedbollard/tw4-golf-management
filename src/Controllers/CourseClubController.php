@@ -35,6 +35,8 @@ class CourseClubController extends BaseController
         $courseClubService = $this->getCourseClubService();
         $courseClubs = $courseClubService->getAllCourseClubs();
         $clubNames = $courseClubService->getUniqueClubNames();
+        $success = $_SESSION['success'] ?? [];
+        $errors = $_SESSION['errors'] ?? [];
         
         // Pre-select filters if provided in URL
         $selectedClub = $club;
@@ -46,11 +48,15 @@ class CourseClubController extends BaseController
         $this->render('course-club/index', [
             'courseClubs' => $courseClubs,
             'clubNames' => $clubNames,
+            'success' => $success,
+            'errors' => $errors,
             'selectedClub' => $selectedClub,
             'selectedGender' => $selectedGender,
             'pendingEdits' => $pendingEdits,
             'user' => $this->app->getDatabase()->getAuth()->getUser()
         ]);
+
+        unset($_SESSION['success'], $_SESSION['errors']);
     }
 
     /**
@@ -382,8 +388,12 @@ class CourseClubController extends BaseController
         
         $this->render('course-club/add-course', [
             'clubNames' => $clubNames,
+            'errors' => $_SESSION['errors'] ?? [],
+            'old' => $_SESSION['old'] ?? [],
             'user' => $this->app->getDatabase()->getAuth()->getUser()
         ]);
+
+        unset($_SESSION['errors'], $_SESSION['old']);
     }
 
     /**
@@ -405,10 +415,11 @@ class CourseClubController extends BaseController
 
         $courseClubService = $this->getCourseClubService();
         $courseName = trim($data['course_name']);
+        $gender = trim($data['gender']);
         
-        // Check if course already exists
-        if ($courseClubService->courseExists($courseName)) {
-            $_SESSION['errors'] = ['course_name' => 'Course/Club already exists'];
+        // Block duplicates for the same course and gender only.
+        if ($courseClubService->courseGenderExists($courseName, $gender)) {
+            $_SESSION['errors'] = ['course_name' => "Course '{$courseName}' already has {$gender} entries"]; 
             $_SESSION['old'] = $data;
             $this->redirect('/course-club/add-course');
             return;
@@ -416,10 +427,10 @@ class CourseClubController extends BaseController
 
         // Store the new course name in session for redirect
         $_SESSION['newCourseAdded'] = $courseName;
-        $_SESSION['success'] = "Course '{$courseName}' created successfully. You can now add holes for this course.";
+        $_SESSION['success'] = "Course '{$courseName}' selected for {$gender}. You can now add all 18 holes.";
         
-        // Redirect to bulk create form with the new course selected
-        $this->redirect('/course-club/bulk-create?course=' . urlencode($courseName));
+        // Redirect to bulk create form with course and gender preselected.
+        $this->redirect('/course-club/bulk-create?course=' . urlencode($courseName) . '&gender=' . urlencode($gender));
     }
 
     /**
@@ -430,9 +441,11 @@ class CourseClubController extends BaseController
         $this->requireRole('admin');
         
         $courseName = urldecode($_GET['course'] ?? $_SESSION['newCourseAdded'] ?? '');
+        $selectedGender = $_GET['gender'] ?? '';
+        $success = $_SESSION['success'] ?? [];
         $errors = $_SESSION['errors'] ?? [];
         $old = $_SESSION['old'] ?? [];
-        unset($_SESSION['errors'], $_SESSION['old']);
+        unset($_SESSION['success'], $_SESSION['errors'], $_SESSION['old']);
         
         if (empty($courseName)) {
             $_SESSION['errors'] = ['course' => 'Course name is required'];
@@ -447,6 +460,8 @@ class CourseClubController extends BaseController
         
         $this->render('course-club/bulk-create', [
             'courseName' => $courseName,
+            'selectedGender' => $selectedGender,
+            'success' => $success,
             'errors' => $errors,
             'old' => $old,
             'user' => $this->app->getDatabase()->getAuth()->getUser()
@@ -574,7 +589,8 @@ class CourseClubController extends BaseController
         }
 
         if ($successCount === 18) {
-            $_SESSION['success'] = "Successfully created all 18 holes for {$courseName}";
+            $genderLabel = $gender === 'M' ? 'Male' : 'Female';
+            $_SESSION['success'] = "Successfully created all 18 holes for {$courseName} ({$genderLabel})";
             $this->redirect('/course-club');
         } else {
             $_SESSION['errors'] = ["Created {$successCount}/18 holes, but some failed"];
@@ -600,6 +616,10 @@ class CourseClubController extends BaseController
             $errors['course_name'] = 'Course name is required';
         } elseif (strlen($data['course_name']) > 16) {
             $errors['course_name'] = 'Course name must not exceed 16 characters';
+        }
+
+        if (empty($data['gender']) || !in_array($data['gender'], ['M', 'F'])) {
+            $errors['gender'] = 'Gender is required';
         }
         
         return $errors;

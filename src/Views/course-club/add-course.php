@@ -13,7 +13,7 @@
             <div class="col-md-6">
                 <div class="card shadow">
                     <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">Add New Course</h4>
+                        <h4 class="mb-0">Select Course and Gender</h4>
                         <a href="/course-club" class="btn btn-sm btn-outline-light">Cancel</a>
                     </div>
                     <div class="card-body">
@@ -34,10 +34,20 @@
                             <div class="mb-3">
                                 <label for="course_name" class="form-label">Course/Club Name *</label>
                                 <input type="text" class="form-control" id="course_name" name="course_name" 
-                                       value="<?php echo htmlspecialchars($_SESSION['old']['course_name'] ?? ''); ?>" 
+                                       value="<?php echo htmlspecialchars($old['course_name'] ?? ''); ?>" 
                                        maxlength="16" required autofocus>
                                 <div class="form-text">Enter the course/club abbreviation (e.g., OVGC, PV, TCC). Maximum 16 characters.</div>
                                 <small id="charCount" class="text-muted">0/16 characters</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="gender" class="form-label">Gender *</label>
+                                <select class="form-select" id="gender" name="gender" required>
+                                    <option value="">Select Gender</option>
+                                    <option value="M" <?php echo (($old['gender'] ?? '') === 'M') ? 'selected' : ''; ?>>Male</option>
+                                    <option value="F" <?php echo (($old['gender'] ?? '') === 'F') ? 'selected' : ''; ?>>Female</option>
+                                </select>
+                                <div class="form-text">Choose which set of 18 holes you are creating for this course.</div>
                             </div>
 
                             <div class="mb-3">
@@ -57,7 +67,7 @@
 
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-danger">
-                                    <i class="fas fa-plus"></i> Create Course
+                                    <i class="fas fa-plus"></i> Continue to Add Holes
                                 </button>
                             </div>
                         </form>

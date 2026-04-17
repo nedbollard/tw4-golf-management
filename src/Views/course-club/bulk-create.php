@@ -17,6 +17,22 @@
                         <a href="/course-club" class="btn btn-sm btn-outline-light">Cancel</a>
                     </div>
                     <div class="card-body">
+                        <div id="validationMessage" class="alert alert-warning" role="alert" style="display: none;">
+                            Please complete all required fields for all 18 holes (name, par, stroke) and choose a gender before saving.
+                        </div>
+
+                        <?php if (!empty($success)): ?>
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <?php
+                                $successMessages = is_array($success) ? $success : [$success];
+                                foreach ($successMessages as $message):
+                                ?>
+                                    <?php echo htmlspecialchars($message); ?><br>
+                                <?php endforeach; ?>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        <?php endif; ?>
+
                         <?php if (!empty($errors)): ?>
                             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                                 <strong>Error:</strong>
@@ -46,8 +62,8 @@
                                         <label for="gender" class="form-label">Gender *</label>
                                         <select class="form-select" id="gender" name="gender" required>
                                             <option value="">Select Gender</option>
-                                            <option value="M" <?php echo (($old['gender'] ?? '') === 'M') ? 'selected' : ''; ?>>Male</option>
-                                            <option value="F" <?php echo (($old['gender'] ?? '') === 'F') ? 'selected' : ''; ?>>Female</option>
+                                            <option value="M" <?php echo ((($old['gender'] ?? $selectedGender ?? '') === 'M')) ? 'selected' : ''; ?>>Male</option>
+                                            <option value="F" <?php echo ((($old['gender'] ?? $selectedGender ?? '') === 'F')) ? 'selected' : ''; ?>>Female</option>
                                         </select>
                                     </div>
                                 </div>
@@ -156,5 +172,26 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous"></script>
+    <script>
+        const bulkCreateForm = document.getElementById('bulkCreateForm');
+        const validationMessage = document.getElementById('validationMessage');
+
+        bulkCreateForm.addEventListener('submit', function (event) {
+            if (!bulkCreateForm.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+                validationMessage.style.display = 'block';
+
+                const firstInvalidField = bulkCreateForm.querySelector(':invalid');
+                if (firstInvalidField) {
+                    firstInvalidField.focus();
+                }
+
+                return;
+            }
+
+            validationMessage.style.display = 'none';
+        });
+    </script>
 </body>
 </html>
