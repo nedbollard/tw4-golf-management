@@ -125,6 +125,9 @@ class Router
         } elseif ($controllerClass === 'App\\Controllers\\CourseClubController') {
             $logger = new \App\Services\Logger($this->app->getDatabase());
             $controller = new $controllerClass($this->app, $logger);
+        } elseif ($controllerClass === 'App\\Controllers\\CoursePlayedController') {
+            $logger = new \App\Services\Logger($this->app->getDatabase());
+            $controller = new $controllerClass($this->app, $logger);
         } else {
             $controller = new $controllerClass($this->app);
         }

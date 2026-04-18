@@ -49,6 +49,16 @@
                                     <a href="/course-club" class="btn btn-warning">Manage Course</a>
                                 </div>
                             </div>
+
+                            <!-- Course Played Management -->
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-route fa-3x text-info mb-3"></i>
+                                    <h6 class="card-title">Course Played Management</h6>
+                                    <p class="card-text text-muted">Create and maintain played 9-hole course definitions</p>
+                                    <a href="/course-played" class="btn btn-info">Manage Course Played</a>
+                                </div>
+                            </div>
                             
                             <!-- View Logs -->
                             <div class="card">

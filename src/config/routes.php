@@ -48,6 +48,21 @@ return [
             'controller' => 'App\Controllers\CourseClubController',
             'method' => 'bulkCreate'
         ],
+        '/course-played' => [
+            'path' => '/course-played',
+            'controller' => 'App\Controllers\CoursePlayedController',
+            'method' => 'index'
+        ],
+        '/course-played/create' => [
+            'path' => '/course-played/create',
+            'controller' => 'App\Controllers\CoursePlayedController',
+            'method' => 'create'
+        ],
+        '/course-played/{id}/edit' => [
+            'path' => '/course-played/{id}/edit',
+            'controller' => 'App\Controllers\CoursePlayedController',
+            'method' => 'edit'
+        ],
         '/course-club/{club}-{gender}' => [
             'path' => '/course-club/{club}-{gender}',
             'controller' => 'App\Controllers\CourseClubController',
@@ -260,6 +275,21 @@ return [
             'path' => '/course-club/bulk-store',
             'controller' => 'App\Controllers\CourseClubController',
             'method' => 'bulkStore'
+        ],
+        '/course-played/store' => [
+            'path' => '/course-played/store',
+            'controller' => 'App\Controllers\CoursePlayedController',
+            'method' => 'store'
+        ],
+        '/course-played/{id}/update' => [
+            'path' => '/course-played/{id}/update',
+            'controller' => 'App\Controllers\CoursePlayedController',
+            'method' => 'update'
+        ],
+        '/course-played/{id}/delete' => [
+            'path' => '/course-played/{id}/delete',
+            'controller' => 'App\Controllers\CoursePlayedController',
+            'method' => 'delete'
         ],
         '/course-club/{id}/update' => [
             'path' => '/course-club/{id}/update',
