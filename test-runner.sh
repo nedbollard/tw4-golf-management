@@ -200,6 +200,90 @@ clean_tests() {
     print_status "Test artifacts cleaned"
 }
 
+# Run migration replay and schema parity test
+run_migration_schema_test() {
+    print_status "Running migration replay/schema parity test..."
+
+    local temp_db="tw4_migration_test"
+    local migrate_log
+    migrate_log=$(mktemp)
+    local tw4_tables
+    tw4_tables=$(mktemp)
+    local test_tables
+    test_tables=$(mktemp)
+    local tw4_schema
+    tw4_schema=$(mktemp)
+    local test_schema
+    test_schema=$(mktemp)
+
+    # Ensure temp DB exists fresh
+    if ! docker compose exec -T db mysql -u root -psecretpassword -e "DROP DATABASE IF EXISTS ${temp_db}; CREATE DATABASE ${temp_db};" >/dev/null 2>&1; then
+        print_error "Failed to create temporary database ${temp_db}."
+        rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
+        return 1
+    fi
+
+    # Replay canonical migration chain (exclude snapshot schema)
+    for migration in $(ls src/migrations/*.sql | grep -v '999_current_schema.sql' | sort); do
+        echo "Applying $(basename "$migration")" >> "$migrate_log"
+        if ! docker compose exec -T db mysql -u root -psecretpassword "$temp_db" < "$migration" >> "$migrate_log" 2>&1; then
+            print_error "Migration replay failed at $(basename "$migration")."
+            cat "$migrate_log"
+            rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
+            return 1
+        fi
+    done
+
+    # Compare table sets
+    if ! docker compose exec -T db mysql -u root -psecretpassword -e "USE TW4; SHOW TABLES;" | tail -n +2 | sort > "$tw4_tables"; then
+        print_error "Failed to read TW4 table list."
+        rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
+        return 1
+    fi
+
+    if ! docker compose exec -T db mysql -u root -psecretpassword -e "USE ${temp_db}; SHOW TABLES;" | tail -n +2 | sort > "$test_tables"; then
+        print_error "Failed to read ${temp_db} table list."
+        rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
+        return 1
+    fi
+
+    if ! diff -u "$tw4_tables" "$test_tables" >/dev/null; then
+        print_error "Table set mismatch between TW4 and ${temp_db}."
+        diff -u "$tw4_tables" "$test_tables"
+        rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
+        return 1
+    fi
+
+    # Compare full CREATE TABLE output while normalizing AUTO_INCREMENT drift
+    while IFS= read -r table_name; do
+        if ! docker compose exec -T db mysql -u root -psecretpassword -e "USE TW4; SHOW CREATE TABLE ${table_name};" \
+            | sed -E 's/ AUTO_INCREMENT=[0-9]+//g' >> "$tw4_schema"; then
+            print_error "Failed to read SHOW CREATE TABLE for TW4.${table_name}"
+            rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
+            return 1
+        fi
+
+        if ! docker compose exec -T db mysql -u root -psecretpassword -e "USE ${temp_db}; SHOW CREATE TABLE ${table_name};" \
+            | sed -E 's/ AUTO_INCREMENT=[0-9]+//g' >> "$test_schema"; then
+            print_error "Failed to read SHOW CREATE TABLE for ${temp_db}.${table_name}"
+            rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
+            return 1
+        fi
+    done < "$tw4_tables"
+
+    if ! diff -u "$tw4_schema" "$test_schema" >/dev/null; then
+        print_error "Schema mismatch found between TW4 and ${temp_db}."
+        diff -u "$tw4_schema" "$test_schema"
+        rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
+        return 1
+    fi
+
+    print_status "Migration replay/schema parity test passed"
+
+    rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
+    return 0
+}
+
 # Show help
 show_help() {
     print_header
@@ -209,6 +293,7 @@ show_help() {
     echo -e "${GREEN}  unit${NC}          - Run unit tests only"
     echo -e "${GREEN}  integration${NC}   - Run integration tests only"
     echo -e "${GREEN}  coverage${NC}      - Run tests with coverage report"
+    echo -e "${GREEN}  migrations${NC}    - Replay migrations and compare schema parity"
     echo -e "${GREEN}  specific <file>${NC} - Run specific test file"
     echo -e "${GREEN}  stats${NC}         - Show test statistics"
     echo -e "${GREEN}  clean${NC}         - Clean test artifacts"
@@ -238,7 +323,7 @@ main() {
         "all")
             check_docker
             check_test_database
-            run_all_tests
+            run_migration_schema_test && run_all_tests
             ;;
         "unit")
             check_docker
@@ -254,6 +339,10 @@ main() {
             check_docker
             check_test_database
             run_tests_with_coverage
+            ;;
+        "migrations")
+            check_docker
+            run_migration_schema_test
             ;;
         "specific")
             if [ -z "$2" ]; then

@@ -20,8 +20,22 @@ EXECUTE add_date_stmt;
 DEALLOCATE PREPARE add_date_stmt;
 
 -- Keep updated_by consistent with application usage.
-ALTER TABLE roster
-    MODIFY COLUMN updated_by VARCHAR(50) NULL;
+SET @has_updated_by := (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'roster'
+      AND COLUMN_NAME = 'updated_by'
+);
+
+SET @ensure_updated_by_sql := IF(
+    @has_updated_by = 0,
+    'ALTER TABLE roster ADD COLUMN updated_by VARCHAR(50) NULL AFTER created_at',
+    'ALTER TABLE roster MODIFY COLUMN updated_by VARCHAR(50) NULL'
+);
+PREPARE ensure_updated_by_stmt FROM @ensure_updated_by_sql;
+EXECUTE ensure_updated_by_stmt;
+DEALLOCATE PREPARE ensure_updated_by_stmt;
 
 -- If legacy first_play_date exists, migrate values and remove old column.
 SET @has_first_play_date := (

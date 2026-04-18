@@ -148,3 +148,49 @@ CREATE TABLE audit_log (
     INDEX idx_staff (staff_id),
     INDEX idx_created (created_at)
 );
+
+-- Application configuration table
+CREATE TABLE config_application (
+    row_id INT AUTO_INCREMENT PRIMARY KEY,
+    config_name VARCHAR(100) NOT NULL,
+    config_value_string TEXT NULL,
+    config_value_int INT NULL,
+    config_type ENUM('string', 'int') NOT NULL DEFAULT 'string',
+    UNIQUE KEY config_name (config_name),
+    INDEX idx_config_name (config_name)
+);
+
+-- Course/club hole definitions (core scoring reference)
+CREATE TABLE course_club (
+    row_id INT AUTO_INCREMENT PRIMARY KEY,
+    name_club VARCHAR(16) NOT NULL,
+    gender CHAR(1) NOT NULL,
+    number_hole INT NOT NULL,
+    name_hole VARCHAR(24) NOT NULL,
+    par INT NOT NULL,
+    stroke INT NOT NULL,
+    updated_by VARCHAR(32) NOT NULL,
+    updated_ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_hole (name_club, gender, number_hole)
+);
+
+-- Course played metadata (legacy structure; normalized later by migrations 013/014)
+CREATE TABLE course_played (
+    row_id INT AUTO_INCREMENT PRIMARY KEY,
+    name_course VARCHAR(16) NOT NULL,
+    name_club VARCHAR(16) NOT NULL,
+    ident_eclectic TEXT NOT NULL,
+    updated_by VARCHAR(32) NOT NULL,
+    updated_ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_course_played (name_club, name_course)
+);
+
+-- Course played hole mapping (legacy structure; normalized later by migrations 013/014)
+CREATE TABLE course_played_hole (
+    row_id INT AUTO_INCREMENT PRIMARY KEY,
+    name_course VARCHAR(16) NOT NULL,
+    hole INT NOT NULL,
+    number_hole INT NOT NULL,
+    updated_by VARCHAR(32) NOT NULL,
+    updated_ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

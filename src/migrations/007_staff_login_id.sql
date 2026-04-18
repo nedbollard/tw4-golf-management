@@ -1,5 +1,3 @@
--- Add staff_id column for login purposes
-ALTER TABLE staff ADD COLUMN staff_id VARCHAR(16) UNIQUE AFTER row_id;
-
--- Update staff_id with row_id values for existing records
-UPDATE staff SET staff_id = CONCAT('STAFF', LPAD(row_id, 3, '0')) WHERE staff_id IS NULL;
+-- Superseded migration preserved for sequence continuity.
+-- staff_id login approach is no longer used in canonical schema.
+SELECT '007_staff_login_id: no-op (superseded)' AS migration_note;
