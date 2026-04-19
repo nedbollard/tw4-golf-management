@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Controllers\BaseController;
 use App\Core\Application;
+use App\Services\RoundWorkflowService;
 
 /**
  * Score Controller - Handle score-related operations
@@ -25,15 +26,37 @@ class ScoreController extends BaseController
 
     public function enter(): void
     {
-        $this->requireAuth();
-        $this->render('scores/enter', [
-            'title' => 'Enter Scores - TW4 Golf Management'
-        ]);
+        $this->requireRole('scorer');
+
+        $user = $this->app->getDatabase()->getAuth()->getUser();
+        $workflow = new RoundWorkflowService($this->app->getDatabase());
+        $active = $workflow->getActiveRoundForScorerMenu();
+
+        if ($active) {
+            $workflow->openCardEntry((int) $active['round_id'], (int) ($user['user_id'] ?? 0));
+        }
+
+        $this->redirect('/scorer/menu');
     }
 
     public function store(): void
     {
         $this->requireAuth();
         $this->redirect('/scores');
+    }
+
+    public function presentResults(): void
+    {
+        $this->requireRole('scorer');
+
+        $user = $this->app->getDatabase()->getAuth()->getUser();
+        $workflow = new RoundWorkflowService($this->app->getDatabase());
+        $active = $workflow->getActiveRoundForScorerMenu();
+
+        if ($active) {
+            $workflow->presentResults((int) $active['round_id'], (int) ($user['user_id'] ?? 0));
+        }
+
+        $this->redirect('/scorer/menu');
     }
 }

@@ -19,7 +19,8 @@ class RoleSwitchController extends BaseController
     {
         $this->requireAuth();
         
-        // Update session role to admin
+        // Normalize role key and keep legacy compatibility.
+        $_SESSION['user_role'] = 'admin';
         $_SESSION['role'] = 'admin';
         
         $this->redirect('/admin/menu');
@@ -29,7 +30,8 @@ class RoleSwitchController extends BaseController
     {
         $this->requireAuth();
         
-        // Update session role to scorer
+        // Normalize role key and keep legacy compatibility.
+        $_SESSION['user_role'] = 'scorer';
         $_SESSION['role'] = 'scorer';
         
         $this->redirect('/scorer/menu');

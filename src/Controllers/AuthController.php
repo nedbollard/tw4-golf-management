@@ -6,6 +6,7 @@ use App\Controllers\BaseController;
 use App\Core\Application;
 use App\Services\AuthService;
 use App\Services\Logger;
+use App\Services\RoundLockService;
 
 /**
  * Authentication Controller - Handles user login, logout, and registration
@@ -92,6 +93,9 @@ class AuthController extends BaseController
         $user = $this->app->getDatabase()->getAuth()->getUser();
         if ($user && isset($user['username'])) {
             $this->logger->logLogout($user['username']);
+
+            $lockService = new RoundLockService($this->app->getDatabase());
+            $lockService->releaseAnyLocksByStaff((int) ($user['user_id'] ?? 0), 'logout');
         }
         
         $this->authService->logout();

@@ -193,6 +193,16 @@ return [
             'controller' => 'App\\Controllers\\RoundController',
             'method' => 'start'
         ],
+        '/rounds/finish' => [
+            'path' => '/rounds/finish',
+            'controller' => 'App\\Controllers\\RoundController',
+            'method' => 'finish'
+        ],
+        '/rounds/{id}/unlock' => [
+            'path' => '/rounds/{id}/unlock',
+            'controller' => 'App\\Controllers\\RoundController',
+            'method' => 'forceUnlock'
+        ],
         '/scores' => [
             'path' => '/scores',
             'controller' => 'App\\Controllers\\ScoreController',
@@ -202,6 +212,11 @@ return [
             'path' => '/scores/enter',
             'controller' => 'App\\Controllers\\ScoreController',
             'method' => 'enter'
+        ],
+        '/scores/present-results' => [
+            'path' => '/scores/present-results',
+            'controller' => 'App\\Controllers\\ScoreController',
+            'method' => 'presentResults'
         ],
     ],
     

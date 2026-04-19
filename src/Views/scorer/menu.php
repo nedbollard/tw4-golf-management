@@ -167,7 +167,7 @@ $activeRound = $roundState['active_round'] ?? null;
             <a href="/" class="btn btn-nav-main">← Main Menu</a>
             <a href="/roster" class="btn btn-nav-roster">View Roster</a>
             <a href="/leaderboard" class="btn btn-nav-leader">Leaderboard</a>
-            <?php if ($activeRound): ?>
+            <?php if ($activeRound && (($activeRound['workflow_step'] ?? 'not_started') !== 'not_started')): ?>
                 <a href="/results" class="btn btn-nav-results">View Results</a>
             <?php endif; ?>
         </div>

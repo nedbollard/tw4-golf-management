@@ -77,7 +77,7 @@ ensure_reference_database_schema() {
 
     if [ "$table_count" = "0" ]; then
         print_status "TW4_base is empty; applying baseline migrations..."
-        for migration in $(ls src/migrations/*.sql | grep -v '017_create_live_database_schema.sql' | grep -v '999_current_schema.sql' | sort); do
+        for migration in $(ls src/migrations/*.sql | grep -v '017_create_live_database_schema.sql' | grep -v '018_seed_live_round.sql' | grep -v '019_round_workflow_and_lock.sql' | grep -v '021_live_round_start_defaults.sql' | grep -v '999_current_schema.sql' | sort); do
             print_status "Applying $(basename "$migration") to TW4_base..."
             if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root TW4_base < "$migration"; then
                 print_error "Failed applying $(basename "$migration") to TW4_base."
@@ -105,7 +105,7 @@ check_test_database() {
     print_status "Applying migrations to test database..."
     for migration in src/migrations/*.sql; do
         if [ -f "$migration" ]; then
-            if [ "$(basename "$migration")" = "017_create_live_database_schema.sql" ]; then
+            if [ "$(basename "$migration")" = "017_create_live_database_schema.sql" ] || [ "$(basename "$migration")" = "018_seed_live_round.sql" ] || [ "$(basename "$migration")" = "019_round_workflow_and_lock.sql" ] || [ "$(basename "$migration")" = "021_live_round_start_defaults.sql" ]; then
                 continue
             fi
             print_status "Applying $(basename "$migration")..."
@@ -272,7 +272,7 @@ run_migration_schema_test() {
 
     # Replay canonical migration chain (exclude snapshot schema)
     for migration in $(ls src/migrations/*.sql | grep -v '999_current_schema.sql' | sort); do
-        if [ "$(basename "$migration")" = "017_create_live_database_schema.sql" ]; then
+        if [ "$(basename "$migration")" = "017_create_live_database_schema.sql" ] || [ "$(basename "$migration")" = "018_seed_live_round.sql" ] || [ "$(basename "$migration")" = "019_round_workflow_and_lock.sql" ] || [ "$(basename "$migration")" = "021_live_round_start_defaults.sql" ]; then
             continue
         fi
         echo "Applying $(basename "$migration")" >> "$migrate_log"

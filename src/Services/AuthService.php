@@ -31,6 +31,8 @@ class AuthService
             $_SESSION['user_id'] = $staff['row_id'];
             $_SESSION['username'] = $staff['username'];
             $_SESSION['user_role'] = $staff['role'];
+            $_SESSION['session_id'] = session_id();
+            $_SESSION['last_activity_at'] = time();
             return true;
         }
         
