@@ -18,7 +18,7 @@ class DatabaseTest extends TestCase
             'port' => 3306,
             'name' => 'tw4_test',
             'user' => 'root',
-            'password' => 'secretpassword'
+              'password' => $_ENV['DB_PASSWORD'] ?? getenv('DB_PASSWORD') ?: ''
         ];
         $this->database = new Database($config);
     }

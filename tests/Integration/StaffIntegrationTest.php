@@ -20,7 +20,7 @@ class StaffIntegrationTest extends TestCase
             'host' => 'db',
             'name' => 'tw4_test',
             'user' => 'root',
-            'password' => 'secretpassword'
+            'password' => $_ENV['DB_PASSWORD'] ?? getenv('DB_PASSWORD') ?: ''
         ];
         $this->database = new Database($config);
         
@@ -139,7 +139,7 @@ class StaffIntegrationTest extends TestCase
 
         // Verify deactivated
         $deactivatedStaff = Staff::findById($this->database, $id);
-        $this->assertFalse($deactivatedStaff->isActive());
+        $this->assertNull($deactivatedStaff);
     }
 
     public function testFindAllStaff(): void

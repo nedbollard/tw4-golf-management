@@ -2,12 +2,14 @@
 
 namespace Tests\Unit;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use App\Controllers\StaffController;
 use App\Core\Application;
 use App\Services\Logger;
 
+#[AllowMockObjectsWithoutExpectations]
 class StaffControllerTest extends TestCase
 {
     private StaffController $staffController;

@@ -4,7 +4,7 @@
 -- then cleared from here.
 --
 -- Run against the TW4_live database:
---   docker compose exec db mysql -uroot -psecretpassword TW4_live < src/migrations/017_create_live_database_schema.sql
+--   docker compose exec -e MYSQL_PWD=${DB_PASSWORD} db mysql -u root TW4_live < src/migrations/017_create_live_database_schema.sql
 
 USE TW4_live;
 

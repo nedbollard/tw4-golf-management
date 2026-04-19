@@ -2,10 +2,12 @@
 
 namespace Tests\Unit;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use App\Middleware\Auth;
 use App\Core\Database;
 
+#[AllowMockObjectsWithoutExpectations]
 class AuthMiddlewareTest extends TestCase
 {
     private Auth $auth;

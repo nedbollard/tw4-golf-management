@@ -13,6 +13,13 @@ PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# Load DB_PASSWORD from .env when not explicitly provided by caller.
+if [ -z "${DB_PASSWORD-}" ] && [ -f ".env" ]; then
+    DB_PASSWORD="$(awk -F= '/^DB_PASSWORD=/{print substr($0, index($0,"=")+1); exit}' .env)"
+fi
+
+: "${DB_PASSWORD:?DB_PASSWORD is required (set it in .env or export it)}"
+
 # Function to print colored output
 print_status() {
     echo -e "${GREEN}[INFO]${NC} $1"
@@ -80,7 +87,7 @@ start_app() {
         echo ""
         echo -e "${GREEN}Database Access:${NC}"
         echo -e "${CYAN}  Host:${NC} localhost"
-        echo -e "${CYAN}  Database:${NC} TW4"
+        echo -e "${CYAN}  Database:${NC} TW4_base"
         echo -e "${CYAN}  User:${NC} root"
         echo ""
         echo -e "${GREEN}Admin Credentials:${NC}"
@@ -203,7 +210,7 @@ connect_db() {
     fi
     
     echo -e "${CYAN}Connecting to MySQL database...${NC}"
-    docker compose exec db mysql -uroot -psecretpassword TW4
+    docker compose exec -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root TW4_base
 }
 
 # Clean up
@@ -247,7 +254,7 @@ create_backup() {
     mkdir -p backup
     
     # Create backup
-    docker compose exec -T db mysqldump -uroot -psecretpassword TW4 > "$BACKUP_FILE"
+    docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysqldump -u root TW4_base > "$BACKUP_FILE"
     
     if [ $? -eq 0 ]; then
         print_status "✅ Backup created: $BACKUP_FILE"

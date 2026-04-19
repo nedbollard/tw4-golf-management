@@ -4,7 +4,7 @@ return [
     'database' => [
         'host' => $_ENV['DB_HOST'] ?? 'localhost',
         'port' => $_ENV['DB_PORT'] ?? 3306,
-        'name' => $_ENV['DB_NAME'] ?? 'TW4',
+        'name' => $_ENV['DB_NAME'] ?? 'TW4_base',
         'user' => $_ENV['DB_USER'] ?? 'root',
         'password' => $_ENV['DB_PASSWORD'] ?? '',
     ],

@@ -66,12 +66,12 @@ Tests use a separate test database `tw4_test` to avoid affecting production data
 
 ### Setup Test Database
 ```bash
-docker compose exec db mysql -uroot -psecretpassword -e "CREATE DATABASE tw4_test;"
+docker compose exec -e MYSQL_PWD=${DB_PASSWORD} db mysql -u root -e "CREATE DATABASE tw4_test;"
 ```
 
 ### Run Migrations on Test Database
 ```bash
-docker compose exec db mysql -uroot -psecretpassword tw4_test < src/migrations/001_create_tables.sql
+docker compose exec -e MYSQL_PWD=${DB_PASSWORD} db mysql -u root tw4_test < src/migrations/001_create_tables.sql
 ```
 
 ## Writing New Tests

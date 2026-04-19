@@ -2,11 +2,13 @@
 
 namespace Tests\Integration;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use App\Core\Application;
 use App\Core\Database;
 use App\Core\Router;
 
+#[AllowMockObjectsWithoutExpectations]
 class CourseClubIntegrationTest extends TestCase
 {
     private Application $app;

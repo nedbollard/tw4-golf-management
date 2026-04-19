@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use App\Controllers\CourseClubController;
 use App\Core\Application;
@@ -9,6 +10,7 @@ use App\Core\Database;
 use App\Services\Logger;
 use App\Services\AuthService;
 
+#[AllowMockObjectsWithoutExpectations]
 class CourseClubControllerTest extends TestCase
 {
     protected function setUp(): void

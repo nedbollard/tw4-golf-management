@@ -23,10 +23,10 @@ This file helps Copilot-style assistants (and future contributors) quickly under
   - `./vendor/bin/phpunit --filter testMethodName`
 - Coverage (HTML):
   - `./vendor/bin/phpunit --coverage-html coverage`
-- Test DB / env (see phpunit.xml): DB_NAME=tw4_test, DB_HOST=db, DB_USER=root, DB_PASSWORD=secretpassword
+- Test DB / env (see phpunit.xml): DB_NAME=tw4_test, DB_HOST=db, DB_USER=root, DB_PASSWORD=${DB_PASSWORD}
 - To create the test database via docker:
-  - `docker compose exec db mysql -uroot -psecretpassword -e "CREATE DATABASE tw4_test;"`
-  - Migrations: `docker compose exec db mysql -uroot -psecretpassword tw4_test < src/migrations/001_create_tables.sql`
+  - `docker compose exec -e MYSQL_PWD=${DB_PASSWORD} db mysql -u root -e "CREATE DATABASE tw4_test;"`
+  - Migrations: `docker compose exec -e MYSQL_PWD=${DB_PASSWORD} db mysql -u root tw4_test < src/migrations/001_create_tables.sql`
 
 ## Linting / Static analysis
 - No repository-provided linter or static-analysis configuration detected (no scripts in composer.json). Add PHPCS/PHPMD/PSALM if desired. Do not assume a linter is present.

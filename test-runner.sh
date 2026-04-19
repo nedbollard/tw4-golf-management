@@ -13,6 +13,13 @@ PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# Load DB_PASSWORD from .env when not explicitly provided by caller.
+if [ -z "${DB_PASSWORD-}" ] && [ -f ".env" ]; then
+    DB_PASSWORD="$(awk -F= '/^DB_PASSWORD=/{print substr($0, index($0,"=")+1); exit}' .env)"
+fi
+
+: "${DB_PASSWORD:?DB_PASSWORD is required (set it in .env or export it)}"
+
 print_status() {
     echo -e "${GREEN}[INFO]${NC} $1"
 }
@@ -53,24 +60,63 @@ check_docker() {
     fi
 }
 
-# Check test database
-check_test_database() {
-    print_status "Checking test database..."
-    
-    # Check if test database exists
-    if ! docker compose exec -T db mysql -u root -psecretpassword -e "USE tw4_test;" 2>/dev/null; then
-        print_status "Creating test database..."
-        docker compose exec -T db mysql -u root -psecretpassword -e "CREATE DATABASE tw4_test;"
-        
-        # Apply migrations to test database
-        print_status "Applying migrations to test database..."
-        for migration in src/migrations/*.sql; do
-            if [ -f "$migration" ]; then
-                print_status "Applying $(basename "$migration")..."
-                docker compose exec -T db mysql -u root -psecretpassword tw4_test < "$migration"
+# Validate DB credentials before running setup or parity checks.
+validate_db_connection() {
+    if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "SELECT 1;" >/dev/null 2>&1; then
+        print_error "Cannot connect to MySQL with the provided DB_PASSWORD."
+        print_error "Set DB_PASSWORD in .env (or export it) to match docker-compose MySQL credentials."
+        return 1
+    fi
+    return 0
+}
+
+# Ensure TW4_base has schema when running against a freshly recreated volume.
+ensure_reference_database_schema() {
+    local table_count
+    table_count=$(docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -N -s -u root -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='TW4_base' AND table_type='BASE TABLE';" 2>/dev/null)
+
+    if [ "$table_count" = "0" ]; then
+        print_status "TW4_base is empty; applying baseline migrations..."
+        for migration in $(ls src/migrations/*.sql | grep -v '017_create_live_database_schema.sql' | grep -v '999_current_schema.sql' | sort); do
+            print_status "Applying $(basename "$migration") to TW4_base..."
+            if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root TW4_base < "$migration"; then
+                print_error "Failed applying $(basename "$migration") to TW4_base."
+                return 1
             fi
         done
     fi
+
+    return 0
+}
+
+# Check test database
+check_test_database() {
+    print_status "Checking test database..."
+
+    # Always recreate test DB to avoid stale schema from prior runs.
+    print_status "Recreating test database..."
+    if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "DROP DATABASE IF EXISTS tw4_test; CREATE DATABASE tw4_test;"; then
+        print_error "Failed to recreate tw4_test database."
+        print_error "Check DB_PASSWORD in .env or export DB_PASSWORD before running tests."
+        return 1
+    fi
+
+    # Apply migrations to test database
+    print_status "Applying migrations to test database..."
+    for migration in src/migrations/*.sql; do
+        if [ -f "$migration" ]; then
+            if [ "$(basename "$migration")" = "017_create_live_database_schema.sql" ]; then
+                continue
+            fi
+            print_status "Applying $(basename "$migration")..."
+            if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root tw4_test < "$migration"; then
+                print_error "Failed applying migration $(basename "$migration") to tw4_test."
+                return 1
+            fi
+        fi
+    done
+
+    return 0
 }
 
 # Run unit tests only
@@ -217,16 +263,20 @@ run_migration_schema_test() {
     test_schema=$(mktemp)
 
     # Ensure temp DB exists fresh
-    if ! docker compose exec -T db mysql -u root -psecretpassword -e "DROP DATABASE IF EXISTS ${temp_db}; CREATE DATABASE ${temp_db};" >/dev/null 2>&1; then
+    if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "DROP DATABASE IF EXISTS ${temp_db}; CREATE DATABASE ${temp_db};" >/dev/null 2>&1; then
         print_error "Failed to create temporary database ${temp_db}."
+        print_error "Check DB_PASSWORD in .env or export DB_PASSWORD before running tests."
         rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
         return 1
     fi
 
     # Replay canonical migration chain (exclude snapshot schema)
     for migration in $(ls src/migrations/*.sql | grep -v '999_current_schema.sql' | sort); do
+        if [ "$(basename "$migration")" = "017_create_live_database_schema.sql" ]; then
+            continue
+        fi
         echo "Applying $(basename "$migration")" >> "$migrate_log"
-        if ! docker compose exec -T db mysql -u root -psecretpassword "$temp_db" < "$migration" >> "$migrate_log" 2>&1; then
+        if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root "$temp_db" < "$migration" >> "$migrate_log" 2>&1; then
             print_error "Migration replay failed at $(basename "$migration")."
             cat "$migrate_log"
             rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
@@ -235,13 +285,13 @@ run_migration_schema_test() {
     done
 
     # Compare table sets
-    if ! docker compose exec -T db mysql -u root -psecretpassword -e "USE TW4; SHOW TABLES;" | tail -n +2 | sort > "$tw4_tables"; then
-        print_error "Failed to read TW4 table list."
+    if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "USE TW4_base; SHOW TABLES;" | tail -n +2 | sort > "$tw4_tables"; then
+        print_error "Failed to read TW4_base table list."
         rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
         return 1
     fi
 
-    if ! docker compose exec -T db mysql -u root -psecretpassword -e "USE ${temp_db}; SHOW TABLES;" | tail -n +2 | sort > "$test_tables"; then
+    if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "USE ${temp_db}; SHOW TABLES;" | tail -n +2 | sort > "$test_tables"; then
         print_error "Failed to read ${temp_db} table list."
         rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
         return 1
@@ -256,14 +306,14 @@ run_migration_schema_test() {
 
     # Compare full CREATE TABLE output while normalizing AUTO_INCREMENT drift
     while IFS= read -r table_name; do
-        if ! docker compose exec -T db mysql -u root -psecretpassword -e "USE TW4; SHOW CREATE TABLE ${table_name};" \
+        if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "USE TW4_base; SHOW CREATE TABLE ${table_name};" \
             | sed -E 's/ AUTO_INCREMENT=[0-9]+//g' >> "$tw4_schema"; then
-            print_error "Failed to read SHOW CREATE TABLE for TW4.${table_name}"
+            print_error "Failed to read SHOW CREATE TABLE for TW4_base.${table_name}"
             rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
             return 1
         fi
 
-        if ! docker compose exec -T db mysql -u root -psecretpassword -e "USE ${temp_db}; SHOW CREATE TABLE ${table_name};" \
+        if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "USE ${temp_db}; SHOW CREATE TABLE ${table_name};" \
             | sed -E 's/ AUTO_INCREMENT=[0-9]+//g' >> "$test_schema"; then
             print_error "Failed to read SHOW CREATE TABLE for ${temp_db}.${table_name}"
             rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
@@ -321,28 +371,19 @@ main() {
     
     case "${1:-help}" in
         "all")
-            check_docker
-            check_test_database
-            run_migration_schema_test && run_all_tests
+            check_docker && validate_db_connection && ensure_reference_database_schema && check_test_database && run_migration_schema_test && run_all_tests
             ;;
         "unit")
-            check_docker
-            check_test_database
-            run_unit_tests
+            check_docker && validate_db_connection && ensure_reference_database_schema && check_test_database && run_unit_tests
             ;;
         "integration")
-            check_docker
-            check_test_database
-            run_integration_tests
+            check_docker && validate_db_connection && ensure_reference_database_schema && check_test_database && run_integration_tests
             ;;
         "coverage")
-            check_docker
-            check_test_database
-            run_tests_with_coverage
+            check_docker && validate_db_connection && ensure_reference_database_schema && check_test_database && run_tests_with_coverage
             ;;
         "migrations")
-            check_docker
-            run_migration_schema_test
+            check_docker && validate_db_connection && ensure_reference_database_schema && run_migration_schema_test
             ;;
         "specific")
             if [ -z "$2" ]; then
@@ -350,9 +391,7 @@ main() {
                 echo "Usage: ./test-runner.sh specific <test_file>"
                 exit 1
             fi
-            check_docker
-            check_test_database
-            run_specific_test "$2"
+            check_docker && validate_db_connection && ensure_reference_database_schema && check_test_database && run_specific_test "$2"
             ;;
         "stats")
             show_test_stats

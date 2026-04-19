@@ -14,16 +14,16 @@ services:
       - tw4-network
     environment:
       - DB_HOST=db
-      - DB_NAME=TW4
+      - DB_NAME=TW4_base
       - DB_USER=root
-      - DB_PASSWORD=secretpassword
+      - DB_PASSWORD=${DB_PASSWORD}
 
   db:
     image: mysql:8.0
     restart: always
     environment:        
-      MYSQL_DATABASE: TW4
-      MYSQL_ROOT_PASSWORD: secretpassword
+      MYSQL_DATABASE: TW4_base
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
     ports:
       - "3307:3306"
     volumes:
@@ -39,7 +39,7 @@ services:
     environment:
       PMA_HOST: db
       PMA_USER: root
-      PMA_PASSWORD: secretpassword
+      PMA_PASSWORD: ${DB_PASSWORD}
       PMA_ARBITRARY: 1
     depends_on:
       - db

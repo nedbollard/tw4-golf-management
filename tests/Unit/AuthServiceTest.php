@@ -2,11 +2,13 @@
 
 namespace Tests\Unit;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use App\Core\Database;
 use App\Services\AuthService;
 
+#[AllowMockObjectsWithoutExpectations]
 class AuthServiceTest extends TestCase
 {
     private AuthService $authService;

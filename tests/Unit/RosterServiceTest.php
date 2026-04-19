@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Services\RosterService;
 use App\Core\Database;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
@@ -11,6 +12,7 @@ use PHPUnit\Framework\MockObject\MockObject;
  * RosterService Unit Tests
  * Tests all roster service functionality including database operations
  */
+#[AllowMockObjectsWithoutExpectations]
 class RosterServiceTest extends TestCase
 {
     private RosterService $rosterService;

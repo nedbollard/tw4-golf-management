@@ -29,6 +29,8 @@ TW4 is a complete rewrite of the Twilight golf scoring application using modern 
 ### Quick Start
 ```bash
 cd TW4
+cp .env.example .env
+# Edit .env and set DB_PASSWORD
 docker-compose up --build
 ```
 
@@ -37,7 +39,7 @@ docker-compose up --build
 - **phpMyAdmin**: http://localhost:8085
   - Server: `db`
   - Username: `root`
-  - Password: `secretpassword`
+  - Password: `DB_PASSWORD` value from `.env`
 - **MySQL Direct**: localhost:3307
 
 ## URL Structure

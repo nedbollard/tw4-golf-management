@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Controllers\RosterController;
 use App\Core\Application;
 use App\Services\RosterService;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
@@ -12,6 +13,7 @@ use PHPUnit\Framework\MockObject\MockObject;
  * RosterController Unit Tests
  * Tests basic roster controller functionality that can be reliably unit tested
  */
+#[AllowMockObjectsWithoutExpectations]
 class RosterControllerTest extends TestCase
 {
     private RosterController $controller;
