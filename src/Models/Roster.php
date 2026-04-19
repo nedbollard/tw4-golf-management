@@ -152,7 +152,7 @@ class Roster
 
     public function isActive(): bool
     {
-        return $this->status === 'active';
+        return in_array($this->status, ['active', 'scored'], true);
     }
 
     public function isMale(): bool
@@ -213,8 +213,8 @@ class Roster
     public static function findById(Database $db, int $rosterId): ?self
     {
         $data = $db->fetchOne(
-            'SELECT * FROM roster WHERE row_id = ? AND status = "active"",
-            [$rosterId]
+            'SELECT * FROM roster WHERE row_id = ? AND status IN (?, ?)',
+            [$rosterId, 'active', 'scored']
         );
 
         if (!$data) {
@@ -227,8 +227,8 @@ class Roster
     public static function findByIdentifier(Database $db, string $identifier): ?self
     {
         $data = $db->fetchOne(
-            'SELECT * FROM roster WHERE player_identifier = ? AND status = "active"',
-            [$identifier]
+            'SELECT * FROM roster WHERE player_identifier = ? AND status IN (?, ?)',
+            [$identifier, 'active', 'scored']
         );
 
         if (!$data) {
@@ -241,8 +241,8 @@ class Roster
     public static function findByAlias(Database $db, string $alias): ?self
     {
         $data = $db->fetchOne(
-            'SELECT * FROM roster WHERE alias = ? AND status = "active"',
-            [$alias]
+            'SELECT * FROM roster WHERE alias = ? AND status IN (?, ?)',
+            [$alias, 'active', 'scored']
         );
 
         if (!$data) {
@@ -255,7 +255,8 @@ class Roster
     public static function findAll(Database $db): array
     {
         $data = $db->fetchAll(
-            'SELECT * FROM roster WHERE status = "active" ORDER BY first_name, last_name'
+            'SELECT * FROM roster WHERE status IN (?, ?) ORDER BY first_name, last_name',
+            ['active', 'scored']
         );
 
         return array_map([self::class, 'fromArray'], $data);
@@ -268,8 +269,8 @@ class Roster
         $data = $db->fetchAll(
             'SELECT * FROM roster WHERE 
              (player_identifier LIKE ? OR alias LIKE ? OR first_name LIKE ? OR last_name LIKE ?)
-             AND status = "active" ORDER BY first_name, last_name',
-            [$searchTerm, $searchTerm, $searchTerm, $searchTerm]
+             AND status IN (?, ?) ORDER BY first_name, last_name',
+            [$searchTerm, $searchTerm, $searchTerm, $searchTerm, 'active', 'scored']
         );
 
         return array_map([self::class, 'fromArray'], $data);

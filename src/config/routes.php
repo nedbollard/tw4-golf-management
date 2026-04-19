@@ -213,6 +213,11 @@ return [
             'controller' => 'App\\Controllers\\ScoreController',
             'method' => 'enter'
         ],
+        '/scores/enter/{id}' => [
+            'path' => '/scores/enter/{id}',
+            'controller' => 'App\\Controllers\\ScoreController',
+            'method' => 'enterCard'
+        ],
         '/scores/present-results' => [
             'path' => '/scores/present-results',
             'controller' => 'App\\Controllers\\ScoreController',
@@ -275,6 +280,11 @@ return [
             'path' => '/scores',
             'controller' => 'App\\Controllers\\ScoreController',
             'method' => 'store'
+        ],
+        '/scores/enter/{id}' => [
+            'path' => '/scores/enter/{id}',
+            'controller' => 'App\\Controllers\\ScoreController',
+            'method' => 'storeCard'
         ],
         '/course-club/store' => [
             'path' => '/course-club/store',

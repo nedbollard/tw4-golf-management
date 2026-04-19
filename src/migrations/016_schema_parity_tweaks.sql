@@ -77,7 +77,7 @@ ALTER TABLE roster
     MODIFY COLUMN last_name VARCHAR(100) NOT NULL,
     MODIFY COLUMN alias VARCHAR(50) NULL,
     MODIFY COLUMN gender ENUM('male', 'female') NOT NULL,
-  MODIFY COLUMN status ENUM('active', 'inactive') NOT NULL DEFAULT 'active' AFTER gender,
+  MODIFY COLUMN status ENUM('active', 'scored', 'inactive') NOT NULL DEFAULT 'active' AFTER gender,
   MODIFY COLUMN handicap INT DEFAULT 0 AFTER status;
 
 ALTER TABLE roster COMMENT = '';

@@ -162,13 +162,13 @@ CREATE TABLE `holes` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `players`
+-- Table structure for table `roster`
 --
 
-DROP TABLE IF EXISTS `players`;
+DROP TABLE IF EXISTS `roster`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `players` (
+CREATE TABLE `roster` (
   `player_id` int NOT NULL AUTO_INCREMENT,
   `member_identifier` varchar(50) NOT NULL,
   `first_name` varchar(100) NOT NULL,
@@ -176,7 +176,7 @@ CREATE TABLE `players` (
   `alias` varchar(50) DEFAULT NULL,
   `gender` enum('male','female') NOT NULL,
   `handicap` int DEFAULT '0',
-  `status` enum('active','inactive') NOT NULL DEFAULT 'active',
+  `status` enum('active','scored','inactive') NOT NULL DEFAULT 'active',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`player_id`),

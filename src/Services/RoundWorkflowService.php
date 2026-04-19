@@ -113,25 +113,37 @@ class RoundWorkflowService
             throw new \RuntimeException('Unable to acquire lock for round start.');
         }
 
-        $this->db->query(
-            "UPDATE TW4_live.round
-             SET number_round = ?,
-                 round_date = ?,
-                 course_played_id = ?,
-                 workflow_step = 'card_entry_open',
-                 card_count = 0,
-                 results_presented_at = NULL,
-                 finished_at = NULL,
-                 updated_by = ?
-             WHERE row_id = ?",
-            [
-                $roundNumber,
-                $roundDate,
-                $coursePlayedId,
-                $_SESSION['username'] ?? 'system',
-                $roundId,
-            ]
-        );
+        $this->db->beginTransaction();
+
+        try {
+            $this->db->query('DELETE FROM TW4_live.card_by_hole');
+            $this->db->query('DELETE FROM TW4_live.card');
+
+            $this->db->query(
+                "UPDATE TW4_live.round
+                 SET number_round = ?,
+                     round_date = ?,
+                     course_played_id = ?,
+                     workflow_step = 'card_entry_open',
+                     card_count = 0,
+                     results_presented_at = NULL,
+                     finished_at = NULL,
+                     updated_by = ?
+                 WHERE row_id = ?",
+                [
+                    $roundNumber,
+                    $roundDate,
+                    $coursePlayedId,
+                    $_SESSION['username'] ?? 'system',
+                    $roundId,
+                ]
+            );
+
+            $this->db->commit();
+        } catch (\Throwable $e) {
+            $this->db->rollback();
+            throw $e;
+        }
 
         return $this->db->fetchOne(
             'SELECT row_id AS round_id, number_round AS round_number, round_date, course_played_id, workflow_step, card_count
@@ -191,6 +203,15 @@ class RoundWorkflowService
         $this->db->beginTransaction();
 
         try {
+            $this->db->query('DELETE FROM TW4_live.card_by_hole');
+            $this->db->query('DELETE FROM TW4_live.card');
+            $this->db->query(
+                "UPDATE TW4_base.roster
+                 SET status = 'active', updated_by = ?
+                 WHERE status = 'scored'",
+                [$_SESSION['username'] ?? 'system']
+            );
+
             $stmt = $this->db->query(
                 "UPDATE TW4_live.round
                  SET workflow_step = 'not_started',

@@ -18,8 +18,8 @@ CREATE TABLE staff (
     INDEX idx_active (is_active)
 );
 
--- Players table (no login required)
-CREATE TABLE players (
+-- Roster table (no login required)
+CREATE TABLE roster (
     row_id INT AUTO_INCREMENT PRIMARY KEY,
     member_identifier VARCHAR(50) NOT NULL UNIQUE,
     first_name VARCHAR(100) NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE players (
     alias VARCHAR(50) NULL UNIQUE,
     gender ENUM('male', 'female') NOT NULL,
     handicap INT DEFAULT 0,
-    status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
+    status ENUM('active', 'scored', 'inactive') NOT NULL DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_member_identifier (member_identifier),
@@ -104,7 +104,7 @@ CREATE TABLE score_cards (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (round_id) REFERENCES rounds(row_id),
-    FOREIGN KEY (player_id) REFERENCES players(row_id),
+    FOREIGN KEY (player_id) REFERENCES roster(row_id),
     FOREIGN KEY (verified_by) REFERENCES staff(row_id),
     UNIQUE KEY uk_round_player (round_id, player_id),
     INDEX idx_round (round_id),

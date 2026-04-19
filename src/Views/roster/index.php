@@ -63,7 +63,7 @@
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-<?php echo $player['status'] === 'active' ? 'success' : 'secondary'; ?>">
+                                                    <span class="badge bg-<?php echo $player['status'] === 'active' ? 'success' : ($player['status'] === 'scored' ? 'warning text-dark' : 'secondary'); ?>">
                                                         <?php echo ucfirst($player['status']); ?>
                                                     </span>
                                                 </td>

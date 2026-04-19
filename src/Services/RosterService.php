@@ -11,6 +11,7 @@ use App\Utility\NameHelper;
 class RosterService
 {
     private Database $db;
+    private const NON_INACTIVE_STATUSES = ['active', 'scored'];
 
     public function __construct(Database $db)
     {
@@ -111,24 +112,24 @@ class RosterService
     public function getPlayer(int $playerId): ?array
     {
         return $this->db->fetchOne(
-            'SELECT * FROM roster WHERE row_id = ? AND status = "active"',
-            [$playerId]
+            'SELECT * FROM roster WHERE row_id = ? AND status IN (?, ?)',
+            [$playerId, ...self::NON_INACTIVE_STATUSES]
         );
     }
 
     public function getPlayerByIdentifier(string $identifier): ?array
     {
         return $this->db->fetchOne(
-            'SELECT * FROM roster WHERE player_identifier = ? AND status = "active"',
-            [$identifier]
+            'SELECT * FROM roster WHERE player_identifier = ? AND status IN (?, ?)',
+            [$identifier, ...self::NON_INACTIVE_STATUSES]
         );
     }
 
     public function getPlayerByAlias(string $alias): ?array
     {
         return $this->db->fetchOne(
-            'SELECT * FROM roster WHERE alias = ? AND status = "active"',
-            [$alias]
+            'SELECT * FROM roster WHERE alias = ? AND status IN (?, ?)',
+            [$alias, ...self::NON_INACTIVE_STATUSES]
         );
     }
 
@@ -139,21 +140,24 @@ class RosterService
         return $this->db->fetchAll(
             'SELECT * FROM roster WHERE 
              (player_identifier LIKE ? OR alias LIKE ? OR first_name LIKE ? OR last_name LIKE ?)
-             AND status = "active" ORDER BY first_name, last_name',
-            [$searchTerm, $searchTerm, $searchTerm, $searchTerm]
+             AND status IN (?, ?) ORDER BY first_name, last_name',
+            [$searchTerm, $searchTerm, $searchTerm, $searchTerm, ...self::NON_INACTIVE_STATUSES]
         );
     }
 
     public function getAllPlayers(): array
     {
         return $this->db->fetchAll(
-            'SELECT * FROM roster WHERE status = "active" ORDER BY first_name, last_name'
+            'SELECT * FROM roster WHERE status IN (?, ?) ORDER BY first_name, last_name',
+            self::NON_INACTIVE_STATUSES
         );
     }
 
     public function getActivePlayers(): array
     {
-        return $this->getAllPlayers(); // Same as getAllPlayers for clarity
+        return $this->db->fetchAll(
+            'SELECT * FROM roster WHERE status = "active" ORDER BY first_name, last_name'
+        );
     }
 
     public function getAllPlayersIncludingInactive(): array
@@ -203,8 +207,8 @@ class RosterService
     private function isPlayerIdentifierAvailable(string $identifier, ?int $excludePlayerId = null): bool
     {
         // Check if identifier conflicts with existing player identifiers
-        $sql = 'SELECT COUNT(*) FROM roster WHERE player_identifier = ? AND status = "active"';
-        $params = [$identifier];
+        $sql = 'SELECT COUNT(*) FROM roster WHERE player_identifier = ? AND status IN (?, ?)';
+        $params = [$identifier, ...self::NON_INACTIVE_STATUSES];
         
         if ($excludePlayerId !== null) {
             $sql .= ' AND row_id != ?';
@@ -218,8 +222,8 @@ class RosterService
         }
         
         // Check if identifier conflicts with existing aliases
-        $sql = 'SELECT COUNT(*) FROM roster WHERE alias = ? AND status = "active"';
-        $params = [$identifier];
+        $sql = 'SELECT COUNT(*) FROM roster WHERE alias = ? AND status IN (?, ?)';
+        $params = [$identifier, ...self::NON_INACTIVE_STATUSES];
         
         if ($excludePlayerId !== null) {
             $sql .= ' AND row_id != ?';
@@ -235,8 +239,8 @@ class RosterService
     {
         // Check against both aliases and player identifiers
         $sql = 'SELECT COUNT(*) FROM roster WHERE 
-                (alias = ? OR player_identifier = ?) AND status = "active"';
-        $params = [$alias, $alias];
+                (alias = ? OR player_identifier = ?) AND status IN (?, ?)';
+        $params = [$alias, $alias, ...self::NON_INACTIVE_STATUSES];
         
         if ($excludePlayerId !== null) {
             $sql .= ' AND row_id != ?';

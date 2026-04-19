@@ -61,7 +61,8 @@ class RosterServiceTest extends TestCase
             ->expects($this->once())
             ->method('fetchAll')
             ->with(
-                $this->equalTo('SELECT * FROM roster WHERE status = "active" ORDER BY first_name, last_name')
+                $this->equalTo('SELECT * FROM roster WHERE status IN (?, ?) ORDER BY first_name, last_name'),
+                $this->equalTo(['active', 'scored'])
             )
             ->willReturn($expectedRoster);
 
@@ -79,7 +80,8 @@ class RosterServiceTest extends TestCase
             ->expects($this->once())
             ->method('fetchAll')
             ->with(
-                $this->equalTo('SELECT * FROM roster WHERE status = "active" ORDER BY first_name, last_name')
+                $this->equalTo('SELECT * FROM roster WHERE status IN (?, ?) ORDER BY first_name, last_name'),
+                $this->equalTo(['active', 'scored'])
             )
             ->willReturn([]);
 
@@ -106,8 +108,8 @@ class RosterServiceTest extends TestCase
             ->expects($this->once())
             ->method('fetchOne')
             ->with(
-                $this->equalTo('SELECT * FROM roster WHERE row_id = ? AND status = "active"'),
-                $this->equalTo([1])
+                $this->equalTo('SELECT * FROM roster WHERE row_id = ? AND status IN (?, ?)'),
+                $this->equalTo([1, 'active', 'scored'])
             )
             ->willReturn($expectedPlayer);
 
@@ -124,8 +126,8 @@ class RosterServiceTest extends TestCase
             ->expects($this->once())
             ->method('fetchOne')
             ->with(
-                $this->equalTo('SELECT * FROM roster WHERE row_id = ? AND status = "active"'),
-                $this->equalTo([999])
+                $this->equalTo('SELECT * FROM roster WHERE row_id = ? AND status IN (?, ?)'),
+                $this->equalTo([999, 'active', 'scored'])
             )
             ->willReturn(null);
 
@@ -151,8 +153,8 @@ class RosterServiceTest extends TestCase
             ->expects($this->once())
             ->method('fetchOne')
             ->with(
-                $this->equalTo('SELECT * FROM roster WHERE player_identifier = ? AND status = "active"'),
-                $this->equalTo(['JohnD'])
+                $this->equalTo('SELECT * FROM roster WHERE player_identifier = ? AND status IN (?, ?)'),
+                $this->equalTo(['JohnD', 'active', 'scored'])
             )
             ->willReturn($expectedPlayer);
 
@@ -179,8 +181,8 @@ class RosterServiceTest extends TestCase
             ->expects($this->once())
             ->method('fetchOne')
             ->with(
-                $this->equalTo('SELECT * FROM roster WHERE alias = ? AND status = "active"'),
-                $this->equalTo(['JD'])
+                $this->equalTo('SELECT * FROM roster WHERE alias = ? AND status IN (?, ?)'),
+                $this->equalTo(['JD', 'active', 'scored'])
             )
             ->willReturn($expectedPlayer);
 
@@ -196,8 +198,8 @@ class RosterServiceTest extends TestCase
             ->expects($this->once())
             ->method('fetchOne')
             ->with(
-                $this->equalTo('SELECT * FROM roster WHERE alias = ? AND status = "active"'),
-                $this->equalTo(['NonExistent'])
+                $this->equalTo('SELECT * FROM roster WHERE alias = ? AND status IN (?, ?)'),
+                $this->equalTo(['NonExistent', 'active', 'scored'])
             )
             ->willReturn(null);
 
@@ -418,8 +420,8 @@ class RosterServiceTest extends TestCase
             ->with(
                 $this->equalTo('SELECT * FROM roster WHERE 
              (player_identifier LIKE ? OR alias LIKE ? OR first_name LIKE ? OR last_name LIKE ?)
-             AND status = "active" ORDER BY first_name, last_name'),
-                $this->equalTo(['%John%', '%John%', '%John%', '%John%'])
+             AND status IN (?, ?) ORDER BY first_name, last_name'),
+                $this->equalTo(['%John%', '%John%', '%John%', '%John%', 'active', 'scored'])
             )
             ->willReturn($expectedResults);
 
