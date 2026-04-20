@@ -156,6 +156,10 @@ $steps      = $roundState['steps']      ?? [];
 $lock       = $roundState['lock']       ?? null;
 $cardCount  = $roundState['card_count'] ?? 0;
 $activeRound = $roundState['active_round'] ?? null;
+$errors = $_SESSION['errors'] ?? [];
+$success = $_SESSION['success'] ?? null;
+
+unset($_SESSION['errors'], $_SESSION['success']);
 ?>
 
 <!-- ─── Header / Navbar ───────────────────────────────────────────────────── -->
@@ -177,6 +181,20 @@ $activeRound = $roundState['active_round'] ?? null;
 <!-- ─── Main body ─────────────────────────────────────────────────────────── -->
 <div class="scorer-main">
     <div class="container" style="max-width:720px;">
+
+        <?php if (!empty($success)): ?>
+            <div class="alert alert-success" role="status">
+                <?php echo htmlspecialchars((string) $success); ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if (!empty($errors)): ?>
+            <div class="alert alert-danger" role="alert">
+                <?php foreach ($errors as $error): ?>
+                    <div><?php echo htmlspecialchars((string) $error); ?></div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
 
         <?php if ($lock && isset($lock['blocked']) && $lock['blocked']): ?>
             <!-- Another scorer holds the lock -->

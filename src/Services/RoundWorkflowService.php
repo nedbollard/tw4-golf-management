@@ -118,6 +118,7 @@ class RoundWorkflowService
         try {
             $this->db->query('DELETE FROM TW4_live.card_by_hole');
             $this->db->query('DELETE FROM TW4_live.card');
+            $this->db->query('DELETE FROM TW4_live.results');
 
             $this->db->query(
                 "UPDATE TW4_live.round
@@ -205,6 +206,7 @@ class RoundWorkflowService
         try {
             $this->db->query('DELETE FROM TW4_live.card_by_hole');
             $this->db->query('DELETE FROM TW4_live.card');
+            $this->db->query('DELETE FROM TW4_live.results');
             $this->db->query(
                 "UPDATE TW4_base.roster
                  SET status = 'active', updated_by = ?

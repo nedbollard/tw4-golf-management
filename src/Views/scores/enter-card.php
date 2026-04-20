@@ -51,16 +51,37 @@
         .compact-card .card-body {
             padding: 0.65rem;
         }
+        .score-grid {
+            border-collapse: separate;
+            border-spacing: 0.22rem;
+        }
         .score-grid th, .score-grid td {
             text-align: center;
             vertical-align: middle;
-            padding: 0.3rem 0.35rem;
+            padding: 0.42rem 0.45rem;
             line-height: 1.1;
             font-size: 0.94rem;
         }
         .score-grid thead th {
             font-weight: 600;
-            padding: 0.32rem 0.35rem;
+            padding: 0.38rem 0.42rem;
+            background: transparent !important;
+        }
+        .score-grid td.meta-cell {
+            background: #e3f2fd;
+            color: #0f3554;
+        }
+        .score-grid td.pink-cell {
+            background: #fce4ec;
+            color: #5f1d35;
+        }
+        .score-grid td.total-green {
+            background: #a5d6a7;
+            color: #1a3d1c;
+        }
+        .score-grid td.total-blue {
+            background: #90caf9;
+            color: #0a2540;
         }
         .score-grid .score-input {
             width: 42px;
@@ -83,18 +104,18 @@
             font-weight: 700;
             border-width: 1px;
         }
-        .score-grid td.sfp-0 { background: #1e3a8a; color: #eff6ff; }
-        .score-grid td.sfp-1 { background: #1d4ed8; color: #eff6ff; }
-        .score-grid td.sfp-2 { background: #0f766e; color: #f0fdfa; }
-        .score-grid td.sfp-3 { background: #15803d; color: #f0fdf4; }
-        .score-grid td.sfp-4 { background: #a16207; color: #fffbeb; }
-        .score-grid td.sfp-5 { background: #6d28d9; color: #f5f3ff; }
-        .score-grid .score-input.sfp-0 { background: #1e3a8a; color: #eff6ff; border-color: #1e40af; }
-        .score-grid .score-input.sfp-1 { background: #1d4ed8; color: #eff6ff; border-color: #2563eb; }
-        .score-grid .score-input.sfp-2 { background: #0f766e; color: #f0fdfa; border-color: #0d9488; }
-        .score-grid .score-input.sfp-3 { background: #15803d; color: #f0fdf4; border-color: #16a34a; }
-        .score-grid .score-input.sfp-4 { background: #a16207; color: #fffbeb; border-color: #ca8a04; }
-        .score-grid .score-input.sfp-5 { background: #6d28d9; color: #f5f3ff; border-color: #7c3aed; }
+        .score-grid td.sfp-0 { background: #C62828; color: #fff5f5; }
+        .score-grid td.sfp-1 { background: #E64A19; color: #fff7f3; }
+        .score-grid td.sfp-2 { background: #FBC02D; color: #3d2f00; }
+        .score-grid td.sfp-3 { background: #388E3C; color: #f3fff3; }
+        .score-grid td.sfp-4 { background: #1976D2; color: #f4f9ff; }
+        .score-grid td.sfp-5 { background: #6A1B9A; color: #fbf5ff; }
+        .score-grid .score-input.sfp-0 { background: #C62828; color: #fff5f5; border-color: #C62828; }
+        .score-grid .score-input.sfp-1 { background: #E64A19; color: #fff7f3; border-color: #E64A19; }
+        .score-grid .score-input.sfp-2 { background: #FBC02D; color: #3d2f00; border-color: #FBC02D; }
+        .score-grid .score-input.sfp-3 { background: #388E3C; color: #f3fff3; border-color: #388E3C; }
+        .score-grid .score-input.sfp-4 { background: #1976D2; color: #f4f9ff; border-color: #1976D2; }
+        .score-grid .score-input.sfp-5 { background: #6A1B9A; color: #fbf5ff; border-color: #6A1B9A; }
         .score-grid .score-input::placeholder {
             color: inherit;
         }
@@ -114,7 +135,7 @@
                 margin-bottom: 0.35rem;
             }
             .score-grid th, .score-grid td {
-                padding: 0.24rem 0.28rem;
+                padding: 0.32rem 0.34rem;
                 font-size: 0.9rem;
             }
             .score-grid .score-input {
@@ -132,7 +153,7 @@
             }
             .score-grid th, .score-grid td {
                 font-size: 0.86rem;
-                padding: 0.22rem 0.22rem;
+                padding: 0.28rem 0.28rem;
             }
             .score-grid .score-input {
                 width: 38px;
@@ -241,9 +262,9 @@ $sfpTotalClass = static function ($points): string {
                             <?php foreach (($entry['holes'] ?? []) as $hole): ?>
                                 <?php $holeSfpClass = $sfpClass($hole['points'] ?? null); ?>
                                 <tr>
-                                    <td><?php echo (int) $hole['hole']; ?></td>
-                                    <td><?php echo (int) $hole['par']; ?></td>
-                                    <td><?php echo (int) $hole['stroke']; ?></td>
+                                    <td class="meta-cell"><?php echo (int) $hole['hole']; ?></td>
+                                    <td class="meta-cell"><?php echo (int) $hole['par']; ?></td>
+                                    <td class="meta-cell"><?php echo (int) $hole['stroke']; ?></td>
                                     <td>
                                         <input
                                             type="text"
@@ -257,22 +278,21 @@ $sfpTotalClass = static function ($points): string {
                                             required
                                         >
                                     </td>
-                                    <td><?php echo ($hole['shots'] === null) ? '' : (int) $hole['shots']; ?></td>
-                                    <td class="sfp-cell <?php echo $holeSfpClass; ?>"><?php echo ($hole['net'] === null) ? '' : (int) $hole['net']; ?></td>
+                                    <td class="pink-cell"><?php echo ($hole['shots'] === null) ? '' : (int) $hole['shots']; ?></td>
+                                    <td class="pink-cell"><?php echo ($hole['net'] === null) ? '' : (int) $hole['net']; ?></td>
                                     <td class="sfp-cell <?php echo $holeSfpClass; ?>"><?php echo ($hole['points'] === null) ? '' : (int) $hole['points']; ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
                         <tfoot>
-                            <?php $totalSfpClass = $sfpTotalClass($entry['totals']['points'] ?? null); ?>
                             <tr class="table-light fw-bold">
-                                <td>Total</td>
-                                <td><?php echo (int) (($entry['totals']['par'] ?? 0)); ?></td>
+                                <td class="meta-cell">Total</td>
+                                <td class="total-green"><?php echo (int) (($entry['totals']['par'] ?? 0)); ?></td>
                                 <td></td>
-                                <td class="sfp-cell <?php echo $totalSfpClass; ?>"><?php echo ($entry['totals']['score'] === null) ? '' : (int) $entry['totals']['score']; ?></td>
-                                <td><?php echo ($entry['totals']['shots'] === null) ? '' : (int) $entry['totals']['shots']; ?></td>
-                                <td class="sfp-cell <?php echo $totalSfpClass; ?>"><?php echo ($entry['totals']['net'] === null) ? '' : (int) $entry['totals']['net']; ?></td>
-                                <td class="sfp-cell <?php echo $totalSfpClass; ?>"><?php echo ($entry['totals']['points'] === null) ? '' : (int) $entry['totals']['points']; ?></td>
+                                <td class="total-blue"><?php echo ($entry['totals']['score'] === null) ? '' : (int) $entry['totals']['score']; ?></td>
+                                <td class="total-green"><?php echo ($entry['totals']['shots'] === null) ? '' : (int) $entry['totals']['shots']; ?></td>
+                                <td class="total-green"><?php echo ($entry['totals']['net'] === null) ? '' : (int) $entry['totals']['net']; ?></td>
+                                <td class="total-blue"><?php echo ($entry['totals']['points'] === null) ? '' : (int) $entry['totals']['points']; ?></td>
                             </tr>
                         </tfoot>
                     </table>

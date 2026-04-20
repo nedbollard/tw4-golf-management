@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Controllers\BaseController;
 use App\Core\Application;
+use App\Services\ResultsPresentationService;
 use App\Services\RoundWorkflowService;
 use App\Services\ScoreEntryService;
 
@@ -13,11 +14,13 @@ use App\Services\ScoreEntryService;
 class ScoreController extends BaseController
 {
     private ScoreEntryService $scoreEntryService;
+    private ResultsPresentationService $resultsPresentationService;
 
     public function __construct(Application $app)
     {
         parent::__construct($app);
         $this->scoreEntryService = new ScoreEntryService($this->app->getDatabase());
+        $this->resultsPresentationService = new ResultsPresentationService($this->app->getDatabase());
     }
 
     public function index(): void
@@ -159,11 +162,102 @@ class ScoreController extends BaseController
         $this->requireRole('scorer');
 
         $user = $this->app->getDatabase()->getAuth()->getUser();
+        $staffId = (int) ($user['user_id'] ?? 0);
         $workflow = new RoundWorkflowService($this->app->getDatabase());
         $active = $workflow->getActiveRoundForScorerMenu();
 
-        if ($active) {
-            $workflow->presentResults((int) $active['round_id'], (int) ($user['user_id'] ?? 0));
+        if (!$active || ($active['workflow_step'] ?? 'not_started') !== 'card_entry_open') {
+            $_SESSION['errors'] = ['Round is not open for presenting results.'];
+            $this->redirect('/scorer/menu');
+            return;
+        }
+
+        $roundId = (int) $active['round_id'];
+        if (!$this->scoreEntryService->assertEntryLock($roundId, $staffId)) {
+            $_SESSION['errors'] = ['Card entry lock is not held by your session.'];
+            $this->redirect('/scorer/menu');
+            return;
+        }
+
+        if (!$workflow->validateCanPresentResults($roundId)) {
+            $_SESSION['errors'] = ['At least four cards are required before presenting results.'];
+            $this->redirect('/scorer/menu');
+            return;
+        }
+
+        try {
+            $resultsData = $this->resultsPresentationService->buildPresentationData($roundId);
+        } catch (\RuntimeException $e) {
+            $_SESSION['errors'] = [$e->getMessage()];
+            $this->redirect('/scorer/menu');
+            return;
+        }
+
+        $this->render('scores/present-results', [
+            'title' => 'Present Results - TW4 Golf Management',
+            'round' => $active,
+            'resultsData' => $resultsData,
+            'errors' => $_SESSION['errors'] ?? [],
+            'old' => $_SESSION['old'] ?? [],
+        ]);
+
+        unset($_SESSION['errors'], $_SESSION['old']);
+    }
+
+    public function finalizeResults(): void
+    {
+        $this->requireRole('scorer');
+
+        $user = $this->app->getDatabase()->getAuth()->getUser();
+        $staffId = (int) ($user['user_id'] ?? 0);
+        $username = (string) ($user['username'] ?? 'system');
+
+        $workflow = new RoundWorkflowService($this->app->getDatabase());
+        $active = $workflow->getActiveRoundForScorerMenu();
+
+        if (!$active || ($active['workflow_step'] ?? 'not_started') !== 'card_entry_open') {
+            $_SESSION['errors'] = ['Round is not open for presenting results.'];
+            $this->redirect('/scorer/menu');
+            return;
+        }
+
+        $roundId = (int) $active['round_id'];
+        if (!$this->scoreEntryService->assertEntryLock($roundId, $staffId)) {
+            $_SESSION['errors'] = ['Card entry lock is not held by your session.'];
+            $this->redirect('/scorer/menu');
+            return;
+        }
+
+        if (!$workflow->validateCanPresentResults($roundId)) {
+            $_SESSION['errors'] = ['At least four cards are required before presenting results.'];
+            $this->redirect('/scorer/menu');
+            return;
+        }
+
+        try {
+            $resultsData = $this->resultsPresentationService->buildPresentationData($roundId);
+            $closestToPinIdentifier = trim((string) ($this->getPostData()['closest_to_pin_identifier'] ?? ''));
+            $options = $resultsData['closest_to_pin_options'] ?? [];
+
+            if ($closestToPinIdentifier === '' || !in_array($closestToPinIdentifier, $options, true)) {
+                $_SESSION['errors'] = ['Please choose a valid closest-to-pin winner.'];
+                $_SESSION['old'] = ['closest_to_pin_identifier' => $closestToPinIdentifier];
+                $this->redirect('/scores/present-results');
+                return;
+            }
+
+            $this->resultsPresentationService->saveResults($roundId, $resultsData, $closestToPinIdentifier, $username);
+
+            if (!$workflow->presentResults($roundId, $staffId)) {
+                throw new \RuntimeException('Unable to move workflow to results_presented.');
+            }
+
+            $_SESSION['success'] = 'Results stored for this live round.';
+        } catch (\RuntimeException $e) {
+            $_SESSION['errors'] = [$e->getMessage()];
+            $_SESSION['old'] = ['closest_to_pin_identifier' => (string) ($this->getPostData()['closest_to_pin_identifier'] ?? '')];
+            $this->redirect('/scores/present-results');
+            return;
         }
 
         $this->redirect('/scorer/menu');

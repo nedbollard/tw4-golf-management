@@ -80,7 +80,6 @@
             <?php else: ?>
                 <form method="GET" action="/scores/enter" onsubmit="return false;">
                     <div class="mb-0">
-                        <label for="player_id" class="form-label">Choose a player</label>
                         <select id="player_id" class="form-select" onchange="if(this.value){window.location='/scores/enter/' + this.value;}">
                             <option value="">Select a player</option>
                             <?php foreach ($players as $player): ?>

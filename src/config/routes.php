@@ -286,6 +286,11 @@ return [
             'controller' => 'App\\Controllers\\ScoreController',
             'method' => 'storeCard'
         ],
+        '/scores/present-results' => [
+            'path' => '/scores/present-results',
+            'controller' => 'App\\Controllers\\ScoreController',
+            'method' => 'finalizeResults'
+        ],
         '/course-club/store' => [
             'path' => '/course-club/store',
             'controller' => 'App\Controllers\CourseClubController',
