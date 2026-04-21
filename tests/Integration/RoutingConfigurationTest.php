@@ -185,4 +185,27 @@ class RoutingConfigurationTest extends TestCase
         $this->assertArrayHasKey('/login', $postRoutes);
         $this->assertArrayHasKey('/logout', $postRoutes);
     }
+
+    public function testAdminScoringStateRoutesMapConsistentlyToAdminController(): void
+    {
+        $routes = require __DIR__ . '/../../src/config/routes.php';
+        $getRoutes = $routes['GET'];
+        $postRoutes = $routes['POST'];
+
+        $this->assertArrayHasKey('/admin/scoring-state', $getRoutes);
+        $this->assertArrayHasKey('/admin/scoring-state/unlock', $postRoutes);
+        $this->assertArrayHasKey('/admin/scoring-state/reset-results', $postRoutes);
+
+        $this->assertSame('App\\Controllers\\AdminController', $getRoutes['/admin/scoring-state']['controller']);
+        $this->assertSame('App\\Controllers\\AdminController', $postRoutes['/admin/scoring-state/unlock']['controller']);
+        $this->assertSame('App\\Controllers\\AdminController', $postRoutes['/admin/scoring-state/reset-results']['controller']);
+
+        $this->assertSame('scoringState', $getRoutes['/admin/scoring-state']['method']);
+        $this->assertSame('unlockScoringProcess', $postRoutes['/admin/scoring-state/unlock']['method']);
+        $this->assertSame('resetResultsToCardEntry', $postRoutes['/admin/scoring-state/reset-results']['method']);
+
+        $this->assertTrue(method_exists('App\\Controllers\\AdminController', 'scoringState'));
+        $this->assertTrue(method_exists('App\\Controllers\\AdminController', 'unlockScoringProcess'));
+        $this->assertTrue(method_exists('App\\Controllers\\AdminController', 'resetResultsToCardEntry'));
+    }
 }

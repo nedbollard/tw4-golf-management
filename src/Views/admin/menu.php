@@ -69,6 +69,16 @@
                                     <a href="/logs" class="btn btn-success">View Logs</a>
                                 </div>
                             </div>
+
+                            <!-- Scoring State Management -->
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-flag-checkered fa-3x text-dark mb-3"></i>
+                                    <h6 class="card-title">Scoring State Management</h6>
+                                    <p class="card-text text-muted">Admin-only scoring process controls</p>
+                                    <a href="/admin/scoring-state" class="btn btn-dark">Manage Scoring State</a>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="text-center mt-4">

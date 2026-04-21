@@ -88,6 +88,11 @@ return [
             'controller' => 'App\\Controllers\\AdminController',
             'method' => 'menu'
         ],
+        '/admin/scoring-state' => [
+            'path' => '/admin/scoring-state',
+            'controller' => 'App\\Controllers\\AdminController',
+            'method' => 'scoringState'
+        ],
         '/scorer/menu' => [
             'path' => '/scorer/menu',
             'controller' => 'App\\Controllers\\ScorerController',
@@ -335,6 +340,16 @@ return [
             'path' => '/course-club/batch-update',
             'controller' => 'App\Controllers\CourseClubController',
             'method' => 'batchUpdate'
+        ],
+        '/admin/scoring-state/unlock' => [
+            'path' => '/admin/scoring-state/unlock',
+            'controller' => 'App\\Controllers\\AdminController',
+            'method' => 'unlockScoringProcess'
+        ],
+        '/admin/scoring-state/reset-results' => [
+            'path' => '/admin/scoring-state/reset-results',
+            'controller' => 'App\\Controllers\\AdminController',
+            'method' => 'resetResultsToCardEntry'
         ],
     ],
 ];

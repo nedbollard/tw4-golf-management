@@ -169,6 +169,67 @@ class RoundWorkflowService
         return $stmt->rowCount() >= 0;
     }
 
+    public function adminResetResultsToCardEntry(string $updatedBy): array
+    {
+        $round = $this->getPermanentRound();
+        if (!$round) {
+            throw new \RuntimeException('Unable to locate live round row.');
+        }
+
+        $roundId = (int) ($round['round_id'] ?? 0);
+        if ($roundId < 1) {
+            throw new \RuntimeException('Invalid live round row.');
+        }
+
+        $currentStep = (string) ($round['workflow_step'] ?? 'not_started');
+        if ($currentStep !== 'results_presented') {
+            throw new \RuntimeException('Reset is only allowed when workflow_step is results_presented.');
+        }
+
+        $resultsCountRow = $this->db->fetchOne('SELECT COUNT(*) AS total FROM TW4_live.results');
+        $resultsRowsCleared = (int) ($resultsCountRow['total'] ?? 0);
+
+        $cardCountRow = $this->db->fetchOne(
+            'SELECT COUNT(*) AS total
+             FROM TW4_live.card
+             WHERE row_id_round = ?',
+            [$roundId]
+        );
+        $cardCount = (int) ($cardCountRow['total'] ?? 0);
+
+        $this->db->beginTransaction();
+        try {
+            $this->db->query('DELETE FROM TW4_live.results');
+            $this->db->query(
+                "UPDATE TW4_live.round
+                 SET workflow_step = 'card_entry_open',
+                     card_count = ?,
+                     results_presented_at = NULL,
+                     finished_at = NULL,
+                     locked_by_staff_id = NULL,
+                     lock_acquired_at = NULL,
+                     lock_expires_at = NULL,
+                     lock_released_at = NOW(),
+                     lock_release_reason = 'admin_forced',
+                     updated_by = ?
+                 WHERE row_id = ?",
+                [$cardCount, $updatedBy, $roundId]
+            );
+            $this->db->commit();
+        } catch (\Throwable $e) {
+            $this->db->rollback();
+            throw $e;
+        }
+
+        return [
+            'round_id' => $roundId,
+            'from_step' => $currentStep,
+            'to_step' => 'card_entry_open',
+            'results_rows_cleared' => $resultsRowsCleared,
+            'card_count' => $cardCount,
+        ];
+    }
+
     public function presentResults(int $roundId, int $staffId): bool
     {
         if (!$this->lockService->assertLockHeld($roundId, $staffId)) {

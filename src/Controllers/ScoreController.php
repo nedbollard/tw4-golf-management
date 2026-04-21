@@ -173,7 +173,8 @@ class ScoreController extends BaseController
         }
 
         $roundId = (int) $active['round_id'];
-        if (!$this->scoreEntryService->assertEntryLock($roundId, $staffId)) {
+        if (!$this->scoreEntryService->assertEntryLock($roundId, $staffId)
+            && !$workflow->openCardEntry($roundId, $staffId)) {
             $_SESSION['errors'] = ['Card entry lock is not held by your session.'];
             $this->redirect('/scorer/menu');
             return;
@@ -222,7 +223,8 @@ class ScoreController extends BaseController
         }
 
         $roundId = (int) $active['round_id'];
-        if (!$this->scoreEntryService->assertEntryLock($roundId, $staffId)) {
+        if (!$this->scoreEntryService->assertEntryLock($roundId, $staffId)
+            && !$workflow->openCardEntry($roundId, $staffId)) {
             $_SESSION['errors'] = ['Card entry lock is not held by your session.'];
             $this->redirect('/scorer/menu');
             return;
@@ -252,14 +254,59 @@ class ScoreController extends BaseController
                 throw new \RuntimeException('Unable to move workflow to results_presented.');
             }
 
-            $_SESSION['success'] = 'Results stored for this live round.';
+            $recordedData = $this->buildRecordedResultsData($resultsData, $closestToPinIdentifier);
+            $this->render('scores/results-recorded', [
+                'title' => 'Results Recorded - TW4 Golf Management',
+                'round' => $active,
+                'recordedData' => $recordedData,
+                'success' => 'Results stored for this live round.',
+            ]);
+            return;
         } catch (\RuntimeException $e) {
             $_SESSION['errors'] = [$e->getMessage()];
             $_SESSION['old'] = ['closest_to_pin_identifier' => (string) ($this->getPostData()['closest_to_pin_identifier'] ?? '')];
             $this->redirect('/scores/present-results');
             return;
         }
+    }
 
-        $this->redirect('/scorer/menu');
+    private function buildRecordedResultsData(array $resultsData, string $closestToPinIdentifier): array
+    {
+        $leaderboard = $resultsData['leaderboard'] ?? [];
+        $podium = array_slice($leaderboard, 0, 3);
+
+        $ballWinners = [];
+        foreach ($leaderboard as $entry) {
+            $twos = (int) ($entry['twos_count'] ?? 0);
+            if ($twos > 0) {
+                $ballWinners[] = [
+                    'type' => 'twos',
+                    'who' => (string) ($entry['display_name'] ?? $entry['player_identifier'] ?? ''),
+                    'count' => $twos,
+                ];
+            }
+        }
+
+        $ballWinners[] = [
+            'type' => 'C_P',
+            'who' => $closestToPinIdentifier,
+            'count' => 1,
+        ];
+
+        $thirdPlacePoints = isset($podium[2]) ? (int) ($podium[2]['points'] ?? -1) : -1;
+        $commiserations = [];
+        foreach ($leaderboard as $entry) {
+            $position = (int) ($entry['position'] ?? 0);
+            $points = (int) ($entry['points'] ?? -2);
+            if ($thirdPlacePoints >= 0 && $position > 3 && $points === $thirdPlacePoints) {
+                $commiserations[] = $entry;
+            }
+        }
+
+        return [
+            'podium' => $podium,
+            'ball_winners' => $ballWinners,
+            'commiserations' => $commiserations,
+        ];
     }
 }
