@@ -185,8 +185,8 @@ return [
         ],
         '/leaderboard' => [
             'path' => '/leaderboard',
-            'controller' => 'App\\Controllers\\HomeController',
-            'method' => 'underConstruction'
+            'controller' => 'App\\Controllers\\ScoreController',
+            'method' => 'leaderboard'
         ],
         '/rounds' => [
             'path' => '/rounds',

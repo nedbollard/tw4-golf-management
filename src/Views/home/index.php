@@ -62,7 +62,7 @@
                                 <div class="card-body text-center">
                                     <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
                                     <h6 class="card-title">Leaderboard</h6>
-                                    <p class="card-text text-muted">Current season standings</p>
+                                    <p class="card-text text-muted">Live progress for the round currently being scored</p>
                                     <a href="/leaderboard" class="btn btn-info">View Leaderboard</a>
                                 </div>
                             </div>

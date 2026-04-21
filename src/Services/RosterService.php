@@ -20,6 +20,8 @@ class RosterService
 
     public function createPlayer(array $data): int
     {
+        $data = $this->normalizeOptionalFields($data);
+
         // Capitalize names properly
         if (isset($data['first_name'])) {
             $data['first_name'] = NameHelper::capitalizeName($data['first_name']);
@@ -54,6 +56,8 @@ class RosterService
 
     public function updatePlayer(int $playerId, array $data): bool
     {
+        $data = $this->normalizeOptionalFields($data);
+
         // Capitalize names properly
         if (isset($data['first_name'])) {
             $data['first_name'] = NameHelper::capitalizeName($data['first_name']);
@@ -250,6 +254,16 @@ class RosterService
         $result = $this->db->fetchOne($sql, $params);
         $count = isset($result['COUNT(*)']) ? (int)$result['COUNT(*)'] : 0;
         return $count == 0;
+    }
+
+    private function normalizeOptionalFields(array $data): array
+    {
+        if (array_key_exists('alias', $data)) {
+            $alias = trim((string) $data['alias']);
+            $data['alias'] = $alias === '' ? null : $alias;
+        }
+
+        return $data;
     }
 
     private function validatePlayerData(array $data): array

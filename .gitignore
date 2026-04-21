@@ -6,3 +6,4 @@ composer.lock
 logs/
 private/logs/
 /nbproject/private/
+.phpunit.cache/

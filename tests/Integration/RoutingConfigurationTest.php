@@ -208,4 +208,15 @@ class RoutingConfigurationTest extends TestCase
         $this->assertTrue(method_exists('App\\Controllers\\AdminController', 'unlockScoringProcess'));
         $this->assertTrue(method_exists('App\\Controllers\\AdminController', 'resetResultsToCardEntry'));
     }
+
+    public function testLeaderboardRouteIsPublicAndPointsToScoreController(): void
+    {
+        $routes = require __DIR__ . '/../../src/config/routes.php';
+        $getRoutes = $routes['GET'];
+
+        $this->assertArrayHasKey('/leaderboard', $getRoutes);
+        $this->assertSame('App\\Controllers\\ScoreController', $getRoutes['/leaderboard']['controller']);
+        $this->assertSame('leaderboard', $getRoutes['/leaderboard']['method']);
+        $this->assertTrue(method_exists('App\\Controllers\\ScoreController', 'leaderboard'));
+    }
 }

@@ -309,6 +309,38 @@ class RosterServiceTest extends TestCase
         $this->assertEquals(1, $result);
     }
 
+    public function testCreatePlayerNormalizesBlankAliasToNull(): void
+    {
+        $playerData = [
+            'player_identifier' => 'JohnD',
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'gender' => 'male',
+            'handicap' => 12,
+            'alias' => '   '
+        ];
+
+        $this->mockDatabase
+            ->expects($this->any())
+            ->method('fetchOne')
+            ->willReturn(['COUNT(*)' => 0]);
+
+        $this->mockDatabase
+            ->expects($this->once())
+            ->method('insert')
+            ->with(
+                $this->equalTo('roster'),
+                $this->callback(function ($data) {
+                    return array_key_exists('alias', $data) && $data['alias'] === null;
+                })
+            )
+            ->willReturn(1);
+
+        $result = $this->rosterService->createPlayer($playerData);
+
+        $this->assertEquals(1, $result);
+    }
+
     public function testUpdatePlayer(): void
     {
         $playerId = 1;
@@ -333,6 +365,28 @@ class RosterServiceTest extends TestCase
             ->expects($this->any())
             ->method('fetchOne')
             ->willReturn(null);
+
+        $result = $this->rosterService->updatePlayer($playerId, $updateData);
+
+        $this->assertTrue($result);
+    }
+
+    public function testUpdatePlayerNormalizesBlankAliasToNull(): void
+    {
+        $playerId = 1;
+        $updateData = [
+            'alias' => '   '
+        ];
+
+        $this->mockDatabase
+            ->expects($this->once())
+            ->method('update')
+            ->with(
+                $this->equalTo('roster'),
+                $this->equalTo(['alias' => null]),
+                $this->equalTo(['row_id' => $playerId])
+            )
+            ->willReturn(1);
 
         $result = $this->rosterService->updatePlayer($playerId, $updateData);
 

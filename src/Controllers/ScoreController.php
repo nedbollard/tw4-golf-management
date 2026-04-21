@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Controllers\BaseController;
 use App\Core\Application;
+use App\Services\Logger;
 use App\Services\ResultsPresentationService;
 use App\Services\RoundWorkflowService;
 use App\Services\ScoreEntryService;
@@ -15,12 +16,14 @@ class ScoreController extends BaseController
 {
     private ScoreEntryService $scoreEntryService;
     private ResultsPresentationService $resultsPresentationService;
+    private Logger $logger;
 
-    public function __construct(Application $app)
+    public function __construct(Application $app, Logger $logger = null)
     {
         parent::__construct($app);
         $this->scoreEntryService = new ScoreEntryService($this->app->getDatabase());
         $this->resultsPresentationService = new ResultsPresentationService($this->app->getDatabase());
+        $this->logger = $logger ?? new Logger($this->app->getDatabase());
     }
 
     public function index(): void
@@ -205,6 +208,41 @@ class ScoreController extends BaseController
         unset($_SESSION['errors'], $_SESSION['old']);
     }
 
+    public function leaderboard(): void
+    {
+        $workflow = new RoundWorkflowService($this->app->getDatabase());
+        $active = $workflow->getActiveRoundForScorerMenu();
+
+        $resultsData = [
+            'leaderboard' => [],
+        ];
+        $notice = null;
+        $showPublishedResultsNudge = false;
+
+        if (!$active || ($active['workflow_step'] ?? 'not_started') === 'not_started') {
+            $notice = 'No live round is active yet.';
+            $showPublishedResultsNudge = true;
+        } else {
+            $roundId = (int) ($active['round_id'] ?? 0);
+
+            try {
+                $resultsData = $this->resultsPresentationService->buildPresentationData($roundId);
+            } catch (\RuntimeException $e) {
+                $notice = $e->getMessage();
+            }
+
+            $leaderboard = $resultsData['leaderboard'] ?? [];
+        }
+
+        $this->render('scores/leaderboard', [
+            'title' => 'Leaderboard - TW4 Golf Management',
+            'round' => $active,
+            'resultsData' => $resultsData,
+            'notice' => $notice,
+            'showPublishedResultsNudge' => $showPublishedResultsNudge,
+        ]);
+    }
+
     public function finalizeResults(): void
     {
         $this->requireRole('scorer');
@@ -248,11 +286,35 @@ class ScoreController extends BaseController
                 return;
             }
 
+            $beforeState = $this->app->getDatabase()->fetchOne(
+                'SELECT row_id, workflow_step FROM TW4_live.round WHERE row_id = ?',
+                [$roundId]
+            );
+
             $this->resultsPresentationService->saveResults($roundId, $resultsData, $closestToPinIdentifier, $username);
 
             if (!$workflow->presentResults($roundId, $staffId)) {
                 throw new \RuntimeException('Unable to move workflow to results_presented.');
             }
+
+            $afterState = $this->app->getDatabase()->fetchOne(
+                'SELECT row_id, workflow_step, results_presented_at FROM TW4_live.round WHERE row_id = ?',
+                [$roundId]
+            );
+
+            $this->logger->log(
+                Logger::LEVEL_INFO,
+                Logger::EVENT_SYSTEM,
+                'Scoring workflow changed to results_presented (state applied)',
+                [
+                    'round_id' => $roundId,
+                    'staff_id' => $staffId,
+                    'before_workflow_step' => (string) ($beforeState['workflow_step'] ?? 'unknown'),
+                    'after_workflow_step' => (string) ($afterState['workflow_step'] ?? 'unknown'),
+                    'results_presented_at' => $afterState['results_presented_at'] ?? null,
+                ],
+                $username
+            );
 
             $recordedData = $this->buildRecordedResultsData($resultsData, $closestToPinIdentifier);
             $this->render('scores/results-recorded', [

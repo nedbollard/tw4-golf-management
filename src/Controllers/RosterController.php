@@ -98,6 +98,11 @@ class RosterController extends BaseController
             $_SESSION['errors'] = ['general' => $e->getMessage()];
             $_SESSION['old'] = $data;
             $this->redirect('/roster/create');
+            return;
+        } catch (\Throwable $e) {
+            $_SESSION['errors'] = ['general' => 'Unable to create player right now.'];
+            $_SESSION['old'] = $data;
+            $this->redirect('/roster/create');
         }
     }
 
@@ -148,6 +153,10 @@ class RosterController extends BaseController
             $this->redirect('/roster/' . $playerId);
         } catch (\InvalidArgumentException $e) {
             $_SESSION['errors'] = ['general' => $e->getMessage()];
+            $this->redirect('/roster/' . $playerId . '/edit');
+            return;
+        } catch (\Throwable $e) {
+            $_SESSION['errors'] = ['general' => 'Unable to update player right now.'];
             $this->redirect('/roster/' . $playerId . '/edit');
         }
     }

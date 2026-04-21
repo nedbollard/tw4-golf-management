@@ -30,7 +30,7 @@ class AdminControllerBehaviorTest extends TestCase
             'username' => 'admin_user',
         ]));
 
-        $db->expects($this->exactly(3))
+        $db->expects($this->exactly(4))
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
                 if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY row_id ASC')) {
@@ -47,6 +47,16 @@ class AdminControllerBehaviorTest extends TestCase
 
                 if (str_contains($sql, 'FROM TW4_live.card')) {
                     return ['total' => 9];
+                }
+
+                if (str_contains($sql, 'workflow_step, card_count, lock_release_reason, locked_by_staff_id')) {
+                    return [
+                        'row_id' => 7,
+                        'workflow_step' => 'card_entry_open',
+                        'card_count' => 9,
+                        'lock_release_reason' => 'admin_forced',
+                        'locked_by_staff_id' => null,
+                    ];
                 }
 
                 return null;
@@ -76,7 +86,7 @@ class AdminControllerBehaviorTest extends TestCase
             ->with(
                 Logger::LEVEL_WARNING,
                 Logger::EVENT_SYSTEM,
-                'Admin reset scoring state from results_presented to card_entry_open',
+                'Admin reset scoring state from results_presented to card_entry_open (state applied)',
                 $this->callback(static function (array $context): bool {
                     return ($context['round_id'] ?? 0) === 7
                         && ($context['admin_staff_id'] ?? 0) === 17
@@ -154,14 +164,34 @@ class AdminControllerBehaviorTest extends TestCase
             'username' => 'admin_unlock',
         ]));
 
-        $db->expects($this->once())
+        $fetchCount = 0;
+        $db->expects($this->exactly(3))
             ->method('fetchOne')
-            ->willReturnCallback(static function (string $sql, array $params = []): ?array {
+            ->willReturnCallback(static function (string $sql, array $params = []) use (&$fetchCount): ?array {
+                $fetchCount++;
                 if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY row_id ASC')) {
                     return [
                         'round_id' => 9,
                         'round_number' => 43,
                         'workflow_step' => 'card_entry_open',
+                    ];
+                }
+
+                if (str_contains($sql, 'workflow_step, locked_by_staff_id, lock_release_reason')) {
+                    if ($fetchCount === 2) {
+                        return [
+                            'row_id' => 9,
+                            'workflow_step' => 'card_entry_open',
+                            'locked_by_staff_id' => 34,
+                            'lock_release_reason' => null,
+                        ];
+                    }
+
+                    return [
+                        'row_id' => 9,
+                        'workflow_step' => 'card_entry_open',
+                        'locked_by_staff_id' => null,
+                        'lock_release_reason' => 'admin_forced',
                     ];
                 }
 
@@ -184,7 +214,7 @@ class AdminControllerBehaviorTest extends TestCase
             ->with(
                 Logger::LEVEL_WARNING,
                 Logger::EVENT_SYSTEM,
-                'Admin forced release of scoring lock',
+                'Admin forced release of scoring lock (state applied)',
                 $this->callback(static function (array $context): bool {
                     return ($context['round_id'] ?? 0) === 9
                         && ($context['admin_staff_id'] ?? 0) === 21
