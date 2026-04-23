@@ -166,8 +166,12 @@ class ConfigController extends BaseController
             }
             return ['valid' => true, 'value' => (int)$value];
         } elseif ($type === 'string') {
+            if ($name === 'season_year' && preg_match('/^\d{2}_\d{2}$/', trim($value)) !== 1) {
+                return ['valid' => false, 'message' => 'Season year must use the format NN_NN, for example 25_26', 'value' => $value];
+            }
+
             // Check if it's a valid string (not empty for required fields)
-            if (empty(trim($value)) && in_array($name, ['config_status', 'club_name', 'competition_name'])) {
+            if (empty(trim($value)) && in_array($name, ['config_status', 'club_name', 'competition_name', 'season_year'])) {
                 return ['valid' => false, 'message' => 'Value cannot be empty', 'value' => $value];
             }
             return ['valid' => true, 'value' => trim($value)];

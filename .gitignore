@@ -7,3 +7,4 @@ logs/
 private/logs/
 /nbproject/private/
 .phpunit.cache/
+cookies.txt

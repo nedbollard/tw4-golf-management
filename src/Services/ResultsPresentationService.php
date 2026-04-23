@@ -24,12 +24,10 @@ class ResultsPresentationService
                     r.alias,
                     c.points,
                     c.score,
-                    c.handicap
+                    c.handicap_applied
              FROM TW4_live.card c
              INNER JOIN TW4_base.roster r ON r.row_id = c.row_id_player
-             WHERE c.row_id_round = ?
-             ORDER BY r.last_name, r.first_name',
-            [$roundId]
+             ORDER BY r.last_name, r.first_name'
         );
 
         if (empty($cards)) {

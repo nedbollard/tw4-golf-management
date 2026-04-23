@@ -24,6 +24,7 @@ class RoundWorkflowService
     {
         $round = $this->db->fetchOne(
             "SELECT row_id AS round_id,
+                    season_year,
                     number_round AS round_number,
                     round_date,
                     course_played_id,
@@ -52,6 +53,7 @@ class RoundWorkflowService
 
         return $this->db->fetchOne(
             "SELECT row_id AS round_id,
+                    season_year,
                     number_round AS round_number,
                     round_date,
                     course_played_id,
@@ -72,6 +74,8 @@ class RoundWorkflowService
     {
         $round = $this->getPermanentRound();
         $today = date('Y-m-d');
+        $seasonYear = $this->getConfiguredSeasonYear();
+        $clubNumber = $this->getConfiguredClubNumber();
         $courses = $this->db->fetchAll(
             'SELECT row_id, name_course, name_club
              FROM TW4_base.course_played
@@ -81,10 +85,11 @@ class RoundWorkflowService
         return [
             'round' => $round,
             'courses' => $courses,
+            'current_season_year' => $seasonYear,
             'default_round_date' => $today,
-            'default_round_number' => ((int) ($round['round_number'] ?? 0)) + 1,
-            'default_course_played_id' => $this->determineDefaultCoursePlayedId($courses, $today),
-            'club_number' => $this->getConfiguredClubNumber(),
+            'default_round_number' => $this->determineDefaultRoundNumber($round, $seasonYear),
+            'default_course_played_id' => $this->determineDefaultCoursePlayedId($courses, $today, $clubNumber),
+            'club_number' => $clubNumber,
         ];
     }
 
@@ -101,6 +106,7 @@ class RoundWorkflowService
 
         $formData = $this->getStartRoundFormData();
         $roundId = (int) $existing['round_id'];
+        $seasonYear = (string) ($formData['current_season_year'] ?? '');
         $roundNumber = isset($payload['round_number'])
             ? max(1, (int) $payload['round_number'])
             : (int) $formData['default_round_number'];
@@ -113,6 +119,14 @@ class RoundWorkflowService
             throw new \RuntimeException('Unable to acquire lock for round start.');
         }
 
+        if (!$this->isRoundSeasonNumberAvailable($seasonYear, $roundNumber, $roundId)) {
+            throw new \RuntimeException(sprintf(
+                'Round %d already exists for season %s.',
+                $roundNumber,
+                $seasonYear
+            ));
+        }
+
         $this->db->beginTransaction();
 
         try {
@@ -122,7 +136,8 @@ class RoundWorkflowService
 
             $this->db->query(
                 "UPDATE TW4_live.round
-                 SET number_round = ?,
+                 SET season_year = ?,
+                     number_round = ?,
                      round_date = ?,
                      course_played_id = ?,
                      workflow_step = 'card_entry_open',
@@ -132,6 +147,7 @@ class RoundWorkflowService
                      updated_by = ?
                  WHERE row_id = ?",
                 [
+                    $seasonYear,
                     $roundNumber,
                     $roundDate,
                     $coursePlayedId,
@@ -147,7 +163,7 @@ class RoundWorkflowService
         }
 
         return $this->db->fetchOne(
-            'SELECT row_id AS round_id, number_round AS round_number, round_date, course_played_id, workflow_step, card_count
+            'SELECT row_id AS round_id, season_year, number_round AS round_number, round_date, course_played_id, workflow_step, card_count
              FROM TW4_live.round WHERE row_id = ?',
             [$roundId]
         ) ?? [];
@@ -265,7 +281,6 @@ class RoundWorkflowService
         $this->db->beginTransaction();
 
         try {
-            $this->db->query('DELETE FROM TW4_live.card_by_hole');
             $this->db->query('DELETE FROM TW4_live.card');
             $this->db->query('DELETE FROM TW4_live.results');
             $this->db->query(
@@ -382,13 +397,13 @@ class RoundWorkflowService
         return (int) ($row['card_count'] ?? 0);
     }
 
-    private function determineDefaultCoursePlayedId(array $courses, string $date): ?int
+    private function determineDefaultCoursePlayedId(array $courses, string $date, int $clubNumber): ?int
     {
         if (empty($courses)) {
             return null;
         }
 
-        if ($this->getConfiguredClubNumber() === 294) {
+        if ($clubNumber === 294) {
             $preferredCourse = ((int) date('j', strtotime($date)) % 2 === 1) ? 'Whites' : 'Blues';
             foreach ($courses as $course) {
                 if (strcasecmp((string) $course['name_course'], $preferredCourse) === 0) {
@@ -398,6 +413,32 @@ class RoundWorkflowService
         }
 
         return (int) $courses[0]['row_id'];
+    }
+
+    private function determineDefaultRoundNumber(?array $round, string $seasonYear): int
+    {
+        if (($round['season_year'] ?? null) !== $seasonYear) {
+            return 1;
+        }
+
+        return ((int) ($round['round_number'] ?? 0)) + 1;
+    }
+
+    private function getConfiguredSeasonYear(): string
+    {
+        $row = $this->db->fetchOne(
+            'SELECT config_value_string
+             FROM TW4_base.config_application
+             WHERE config_name = ?',
+            ['season_year']
+        );
+
+        $seasonYear = trim((string) ($row['config_value_string'] ?? ''));
+        if (preg_match('/^\d{2}_\d{2}$/', $seasonYear) !== 1) {
+            throw new \RuntimeException('Missing or invalid season_year in config_application.');
+        }
+
+        return $seasonYear;
     }
 
     private function getConfiguredClubNumber(): int
@@ -410,5 +451,20 @@ class RoundWorkflowService
         );
 
         return (int) ($row['club_number'] ?? 0);
+    }
+
+    private function isRoundSeasonNumberAvailable(string $seasonYear, int $roundNumber, int $roundId): bool
+    {
+        $row = $this->db->fetchOne(
+            'SELECT row_id
+             FROM TW4_live.round
+             WHERE season_year = ?
+               AND number_round = ?
+               AND row_id <> ?
+             LIMIT 1',
+            [$seasonYear, $roundNumber, $roundId]
+        );
+
+        return $row === null;
     }
 }

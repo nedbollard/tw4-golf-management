@@ -11,6 +11,91 @@ use PHPUnit\Framework\TestCase;
 #[AllowMockObjectsWithoutExpectations]
 class RoundWorkflowServiceTest extends TestCase
 {
+    public function testGetStartRoundFormDataResetsRoundNumberWhenSeasonChanges(): void
+    {
+        /** @var Database|MockObject $db */
+        $db = $this->createMock(Database::class);
+
+        $db->expects($this->exactly(3))
+            ->method('fetchOne')
+            ->willReturnCallback(static function (string $sql, array $params = []): ?array {
+                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY row_id ASC')) {
+                    return [
+                        'round_id' => 7,
+                        'season_year' => '24_25',
+                        'round_number' => 18,
+                        'workflow_step' => 'not_started',
+                    ];
+                }
+
+                if (str_contains($sql, 'FROM TW4_base.config_application') && $params === ['season_year']) {
+                    return ['config_value_string' => '25_26'];
+                }
+
+                if (str_contains($sql, 'FROM TW4_base.config_application') && $params === ['club_number']) {
+                    return ['club_number' => 294];
+                }
+
+                return null;
+            });
+
+        $db->expects($this->once())
+            ->method('fetchAll')
+            ->with($this->stringContains('FROM TW4_base.course_played'))
+            ->willReturn([
+                ['row_id' => 3, 'name_course' => 'Whites', 'name_club' => 'TW4'],
+                ['row_id' => 4, 'name_course' => 'Blues', 'name_club' => 'TW4'],
+            ]);
+
+        $service = new RoundWorkflowService($db);
+        $formData = $service->getStartRoundFormData();
+
+        $this->assertSame('25_26', $formData['current_season_year']);
+        $this->assertSame(1, $formData['default_round_number']);
+    }
+
+    public function testGetStartRoundFormDataIncrementsRoundNumberWithinSeason(): void
+    {
+        /** @var Database|MockObject $db */
+        $db = $this->createMock(Database::class);
+
+        $db->expects($this->exactly(3))
+            ->method('fetchOne')
+            ->willReturnCallback(static function (string $sql, array $params = []): ?array {
+                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY row_id ASC')) {
+                    return [
+                        'round_id' => 7,
+                        'season_year' => '25_26',
+                        'round_number' => 18,
+                        'workflow_step' => 'not_started',
+                    ];
+                }
+
+                if (str_contains($sql, 'FROM TW4_base.config_application') && $params === ['season_year']) {
+                    return ['config_value_string' => '25_26'];
+                }
+
+                if (str_contains($sql, 'FROM TW4_base.config_application') && $params === ['club_number']) {
+                    return ['club_number' => 294];
+                }
+
+                return null;
+            });
+
+        $db->expects($this->once())
+            ->method('fetchAll')
+            ->with($this->stringContains('FROM TW4_base.course_played'))
+            ->willReturn([
+                ['row_id' => 3, 'name_course' => 'Whites', 'name_club' => 'TW4'],
+            ]);
+
+        $service = new RoundWorkflowService($db);
+        $formData = $service->getStartRoundFormData();
+
+        $this->assertSame('25_26', $formData['current_season_year']);
+        $this->assertSame(19, $formData['default_round_number']);
+    }
+
     public function testAdminResetResultsToCardEntryClearsResultsAndUpdatesRound(): void
     {
         /** @var Database|MockObject $db */

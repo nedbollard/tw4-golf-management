@@ -28,11 +28,9 @@ class ScoreEntryService
                     c.row_id AS card_id
              FROM TW4_base.roster r
              LEFT JOIN TW4_live.card c
-                    ON c.row_id_round = ?
-                   AND c.row_id_player = r.row_id
+                    ON c.row_id_player = r.row_id
              WHERE r.status = "active"
-             ORDER BY r.last_name, r.first_name',
-            [$roundId]
+             ORDER BY r.last_name, r.first_name'
         );
     }
 
@@ -92,8 +90,8 @@ class ScoreEntryService
             'SELECT cbh.hole, cbh.score
              FROM TW4_live.card_by_hole cbh
              INNER JOIN TW4_live.card c ON c.row_id = cbh.row_id_card
-             WHERE c.row_id_round = ? AND c.row_id_player = ?',
-            [$roundId, $playerId]
+             WHERE c.row_id_player = ?',
+            [$playerId]
         );
 
         foreach ($existing as $row) {
@@ -211,25 +209,25 @@ class ScoreEntryService
         $this->db->beginTransaction();
         try {
             $card = $this->db->fetchOne(
-                'SELECT row_id
+                'SELECT row_id, handicap_updated
                  FROM TW4_live.card
-                 WHERE row_id_round = ? AND row_id_player = ?',
-                [$roundId, $playerId]
+                 WHERE row_id_player = ?',
+                [$playerId]
             );
 
             if ($card) {
                 $cardId = (int) $card['row_id'];
                 $this->db->query(
                     'UPDATE TW4_live.card
-                     SET handicap = ?, score = ?, points = ?, updated_by = ?
+                     SET handicap_applied = ?, score = ?, points = ?, handicap_updated = ?, updated_by = ?
                      WHERE row_id = ?',
-                    [$handicap, $totalScore, $totalPoints, $username, $cardId]
+                    [$handicap, $totalScore, $totalPoints, $handicap, $username, $cardId]
                 );
             } else {
                 $cardId = $this->db->insert('TW4_live.card', [
-                    'row_id_round' => $roundId,
                     'row_id_player' => $playerId,
-                    'handicap' => $handicap,
+                    'handicap_applied' => $handicap,
+                    'handicap_updated' => $handicap,
                     'score' => $totalScore,
                     'points' => $totalPoints,
                     'updated_by' => $username,
@@ -271,9 +269,7 @@ class ScoreEntryService
 
             $countRow = $this->db->fetchOne(
                 'SELECT COUNT(*) AS card_count
-                 FROM TW4_live.card
-                 WHERE row_id_round = ?',
-                [$roundId]
+                 FROM TW4_live.card'
             );
 
             $this->db->query(

@@ -14,6 +14,7 @@ $defaultDate = $old['round_date'] ?? ($formData['default_round_date'] ?? date('Y
 $defaultRoundNumber = $old['round_number'] ?? ($formData['default_round_number'] ?? 1);
 $defaultCourseId = $old['course_played_id'] ?? ($formData['default_course_played_id'] ?? '');
 $clubNumber = (int) ($formData['club_number'] ?? 0);
+$seasonYear = (string) ($formData['current_season_year'] ?? '');
 ?>
 <div class="container py-5" style="max-width: 720px;">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -32,6 +33,12 @@ $clubNumber = (int) ($formData['club_number'] ?? 0);
     <div class="card shadow-sm">
         <div class="card-body p-4">
             <form method="POST" action="/rounds">
+                <div class="mb-3">
+                    <label class="form-label">Season</label>
+                    <input type="text" class="form-control" value="<?php echo htmlspecialchars($seasonYear); ?>" readonly>
+                    <div class="form-text">Update the season on the configuration screen before starting the first round of a new season.</div>
+                </div>
+
                 <div class="mb-3">
                     <label for="round_date" class="form-label">Date</label>
                     <input type="date" class="form-control" id="round_date" name="round_date"

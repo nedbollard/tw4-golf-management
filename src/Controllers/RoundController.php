@@ -98,10 +98,17 @@ class RoundController extends BaseController
 
         $beforeState = $workflow->getPermanentRound();
 
-        $workflow->startRound($postData, (int) ($user['user_id'] ?? 0));
+        try {
+            $workflow->startRound($postData, (int) ($user['user_id'] ?? 0));
+        } catch (\RuntimeException $e) {
+            $_SESSION['errors'] = ['round' => $e->getMessage()];
+            $_SESSION['old'] = $postData;
+            $this->redirect('/rounds/start');
+            return;
+        }
 
         $afterState = $this->app->getDatabase()->fetchOne(
-            'SELECT row_id, workflow_step, number_round, round_date, course_played_id FROM TW4_live.round WHERE row_id = ?',
+            'SELECT row_id, season_year, workflow_step, number_round, round_date, course_played_id FROM TW4_live.round WHERE row_id = ?',
             [(int) ($beforeState['round_id'] ?? 0)]
         );
 
@@ -114,6 +121,7 @@ class RoundController extends BaseController
                 'staff_id' => (int) ($user['user_id'] ?? 0),
                 'before_workflow_step' => (string) ($beforeState['workflow_step'] ?? 'unknown'),
                 'after_workflow_step' => (string) ($afterState['workflow_step'] ?? 'unknown'),
+                'season_year' => (string) ($afterState['season_year'] ?? ''),
                 'round_number' => (int) ($afterState['number_round'] ?? 0),
                 'round_date' => $afterState['round_date'] ?? null,
                 'course_played_id' => (int) ($afterState['course_played_id'] ?? 0),

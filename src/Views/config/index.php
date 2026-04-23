@@ -60,7 +60,7 @@
                                                 <td>
                                                     <input type="hidden" name="name_<?php echo $config['row_id']; ?>" value="<?php echo htmlspecialchars($config['config_name']); ?>">
                                                     <strong><?php echo htmlspecialchars($config['config_name']); ?></strong>
-                                                    <?php if (in_array($config['config_name'], ['club_name', 'competition_name'])): ?>
+                                                    <?php if (in_array($config['config_name'], ['club_name', 'competition_name', 'season_year'])): ?>
                                                         <span class="badge bg-warning ms-2">Critical</span>
                                                     <?php endif; ?>
                                                 </td>
@@ -86,7 +86,11 @@
                                                                class="form-control" 
                                                                name="config_<?php echo $config['row_id']; ?>" 
                                                                value="<?php echo htmlspecialchars($config['config_value_string']); ?>"
+                                                               <?php echo $config['config_name'] === 'season_year' ? 'pattern="\\d{2}_\\d{2}" maxlength="5"' : ''; ?>
                                                                <?php echo $config['config_type'] === 'int' ? 'step="1"' : ''; ?>>
+                                                        <?php if ($config['config_name'] === 'season_year'): ?>
+                                                            <div class="form-text">Use format NN_NN, for example 25_26.</div>
+                                                        <?php endif; ?>
                                                         <?php if (isset($errors["config_{$config['row_id']}"])): ?>
                                                             <div class="text-danger small"><?php echo htmlspecialchars($errors["config_{$config['row_id']}"]); ?></div>
                                                         <?php endif; ?>
@@ -111,6 +115,7 @@
                                     <li><strong>String values</strong> can contain any text</li>
                                     <li><strong>Integer values</strong> must be whole numbers (e.g., 1, 42, 100)</li>
                                     <li><strong>Critical configurations</strong> (marked with yellow badge) are essential system settings</li>
+                                    <li><strong>Season year</strong> controls round numbering and should use the format NN_NN, for example 25_26</li>
                                     <li><strong>Config Status</strong> controls whether the system shows "Configuration required" or normal operation</li>
                                     <li>All changes are logged for audit purposes with user attribution</li>
                                     <li><strong>Programmer Note:</strong> New configuration items must be added/removed by programmers via database migrations</li>
