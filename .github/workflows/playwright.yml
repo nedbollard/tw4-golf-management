@@ -8,23 +8,52 @@ on:
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    env:
+      DB_PASSWORD: tw4_ci_password
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Start services with docker-compose
+      - name: Select docker compose command
         run: |
-          docker-compose up -d --build
+          if docker compose version >/dev/null 2>&1; then
+            echo "COMPOSE_CMD=docker compose" >> "$GITHUB_ENV"
+          elif docker-compose version >/dev/null 2>&1; then
+            echo "COMPOSE_CMD=docker-compose" >> "$GITHUB_ENV"
+          else
+            echo "Neither docker compose nor docker-compose is available"
+            exit 1
+          fi
+
+      - name: Start services with Compose
+        run: |
+          $COMPOSE_CMD up -d --build
+
+      - name: Wait for database to be ready
+        run: |
+          for i in {1..90}; do
+            if $COMPOSE_CMD exec -T db mysqladmin ping -h 127.0.0.1 -uroot -p"$DB_PASSWORD" --silent >/dev/null 2>&1; then
+              echo 'database available'; exit 0;
+            fi
+            sleep 2
+          done
+          echo 'timeout waiting for database'
+          $COMPOSE_CMD ps
+          $COMPOSE_CMD logs --tail=200 db
+          exit 1
 
       - name: Wait for app to be healthy
         run: |
-          for i in {1..60}; do
+          for i in {1..180}; do
             if curl -sSf http://localhost:8084 >/dev/null; then
               echo 'app available'; exit 0;
             fi
             sleep 2
           done
-          echo 'timeout waiting for app' && exit 1
+          echo 'timeout waiting for app'
+          $COMPOSE_CMD ps
+          $COMPOSE_CMD logs --tail=200 app
+          exit 1
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -41,3 +70,14 @@ jobs:
         run: npm run test:e2e:ci
         env:
           PLAYWRIGHT_BROWSERS_PATH: 0
+
+      - name: Show service logs on failure
+        if: failure()
+        run: |
+          $COMPOSE_CMD ps || true
+          $COMPOSE_CMD logs --tail=300 app db phpmyadmin || true
+
+      - name: Stop services
+        if: always()
+        run: |
+          $COMPOSE_CMD down -v || true
