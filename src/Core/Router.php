@@ -153,6 +153,14 @@ class Router
     private function getPath(): string
     {
         $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/';
+        if ($path === '' || $path === null) {
+            return '/';
+        }
+
+        if ($path !== '/') {
+            $path = rtrim($path, '/');
+        }
+
         return $path === '' ? '/' : $path;
     }
 

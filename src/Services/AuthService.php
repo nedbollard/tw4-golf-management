@@ -110,9 +110,20 @@ class AuthService
         }
 
         if (!$this->hasRole($role)) {
-            header('Location: /error?code=403&message=Access denied. Role ' . $role . ' required.');
+            $currentRole = (string) ($_SESSION['user_role'] ?? 'unknown');
+            $query = http_build_query([
+                'code' => 403,
+                'message' => sprintf(
+                    'Access denied. This page requires the %s role. You are currently signed in as %s.',
+                    $role,
+                    $currentRole
+                ),
+            ]);
+            $url = '/error?' . $query;
+
+            header('Location: ' . $url);
             if (php_sapi_name() === 'cli') {
-                $_SERVER['CLI_REDIRECT_URL'] = '/error?code=403&message=Access denied. Role ' . $role . ' required.';
+                $_SERVER['CLI_REDIRECT_URL'] = $url;
                 $_SERVER['CLI_REDIRECT_STATUS'] = 302;
                 return;
             }

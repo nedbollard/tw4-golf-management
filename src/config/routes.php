@@ -98,6 +98,16 @@ return [
             'controller' => 'App\\Controllers\\ScorerController',
             'method' => 'menu'
         ],
+        '/scorer' => [
+            'path' => '/scorer',
+            'controller' => 'App\\Controllers\\ScorerController',
+            'method' => 'menu'
+        ],
+        '/error' => [
+            'path' => '/error',
+            'controller' => 'App\\Controllers\\ErrorController',
+            'method' => 'index'
+        ],
         '/switch/admin' => [
             'path' => '/switch/admin',
             'controller' => 'App\\Controllers\\RoleSwitchController',

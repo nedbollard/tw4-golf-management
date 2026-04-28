@@ -57,7 +57,7 @@ class ResultsPresentationService
                 'alias' => (string) ($card['alias'] ?? ''),
                 'points' => (int) $card['points'],
                 'score' => (int) $card['score'],
-                'handicap' => (int) $card['handicap'],
+                'handicap' => (int) ($card['handicap_applied'] ?? 0),
                 'countback1' => 0,
                 'countback3' => 0,
                 'countback6' => 0,
@@ -73,8 +73,7 @@ class ResultsPresentationService
             'SELECT cbh.row_id_card, cbh.hole, cbh.score, cbh.points
              FROM TW4_live.card_by_hole cbh
              INNER JOIN TW4_live.card c ON c.row_id = cbh.row_id_card
-             WHERE c.row_id_round = ?',
-            [$roundId]
+             ORDER BY cbh.row_id_card, cbh.hole'
         );
 
         foreach ($holes as $hole) {

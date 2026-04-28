@@ -62,11 +62,11 @@ $workflowStep = (string) ($round['workflow_step'] ?? 'not_started');
 ?>
 
 <div class="container py-4 board-shell">
-    <div class="d-flex justify-content-center mb-2">
+    <h2 class="board-title">Leaderboard</h2>
+
+    <div class="d-flex justify-content-center mb-3">
         <span class="status-chip">Live Round <?php echo $roundNumber > 0 ? $roundNumber : '—'; ?> | <?php echo htmlspecialchars($workflowStep); ?></span>
     </div>
-
-    <h2 class="board-title">Leaderboard</h2>
 
     <?php if (!empty($notice)): ?>
         <div class="alert alert-info" role="status">
@@ -106,7 +106,9 @@ $workflowStep = (string) ($round['workflow_step'] ?? 'not_started');
                         <?php else: ?>
                             <?php foreach ($leaderboard as $entry): ?>
                                 <?php
-                                    $name = (string) ($entry['display_name'] ?? $entry['player_identifier'] ?? '');
+                                    $alias = trim((string) ($entry['alias'] ?? ''));
+                                    $identifier = (string) ($entry['player_identifier'] ?? '');
+                                    $name = $alias !== '' ? $alias : $identifier;
                                     $countBack = (int) ($entry['countback1'] ?? 0)
                                         . '-' . (int) ($entry['countback3'] ?? 0)
                                         . '-' . (int) ($entry['countback6'] ?? 0)
