@@ -295,14 +295,27 @@ class RosterServiceTest extends TestCase
             ->method('fetchOne')
             ->willReturn(['COUNT(*)' => 0]);
 
+        $this->mockDatabase->expects($this->once())->method('beginTransaction');
+        $this->mockDatabase->expects($this->once())->method('commit');
+        $this->mockDatabase->expects($this->never())->method('rollback');
+
         $this->mockDatabase
-            ->expects($this->once())
+            ->expects($this->exactly(2))
             ->method('insert')
-            ->with(
-                $this->equalTo('roster'),
-                $this->equalTo($playerData)
-            )
-            ->willReturn(1);
+            ->willReturnCallback(function (string $table, array $data) use ($playerData) {
+                if ($table === 'roster') {
+                    $this->assertSame('system', $data['updated_by']);
+                    unset($data['updated_by']);
+                    $this->assertEquals($playerData, $data);
+                    return 1;
+                }
+
+                $this->assertSame('TW4_base.handicap_audit', $table);
+                $this->assertSame(1, $data['row_id_player']);
+                $this->assertSame(12, $data['handicap_new']);
+                $this->assertSame('system', $data['updated_by']);
+                return 1;
+            });
 
         $result = $this->rosterService->createPlayer($playerData);
 
@@ -325,16 +338,22 @@ class RosterServiceTest extends TestCase
             ->method('fetchOne')
             ->willReturn(['COUNT(*)' => 0]);
 
+        $this->mockDatabase->expects($this->once())->method('beginTransaction');
+        $this->mockDatabase->expects($this->once())->method('commit');
+        $this->mockDatabase->expects($this->never())->method('rollback');
+
         $this->mockDatabase
-            ->expects($this->once())
+            ->expects($this->exactly(2))
             ->method('insert')
-            ->with(
-                $this->equalTo('roster'),
-                $this->callback(function ($data) {
-                    return array_key_exists('alias', $data) && $data['alias'] === null;
-                })
-            )
-            ->willReturn(1);
+            ->willReturnCallback(function (string $table, array $data) {
+                if ($table === 'roster') {
+                    return array_key_exists('alias', $data)
+                        && $data['alias'] === null
+                        && ($data['updated_by'] ?? '') === 'system' ? 1 : 0;
+                }
+
+                return 1;
+            });
 
         $result = $this->rosterService->createPlayer($playerData);
 
@@ -349,22 +368,41 @@ class RosterServiceTest extends TestCase
             'last_name' => 'Doe'
         ];
 
+        $this->mockDatabase
+            ->expects($this->any())
+            ->method('fetchOne')
+            ->willReturnCallback(function (string $sql, array $params = []) {
+                if (str_contains($sql, 'SELECT * FROM roster WHERE row_id = ?')) {
+                    return [
+                        'row_id' => 1,
+                        'first_name' => 'John',
+                        'last_name' => 'Doe',
+                        'date_first_played' => null,
+                        'handicap' => 12,
+                    ];
+                }
+
+                return ['COUNT(*)' => 0];
+            });
+
+        $this->mockDatabase->expects($this->once())->method('beginTransaction');
+        $this->mockDatabase->expects($this->once())->method('commit');
+        $this->mockDatabase->expects($this->never())->method('rollback');
+
         // Mock update call directly (simplified test)
         $this->mockDatabase
             ->expects($this->once())
             ->method('update')
             ->with(
                 $this->equalTo('roster'),
-                $this->equalTo($updateData),
+                $this->callback(function (array $data): bool {
+                    return ($data['first_name'] ?? null) === 'Johnathan'
+                        && ($data['last_name'] ?? null) === 'Doe'
+                        && ($data['updated_by'] ?? null) === 'system';
+                }),
                 $this->equalTo(['row_id' => $playerId])
             )
             ->willReturn(1);
-
-        // Create a simple mock for getPlayer that returns null to avoid validation
-        $this->mockDatabase
-            ->expects($this->any())
-            ->method('fetchOne')
-            ->willReturn(null);
 
         $result = $this->rosterService->updatePlayer($playerId, $updateData);
 
@@ -380,10 +418,25 @@ class RosterServiceTest extends TestCase
 
         $this->mockDatabase
             ->expects($this->once())
+            ->method('fetchOne')
+            ->willReturn([
+                'row_id' => 1,
+                'first_name' => 'John',
+                'last_name' => 'Doe',
+                'date_first_played' => null,
+                'handicap' => 12,
+            ]);
+
+        $this->mockDatabase->expects($this->once())->method('beginTransaction');
+        $this->mockDatabase->expects($this->once())->method('commit');
+        $this->mockDatabase->expects($this->never())->method('rollback');
+
+        $this->mockDatabase
+            ->expects($this->once())
             ->method('update')
             ->with(
                 $this->equalTo('roster'),
-                $this->equalTo(['alias' => null]),
+                $this->equalTo(['alias' => null, 'updated_by' => 'system']),
                 $this->equalTo(['row_id' => $playerId])
             )
             ->willReturn(1);
@@ -501,17 +554,22 @@ class RosterServiceTest extends TestCase
             ->method('fetchOne')
             ->willReturn(['COUNT(*)' => 0]);
 
+        $this->mockDatabase->expects($this->once())->method('beginTransaction');
+        $this->mockDatabase->expects($this->once())->method('commit');
+        $this->mockDatabase->expects($this->never())->method('rollback');
+
         $this->mockDatabase
-            ->expects($this->once())
+            ->expects($this->exactly(2))
             ->method('insert')
-            ->with(
-                $this->equalTo('roster'),
-                $this->callback(function ($data) {
-                    return isset($data['player_identifier']) && 
-                           !empty($data['player_identifier']);
-                })
-            )
-            ->willReturn(1);
+            ->willReturnCallback(function (string $table, array $data) {
+                if ($table === 'roster') {
+                    return isset($data['player_identifier'])
+                        && !empty($data['player_identifier'])
+                        && ($data['updated_by'] ?? '') === 'system' ? 1 : 0;
+                }
+
+                return 1;
+            });
 
         $result = $this->rosterService->createPlayer($playerData);
 
@@ -555,10 +613,34 @@ class RosterServiceTest extends TestCase
             'last_name' => 'Doe'
         ];
 
+        $this->mockDatabase
+            ->expects($this->once())
+            ->method('fetchOne')
+            ->willReturn([
+                'row_id' => 1,
+                'first_name' => 'John',
+                'last_name' => 'Doe',
+                'date_first_played' => null,
+                'handicap' => 12,
+            ]);
+
+        $this->mockDatabase->expects($this->once())->method('beginTransaction');
+        $this->mockDatabase->expects($this->once())->method('commit');
+        $this->mockDatabase->expects($this->never())->method('rollback');
+
         // Mock update call that returns 0 (no rows affected)
         $this->mockDatabase
             ->expects($this->once())
             ->method('update')
+            ->with(
+                $this->equalTo('roster'),
+                $this->equalTo([
+                    'first_name' => 'John',
+                    'last_name' => 'Doe',
+                    'updated_by' => 'system',
+                ]),
+                $this->equalTo(['row_id' => $playerId])
+            )
             ->willReturn(0);
 
         $result = $this->rosterService->updatePlayer($playerId, $updateData);

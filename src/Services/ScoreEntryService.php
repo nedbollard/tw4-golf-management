@@ -49,7 +49,7 @@ class ScoreEntryService
         );
 
         if (!$round || empty($round['course_played_id'])) {
-            return null;
+            throw new \RuntimeException('Round configuration incomplete: course not selected.');
         }
 
         $player = $this->db->fetchOne(
@@ -60,7 +60,7 @@ class ScoreEntryService
         );
 
         if (!$player) {
-            return null;
+            throw new \RuntimeException('Player not found or no longer active.');
         }
 
         $genderCode = strtolower((string) ($player['gender'] ?? 'male')) === 'female' ? 'F' : 'M';
@@ -82,7 +82,11 @@ class ScoreEntryService
         );
 
         if (count($holes) !== 9) {
-            return null;
+            $gender = strtolower((string) ($player['gender'] ?? 'male')) === 'female' ? 'Female' : 'Male';
+            throw new \RuntimeException(
+                "Course hole configuration incomplete for player {$player['player_identifier']}: "
+                . "Expected 9 holes for $gender, found " . count($holes) . "."
+            );
         }
 
         $existingByHole = [];

@@ -78,9 +78,17 @@ class ScoreController extends BaseController
         }
 
         $roundId = (int) $active['round_id'];
-        $entryData = $this->scoreEntryService->buildEntryData($roundId, $playerId);
-        if ($entryData === null) {
-            $_SESSION['errors'] = ['Unable to prepare card entry for this player.'];
+        
+        try {
+            $entryData = $this->scoreEntryService->buildEntryData($roundId, $playerId);
+        } catch (\RuntimeException $e) {
+            // Get player identifier for error message
+            $player = $this->app->getDatabase()->fetchOne(
+                'SELECT player_identifier FROM TW4_base.roster WHERE row_id = ?',
+                [$playerId]
+            );
+            $playerIdent = $player['player_identifier'] ?? "Player #$playerId";
+            $_SESSION['errors'] = ["Unable to prepare card entry for $playerIdent: " . $e->getMessage()];
             $this->redirect('/scores/enter');
             return;
         }
@@ -118,9 +126,16 @@ class ScoreController extends BaseController
             return;
         }
 
-        $entryData = $this->scoreEntryService->buildEntryData($roundId, $playerId);
-        if ($entryData === null) {
-            $_SESSION['errors'] = ['Unable to prepare card entry for this player.'];
+        try {
+            $entryData = $this->scoreEntryService->buildEntryData($roundId, $playerId);
+        } catch (\RuntimeException $e) {
+            // Get player identifier for error message
+            $player = $this->app->getDatabase()->fetchOne(
+                'SELECT player_identifier FROM TW4_base.roster WHERE row_id = ?',
+                [$playerId]
+            );
+            $playerIdent = $player['player_identifier'] ?? "Player #$playerId";
+            $_SESSION['errors'] = ["Unable to prepare card entry for $playerIdent: " . $e->getMessage()];
             $this->redirect('/scores/enter');
             return;
         }
@@ -141,7 +156,8 @@ class ScoreController extends BaseController
         $action = (string) ($this->getPostData()['action'] ?? 'calculate');
         if ($action === 'save') {
             $this->scoreEntryService->saveCard($roundId, $playerId, $calculated, $username);
-            $_SESSION['success'] = 'Card saved successfully.';
+            $playerIdent = $entryData['player']['player_identifier'] ?? "Player #$playerId";
+            $_SESSION['success'] = "Card saved successfully for $playerIdent.";
             $this->redirect('/scores/enter');
             return;
         }

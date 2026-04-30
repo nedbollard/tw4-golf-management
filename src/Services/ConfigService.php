@@ -63,7 +63,7 @@ class ConfigService
         $this->configCache = null; // Clear cache
         
         $existing = $this->db->fetchOne(
-            'SELECT config_id FROM config_application WHERE config_name = ?',
+            'SELECT row_id FROM config_application WHERE config_name = ?',
             [$key]
         );
         
@@ -83,18 +83,50 @@ class ConfigService
 
     public function initializeDefaultConfig(): void
     {
+        $currentYear = (int) date('y');
+        $nextYear = ($currentYear + 1) % 100;
         $defaultConfigs = [
-            'config_status' => 'waiting',
-            'club_name' => 'TW4 Golf Club',
-            'competition_name' => 'Weekly Competition',
-            'season_year' => date('Y'),
-            'handicap_system' => 'stableford',
-            'max_handicap' => '36',
+            'config_status' => ['value' => 'waiting', 'type' => 'string'],
+            'club_name' => ['value' => 'TW4 Golf Club', 'type' => 'string'],
+            'competition_name' => ['value' => 'Twilight', 'type' => 'string'],
+            'season_year' => ['value' => sprintf('%02d_%02d', $currentYear, $nextYear), 'type' => 'string'],
+            'handicap_system' => ['value' => 'modern', 'type' => 'string'],
+            'max_handicap' => ['value' => 54, 'type' => 'int'],
+            'team_haggle_state' => ['value' => 'F', 'type' => 'string'],
+            'club_number' => ['value' => 294, 'type' => 'int'],
+            'entry_fee' => ['value' => 0, 'type' => 'int'],
         ];
 
-        foreach ($defaultConfigs as $key => $value) {
-            $this->setConfigValue($key, $value);
+        $existingRows = $this->db->fetchAll('SELECT config_name FROM config_application');
+        $existingNames = [];
+        foreach ($existingRows as $row) {
+            if (isset($row['config_name'])) {
+                $existingNames[$row['config_name']] = true;
+            }
         }
+
+        foreach ($defaultConfigs as $key => $definition) {
+            if (isset($existingNames[$key])) {
+                continue;
+            }
+
+            $data = [
+                'config_name' => $key,
+                'config_type' => $definition['type'],
+                'updated_by' => 'system',
+            ];
+
+            if ($definition['type'] === 'int') {
+                $data['config_value_int'] = (int) $definition['value'];
+                $data['config_value_string'] = (string) $definition['value'];
+            } else {
+                $data['config_value_string'] = (string) $definition['value'];
+            }
+
+            $this->db->insert('config_application', $data);
+        }
+
+        $this->configCache = null;
     }
 
     public function getApplicationTitle(): string

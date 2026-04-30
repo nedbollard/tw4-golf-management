@@ -21,6 +21,7 @@ class RosterService
     public function createPlayer(array $data): int
     {
         $data = $this->normalizeOptionalFields($data);
+        $actor = $this->resolveActorUsername();
 
         // Capitalize names properly
         if (isset($data['first_name'])) {
@@ -45,18 +46,39 @@ class RosterService
         }
 
         // Add updated_by field with logged-in staff username
-        $auth = $this->db->getAuth();
-        if ($auth->isLoggedIn()) {
-            $currentUser = $auth->getUser();
-            $data['updated_by'] = $currentUser['username'] ?? null;
+        $data['updated_by'] = $actor;
+        $newHandicap = max(0, (int) ($data['handicap'] ?? 0));
+
+        $this->db->beginTransaction();
+
+        try {
+            $playerId = $this->db->insert('roster', $data);
+            $this->insertHandicapAudit(
+                $playerId,
+                0,
+                $newHandicap,
+                'admin_adjustment',
+                $actor,
+                'player_created'
+            );
+            $this->db->commit();
+
+            return $playerId;
+        } catch (\Throwable $e) {
+            $this->db->rollback();
+            throw $e;
         }
-        
-        return $this->db->insert('roster', $data);
     }
 
     public function updatePlayer(int $playerId, array $data): bool
     {
         $data = $this->normalizeOptionalFields($data);
+        $actor = $this->resolveActorUsername();
+        $currentPlayer = $this->getPlayer($playerId);
+        if (!$currentPlayer) {
+            return false;
+        }
+        $previousHandicap = max(0, (int) ($currentPlayer['handicap'] ?? 0));
 
         // Capitalize names properly
         if (isset($data['first_name'])) {
@@ -68,7 +90,6 @@ class RosterService
         
         // If name changed, regenerate player identifier
         if (isset($data['first_name']) || isset($data['last_name'])) {
-            $currentPlayer = $this->getPlayer($playerId);
             if ($currentPlayer) {
                 $firstName = $data['first_name'] ?? $currentPlayer['first_name'];
                 $lastName = $data['last_name'] ?? $currentPlayer['last_name'];
@@ -104,13 +125,34 @@ class RosterService
         }
 
         // Add updated_by field with logged-in staff username
-        $auth = $this->db->getAuth();
-        if ($auth->isLoggedIn()) {
-            $currentUser = $auth->getUser();
-            $data['updated_by'] = $currentUser['username'] ?? null;
+        $data['updated_by'] = $actor;
+        $newHandicap = array_key_exists('handicap', $data)
+            ? max(0, (int) $data['handicap'])
+            : $previousHandicap;
+
+        $this->db->beginTransaction();
+
+        try {
+            $updated = $this->db->update('roster', $data, ['row_id' => $playerId]) > 0;
+
+            if ($updated && $newHandicap !== $previousHandicap) {
+                $this->insertHandicapAudit(
+                    $playerId,
+                    $previousHandicap,
+                    $newHandicap,
+                    'admin_adjustment',
+                    $actor,
+                    'player_updated'
+                );
+            }
+
+            $this->db->commit();
+
+            return $updated;
+        } catch (\Throwable $e) {
+            $this->db->rollback();
+            throw $e;
         }
-        
-        return $this->db->update('roster', $data, ['row_id' => $playerId]) > 0;
     }
 
     public function getPlayer(int $playerId): ?array
@@ -297,5 +339,40 @@ class RosterService
         }
 
         return $errors;
+    }
+
+    private function resolveActorUsername(): string
+    {
+        $auth = $this->db->getAuth();
+        if ($auth->isLoggedIn()) {
+            $currentUser = $auth->getUser();
+            $username = trim((string) ($currentUser['username'] ?? ''));
+            if ($username !== '') {
+                return $username;
+            }
+        }
+
+        return 'system';
+    }
+
+    private function insertHandicapAudit(
+        int $playerId,
+        int $previous,
+        int $new,
+        string $source,
+        string $actor,
+        ?string $reason = null
+    ): void {
+        $this->db->insert('TW4_base.handicap_audit', [
+            'row_id_player' => $playerId,
+            'handicap_previous' => $previous,
+            'handicap_new' => $new,
+            'handicap_source' => $source,
+            'season_year' => null,
+            'number_round' => null,
+            'reason' => $reason,
+            'changed_by' => $actor,
+            'updated_by' => $actor,
+        ]);
     }
 }

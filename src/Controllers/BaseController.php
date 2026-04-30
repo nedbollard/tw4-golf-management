@@ -18,6 +18,7 @@ abstract class BaseController
         $this->app = $app;
         // Initialize ConfigService for all controllers
         $this->configService = new \App\Services\ConfigService($this->app->getDatabase());
+        $this->configService->initializeDefaultConfig();
         
         // Check configuration status and load to session
         if (!isset($_SESSION['config_checked'])) {
