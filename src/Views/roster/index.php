@@ -58,7 +58,7 @@
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-<?php echo $player['gender'] === 'male' ? 'primary' : 'pink'; ?>">
+                                                    <span class="badge bg-<?php echo $player['gender'] === 'male' ? 'primary' : 'danger'; ?>">
                                                         <?php echo ucfirst($player['gender']); ?>
                                                     </span>
                                                 </td>

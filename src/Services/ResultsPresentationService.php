@@ -34,7 +34,9 @@ class ResultsPresentationService
             return [
                 'leaderboard' => [],
                 'prizes' => [1 => 0, 2 => 0, 3 => 0],
-                'closest_to_pin_options' => ['not taker'],
+                'closest_to_pin_options' => [
+                    ['identifier' => 'not taker', 'label' => 'not taker'],
+                ],
                 'fee_entry' => 0,
                 'prize_pool' => 0,
             ];
@@ -154,11 +156,18 @@ class ResultsPresentationService
         }
         unset($entry);
 
-        $options = ['not taker'];
+        $options = [
+            ['identifier' => 'not taker', 'label' => 'not taker'],
+        ];
         foreach ($leaderboard as $entry) {
             $identifier = (string) $entry['player_identifier'];
-            if ($identifier !== '' && !in_array($identifier, $options, true)) {
-                $options[] = $identifier;
+            $label = (string) ($entry['display_name'] ?? $identifier);
+            $knownIdentifiers = array_column($options, 'identifier');
+            if ($identifier !== '' && !in_array($identifier, $knownIdentifiers, true)) {
+                $options[] = [
+                    'identifier' => $identifier,
+                    'label' => $label,
+                ];
             }
         }
 

@@ -5,163 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($app_title); ?> - Enter Card</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
     <link href="/assets/css/style.css" rel="stylesheet">
-    <style>
-        body {
-            font-size: 0.94rem;
-        }
-        .enter-card-navbar {
-            background: linear-gradient(90deg, #7c2d12 0%, #c2410c 100%);
-            border-bottom: 2px solid #fdba74;
-            color: #fff7ed;
-        }
-        .enter-card-navbar .navbar-title {
-            font-size: 1rem;
-            font-weight: 700;
-            letter-spacing: 0.01em;
-        }
-        .enter-card-navbar .btn {
-            padding: 0.3rem 0.78rem;
-            font-size: 0.9rem;
-        }
-        .compact-wrap {
-            max-width: 860px;
-        }
-        .compact-title {
-            font-size: 1.45rem;
-            margin-bottom: 0;
-        }
-        .player-line {
-            margin-bottom: 0.6rem;
-            margin-top: 0.1rem;
-            font-size: 0.98rem;
-        }
-        .player-banner {
-            background: #78350f;
-            border: 1px solid #fbbf24;
-            border-radius: 10px;
-            padding: .55rem 1rem;
-            font-size: .95rem;
-            color: #fef3c7;
-            margin-bottom: 0.75rem;
-        }
-        .player-banner strong {
-            font-size: 1rem;
-        }
-        .compact-card .card-body {
-            padding: 0.65rem;
-        }
-        .score-grid {
-            border-collapse: separate;
-            border-spacing: 0.22rem;
-        }
-        .score-grid th, .score-grid td {
-            text-align: center;
-            vertical-align: middle;
-            padding: 0.42rem 0.45rem;
-            line-height: 1.1;
-            font-size: 0.94rem;
-        }
-        .score-grid thead th {
-            font-weight: 600;
-            padding: 0.38rem 0.42rem;
-            background: transparent !important;
-        }
-        .score-grid td.meta-cell {
-            background: #e3f2fd;
-            color: #0f3554;
-        }
-        .score-grid td.pink-cell {
-            background: #fce4ec;
-            color: #5f1d35;
-        }
-        .score-grid td.total-green {
-            background: #a5d6a7;
-            color: #1a3d1c;
-        }
-        .score-grid td.total-blue {
-            background: #90caf9;
-            color: #0a2540;
-        }
-        .score-grid .score-input {
-            width: 42px;
-            min-height: 30px;
-            margin: 0 auto;
-            text-align: center;
-            padding: 0.15rem 0.2rem;
-            font-size: 0.93rem;
-        }
-        .score-grid .score-input.sfp-0,
-        .score-grid .score-input.sfp-1,
-        .score-grid .score-input.sfp-2,
-        .score-grid .score-input.sfp-3,
-        .score-grid .score-input.sfp-4,
-        .score-grid .score-input.sfp-5 {
-            font-weight: 700;
-            border-width: 1px;
-        }
-        .score-grid td.sfp-cell {
-            font-weight: 700;
-            border-width: 1px;
-        }
-        .score-grid td.sfp-0 { background: #C62828; color: #fff5f5; }
-        .score-grid td.sfp-1 { background: #E64A19; color: #fff7f3; }
-        .score-grid td.sfp-2 { background: #FBC02D; color: #3d2f00; }
-        .score-grid td.sfp-3 { background: #388E3C; color: #f3fff3; }
-        .score-grid td.sfp-4 { background: #1976D2; color: #f4f9ff; }
-        .score-grid td.sfp-5 { background: #6A1B9A; color: #fbf5ff; }
-        .score-grid .score-input.sfp-0 { background: #C62828; color: #fff5f5; border-color: #C62828; }
-        .score-grid .score-input.sfp-1 { background: #E64A19; color: #fff7f3; border-color: #E64A19; }
-        .score-grid .score-input.sfp-2 { background: #FBC02D; color: #3d2f00; border-color: #FBC02D; }
-        .score-grid .score-input.sfp-3 { background: #388E3C; color: #f3fff3; border-color: #388E3C; }
-        .score-grid .score-input.sfp-4 { background: #1976D2; color: #f4f9ff; border-color: #1976D2; }
-        .score-grid .score-input.sfp-5 { background: #6A1B9A; color: #fbf5ff; border-color: #6A1B9A; }
-        .score-grid .score-input::placeholder {
-            color: inherit;
-        }
-        .compact-actions .btn {
-            padding: 0.34rem 0.82rem;
-            font-size: 0.92rem;
-        }
-        @media (max-height: 860px) {
-            .compact-screen {
-                padding-top: 0.85rem !important;
-                padding-bottom: 0.85rem !important;
-            }
-            .compact-head {
-                margin-bottom: 0.55rem !important;
-            }
-            .player-line {
-                margin-bottom: 0.35rem;
-            }
-            .score-grid th, .score-grid td {
-                padding: 0.32rem 0.34rem;
-                font-size: 0.9rem;
-            }
-            .score-grid .score-input {
-                width: 40px;
-                min-height: 28px;
-                font-size: 0.88rem;
-            }
-            .compact-actions {
-                margin-top: 0.25rem;
-            }
-        }
-        @media (max-width: 768px) {
-            .compact-title {
-                font-size: 1.18rem;
-            }
-            .score-grid th, .score-grid td {
-                font-size: 0.86rem;
-                padding: 0.28rem 0.28rem;
-            }
-            .score-grid .score-input {
-                width: 38px;
-            }
-        }
-    </style>
 </head>
-<body class="bg-light">
+<body class="page-enter-card">
 <?php
 $roundNumber = (int) ($round['round_number'] ?? 0);
 $player = $entry['player'] ?? [];
@@ -213,98 +62,106 @@ $sfpTotalClass = static function ($points): string {
     return 'sfp-0';
 };
 ?>
-<nav class="enter-card-navbar navbar" aria-label="Enter card navigation">
-    <div class="container-fluid px-3 py-2 d-flex justify-content-between align-items-center">
-        <span class="navbar-title">Enter Card</span>
-        <div class="d-flex gap-2">
-            <a href="/scores/enter" class="btn btn-outline-light">Cancel</a>
-            <a href="/scores/enter" class="btn btn-outline-light">Back</a>
-            <a href="/scorer/menu" class="btn btn-light text-dark">Home</a>
-        </div>
-    </div>
-</nav>
-<div class="container py-5 compact-screen compact-wrap">
-    <div class="player-banner compact-head">
-        <strong>Round <?php echo $roundNumber; ?></strong>
-        &nbsp;·&nbsp;
-        Player : <?php echo htmlspecialchars($playerDisplay); ?> :
-        <?php echo htmlspecialchars($playerIdentifier); ?> :
-        [<?php echo (strtolower((string) ($player['gender'] ?? 'male')) === 'female') ? 'F' : 'M'; ?>] :
-        Handicap : [<?php echo (int) ($player['handicap'] ?? 0); ?>]
+
+<div class="enter-card-layout">
+    <header class="enter-card-header">
+        <h1>Twilight Golf Scoring</h1>
+    </header>
+
+    <div class="enter-card-toolbar" aria-label="Enter card navigation">
+        <a href="/scores/enter" class="btn-toolbar-cancel">Cancel</a>
+        <a href="/scores/enter" class="btn-toolbar-back">Back</a>
+        <a href="/scorer/menu" class="btn-toolbar-home">Home</a>
     </div>
 
-    <?php if (!empty($errors)): ?>
-        <div class="alert alert-danger">
-            <?php foreach ($errors as $error): ?>
-                <div><?php echo htmlspecialchars((string) $error); ?></div>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+    <main>
+        <div class="enter-card-card">
+            <h2 class="enter-card-card-title"><?php echo htmlspecialchars($app_title); ?> - Enter Card</h2>
+            <div class="enter-card-card-body">
+                <div class="enter-card-player-banner">
+                    <strong>Round <?php echo $roundNumber; ?></strong>
+                    &nbsp;·&nbsp;
+                    Player : <?php echo htmlspecialchars($playerDisplay); ?> :
+                    <?php echo htmlspecialchars($playerIdentifier); ?> :
+                    [<?php echo (strtolower((string) ($player['gender'] ?? 'male')) === 'female') ? 'F' : 'M'; ?>] :
+                    Handicap : [<?php echo (int) ($player['handicap'] ?? 0); ?>]
+                </div>
 
-    <div class="card shadow-sm compact-card">
-        <div class="card-body">
-            <form method="POST" action="/scores/enter/<?php echo (int) ($player['row_id'] ?? 0); ?>" id="score-entry-form">
-                <input type="hidden" name="action" id="form-action" value="">
-                <div class="table-responsive mb-2">
-                    <table class="table table-bordered score-grid align-middle mb-2">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Hole</th>
-                                <th>Par</th>
-                                <th>Stroke</th>
-                                <th>Score</th>
-                                <th>Shots</th>
-                                <th>Net</th>
-                                <th>SFP</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach (($entry['holes'] ?? []) as $hole): ?>
-                                <?php $holeSfpClass = $sfpClass($hole['points'] ?? null); ?>
+                <?php if (!empty($errors)): ?>
+                    <div class="enter-card-alert" role="alert">
+                        <?php foreach ($errors as $error): ?>
+                            <div><?php echo htmlspecialchars((string) $error); ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+
+                <form method="POST" action="/scores/enter/<?php echo (int) ($player['row_id'] ?? 0); ?>" id="score-entry-form">
+                    <input type="hidden" name="action" id="form-action" value="">
+                    <div class="table-responsive mb-2">
+                        <table class="table table-bordered score-grid align-middle mb-2">
+                            <thead class="table-light">
                                 <tr>
-                                    <td class="meta-cell"><?php echo (int) $hole['hole']; ?></td>
-                                    <td class="meta-cell"><?php echo (int) $hole['par']; ?></td>
-                                    <td class="meta-cell"><?php echo (int) $hole['stroke']; ?></td>
-                                    <td>
-                                        <input
-                                            type="text"
-                                            inputmode="numeric"
-                                            maxlength="1"
-                                            class="form-control score-input <?php echo $holeSfpClass; ?>"
-                                            name="scores[<?php echo (int) $hole['hole']; ?>]"
-                                            value="<?php echo htmlspecialchars(((int) ($hole['score'] ?? 0) === 10) ? 'X' : (string) ($hole['score'] ?? '')); ?>"
-                                            pattern="[1-9xX]"
-                                            title="Enter 1-9 or X"
-                                            required
-                                        >
-                                    </td>
-                                    <td class="pink-cell"><?php echo ($hole['shots'] === null) ? '' : (int) $hole['shots']; ?></td>
-                                    <td class="pink-cell"><?php echo ($hole['net'] === null) ? '' : (int) $hole['net']; ?></td>
-                                    <td class="sfp-cell <?php echo $holeSfpClass; ?>"><?php echo ($hole['points'] === null) ? '' : (int) $hole['points']; ?></td>
+                                    <th>Hole</th>
+                                    <th>Par</th>
+                                    <th>Stroke</th>
+                                    <th>Score</th>
+                                    <th>Shots</th>
+                                    <th>Net</th>
+                                    <th>SFP</th>
                                 </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                        <tfoot>
-                            <tr class="table-light fw-bold">
-                                <td class="meta-cell">Total</td>
-                                <td class="total-green"><?php echo (int) (($entry['totals']['par'] ?? 0)); ?></td>
-                                <td></td>
-                                <td class="total-blue"><?php echo ($entry['totals']['score'] === null) ? '' : (int) $entry['totals']['score']; ?></td>
-                                <td class="total-green"><?php echo ($entry['totals']['shots'] === null) ? '' : (int) $entry['totals']['shots']; ?></td>
-                                <td class="total-green"><?php echo ($entry['totals']['net'] === null) ? '' : (int) $entry['totals']['net']; ?></td>
-                                <td class="total-blue"><?php echo ($entry['totals']['points'] === null) ? '' : (int) $entry['totals']['points']; ?></td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                                <?php foreach (($entry['holes'] ?? []) as $hole): ?>
+                                    <?php $holeSfpClass = $sfpClass($hole['points'] ?? null); ?>
+                                    <tr>
+                                        <td class="meta-cell"><?php echo (int) $hole['hole']; ?></td>
+                                        <td class="meta-cell"><?php echo (int) $hole['par']; ?></td>
+                                        <td class="meta-cell"><?php echo (int) $hole['stroke']; ?></td>
+                                        <td>
+                                            <input
+                                                type="text"
+                                                inputmode="numeric"
+                                                maxlength="1"
+                                                class="form-control score-input <?php echo $holeSfpClass; ?>"
+                                                name="scores[<?php echo (int) $hole['hole']; ?>]"
+                                                value="<?php echo htmlspecialchars(((int) ($hole['score'] ?? 0) === 10) ? 'X' : (string) ($hole['score'] ?? '')); ?>"
+                                                pattern="[1-9xX]"
+                                                title="Enter 1-9 or X"
+                                                required
+                                            >
+                                        </td>
+                                        <td class="pink-cell"><?php echo ($hole['shots'] === null) ? '' : (int) $hole['shots']; ?></td>
+                                        <td class="pink-cell"><?php echo ($hole['net'] === null) ? '' : (int) $hole['net']; ?></td>
+                                        <td class="sfp-cell <?php echo $holeSfpClass; ?>"><?php echo ($hole['points'] === null) ? '' : (int) $hole['points']; ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-light fw-bold">
+                                    <td class="meta-cell">Total</td>
+                                    <td class="total-green"><?php echo (int) (($entry['totals']['par'] ?? 0)); ?></td>
+                                    <td></td>
+                                    <td class="total-blue"><?php echo ($entry['totals']['score'] === null) ? '' : (int) $entry['totals']['score']; ?></td>
+                                    <td class="total-green"><?php echo ($entry['totals']['shots'] === null) ? '' : (int) $entry['totals']['shots']; ?></td>
+                                    <td class="total-green"><?php echo ($entry['totals']['net'] === null) ? '' : (int) $entry['totals']['net']; ?></td>
+                                    <td class="total-blue"><?php echo ($entry['totals']['points'] === null) ? '' : (int) $entry['totals']['points']; ?></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
 
-                <div class="d-flex gap-2 justify-content-center compact-actions">
-                    <button type="button" class="btn btn-primary" id="calculate-button">Calculate</button>
-                    <button type="button" class="btn btn-success" id="save-button">Save</button>
-                </div>
-            </form>
+                    <div class="enter-card-actions">
+                        <button type="button" id="calculate-button">Calculate</button>
+                        <button type="button" id="save-button">Save</button>
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
+
+        <footer class="enter-card-footer">
+            <p class="mb-0">&copy; <?php echo date('Y'); ?> Twilight Golf Scoring &bull; 2nd Wind Software</p>
+        </footer>
+    </main>
 </div>
 <script>
 (() => {
@@ -423,5 +280,7 @@ $sfpTotalClass = static function ($points): string {
     });
 })();
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -294,8 +294,12 @@ class ScoreController extends BaseController
             $resultsData = $this->resultsPresentationService->buildPresentationData($roundId);
             $closestToPinIdentifier = trim((string) ($this->getPostData()['closest_to_pin_identifier'] ?? ''));
             $options = $resultsData['closest_to_pin_options'] ?? [];
+            $validClosestToPinIdentifiers = array_map(
+                static fn(array $option): string => (string) ($option['identifier'] ?? ''),
+                $options
+            );
 
-            if ($closestToPinIdentifier === '' || !in_array($closestToPinIdentifier, $options, true)) {
+            if ($closestToPinIdentifier === '' || !in_array($closestToPinIdentifier, $validClosestToPinIdentifiers, true)) {
                 $_SESSION['errors'] = ['Please choose a valid closest-to-pin winner.'];
                 $_SESSION['old'] = ['closest_to_pin_identifier' => $closestToPinIdentifier];
                 $this->redirect('/scores/present-results');
@@ -352,6 +356,14 @@ class ScoreController extends BaseController
     {
         $leaderboard = $resultsData['leaderboard'] ?? [];
         $podium = array_slice($leaderboard, 0, 3);
+        $closestToPinName = $closestToPinIdentifier;
+
+        foreach ($leaderboard as $entry) {
+            if ((string) ($entry['player_identifier'] ?? '') === $closestToPinIdentifier) {
+                $closestToPinName = (string) ($entry['display_name'] ?? $closestToPinIdentifier);
+                break;
+            }
+        }
 
         $ballWinners = [];
         foreach ($leaderboard as $entry) {
@@ -367,7 +379,7 @@ class ScoreController extends BaseController
 
         $ballWinners[] = [
             'type' => 'C_P',
-            'who' => $closestToPinIdentifier,
+            'who' => $closestToPinName,
             'count' => 1,
         ];
 

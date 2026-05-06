@@ -348,7 +348,7 @@ class RoundWorkflowService
         }
 
         $round = $this->db->fetchOne(
-            'SELECT row_id AS round_id, number_round AS round_number, round_date, course_played_id, workflow_step, card_count
+            'SELECT row_id AS round_id, season_year, number_round AS round_number, round_date, course_played_id, workflow_step, card_count
              FROM TW4_live.round WHERE row_id = ?',
             [$roundId]
         );
