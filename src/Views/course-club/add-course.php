@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Course - <?php echo htmlspecialchars($app_title); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/assets/css/style.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <link href="/assets/css/style.css?v=<?php echo urlencode((string) @filemtime(__DIR__ . '/../../../public/assets/css/style.css')); ?>" rel="stylesheet">
 </head>
-<body class="bg-light">
+<body class="page-course-club-form">
     <div class="container mt-5">
         <div class="row justify-content-center">
             <div class="col-md-6">
@@ -66,7 +69,7 @@
                             </div>
 
                             <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-danger">
+                                <button type="submit" class="btn-action-primary">
                                     <i class="fas fa-plus"></i> Continue to Add Holes
                                 </button>
                             </div>

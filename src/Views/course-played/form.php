@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $mode === 'create' ? 'Create' : 'Edit'; ?> Course Played - <?php echo htmlspecialchars($app_title); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/assets/css/style.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <link href="/assets/css/style.css?v=<?php echo urlencode((string) @filemtime(__DIR__ . '/../../../public/assets/css/style.css')); ?>" rel="stylesheet">
 </head>
-<body class="bg-light">
+<body class="page-course-played-form">
     <div class="container mt-5 mb-5">
         <div class="row justify-content-center">
             <div class="col-md-10">
@@ -104,7 +107,7 @@
 
                             <div class="d-flex justify-content-between mt-4">
                                 <a href="/course-played" class="btn btn-secondary">Cancel</a>
-                                <button type="submit" class="btn btn-danger"><?php echo $mode === 'create' ? 'Create Course Played' : 'Update Course Played'; ?></button>
+                                <button type="submit" class="btn-action-primary"><?php echo $mode === 'create' ? 'Create Course Played' : 'Update Course Played'; ?></button>
                             </div>
                         </form>
                     </div>

@@ -5,49 +5,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Course Club Management - <?php echo htmlspecialchars($app_title); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/assets/css/style.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <link href="/assets/css/style.css?v=<?php echo urlencode((string) @filemtime(__DIR__ . '/../../../public/assets/css/style.css')); ?>" rel="stylesheet">
 </head>
-<body class="bg-light">
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-12">
-                <div class="card shadow">
-                    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">Course Club Management</h4>
-                        <a href="/admin/menu" class="btn btn-sm btn-outline-light">Admin Menu</a>
-                    </div>
-                    <div class="card-body">
+<body class="page-course-club">
+<?php
+$sessionUsername = (string) ($_SESSION['username'] ?? 'admin');
+$sessionRole = (string) ($_SESSION['role'] ?? 'admin');
+?>
+<div class="course-club-layout">
+    <header class="course-club-header">
+        <h1>Twilight Golf Scoring</h1>
+    </header>
+
+    <main>
+        <div class="course-club-card">
+            <h2 class="course-club-card-title"><?php echo htmlspecialchars($app_title); ?> Course Club Management</h2>
+            <div class="course-club-card-body">
+                <div class="section-title-wrap text-center">
+                    <h2>Manage Course</h2>
+                    <div class="section-title-accent"></div>
+                </div>
+
+                <p class="course-club-intro">Create and maintain course holes by club and gender.</p>
+
+                <div class="course-club-session" role="status" aria-live="polite">
+                    <strong>Session Active</strong>
+                    <span>
+                        Signed in as <?php echo htmlspecialchars($sessionUsername); ?>
+                        (<?php echo htmlspecialchars(ucfirst($sessionRole)); ?>)
+                    </span>
+                </div>
+
                         <?php if (!empty($success)): ?>
-                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <div class="course-club-alert course-club-alert-success" role="status">
                                 <?php 
                                 $successMessages = is_array($success) ? $success : [$success];
                                 foreach ($successMessages as $message): 
                                 ?>
-                                    <?php echo htmlspecialchars($message); ?><br>
+                                    <div><?php echo htmlspecialchars($message); ?></div>
                                 <?php endforeach; ?>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
                         <?php endif; ?>
 
                         <?php if (!empty($errors)): ?>
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <div class="course-club-alert course-club-alert-error" role="alert">
                                 <?php 
                                 $errorMessages = is_array($errors) ? $errors : [$errors];
                                 foreach ($errorMessages as $message): 
                                 ?>
-                                    <?php echo htmlspecialchars($message); ?><br>
+                                    <div><?php echo htmlspecialchars($message); ?></div>
                                 <?php endforeach; ?>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
                         <?php endif; ?>
 
                         <div id="headerSection" class="d-flex justify-content-between align-items-center mb-4">
                             <h5 class="mb-0">Course Holes</h5>
                             <div id="buttonContainer">
-                                <a href="/course-club/add-course" class="btn btn-primary me-2" style="padding: 6px 12px; font-size: 14px; line-height: 1;">
+                                <a href="/course-club/add-course" class="btn-action-primary btn-compact me-2">
                                     <i class="fas fa-plus"></i> Add Course
                                 </a>
-                                <button type="button" id="applyEditsBtn" class="btn btn-success me-2" style="padding: 6px 12px; font-size: 14px; line-height: 1; display: none;">
+                                <button type="button" id="applyEditsBtn" class="btn-action-primary btn-compact me-2" style="display: none;">
                                     <i class="fas fa-check"></i> Apply Edits
                                 </button>
                             </div>
@@ -77,12 +97,12 @@
                             </div>
                         <?php endif; ?>
 
-                        <div id="filterMessage" class="alert alert-info text-center">
+                        <div id="filterMessage" class="course-club-alert course-club-alert-info text-center">
                             <i class="fas fa-info-circle"></i> Please select both Club and Gender to view course holes.
                         </div>
 
                         <div id="courseContent" style="display: none;">
-                            <div id="selectionHeading" class="alert alert-success text-center" style="display: none;">
+                            <div id="selectionHeading" class="course-club-alert course-club-alert-success text-center" style="display: none;">
                                 <h5 class="mb-0">
                                     <span id="selectedClubDisplay"></span> - 
                                     <span id="selectedGenderDisplay"></span> Course
@@ -110,7 +130,7 @@
                                                 if (!empty($frontNine)) {
                                                     echo "<div class='col-md-12 col-lg-6 mb-3'>";
                                                     echo "<h6 class='text-primary mb-3'>Front Nine (Holes 1-9)</h6>";
-                                                    echo "<div class='table-responsive'>";
+                                                    echo "<div class='table-responsive tw-table-wrap'>";
                                                     echo "<table class='table table-striped table-hover'>";
                                                     echo "<thead class='table-dark'><tr><th>Hole #</th><th>Hole Name</th><th>Par</th><th>Stroke</th><th class='text-center'>Actions</th></tr></thead>";
                                                     echo "<tbody>";
@@ -120,7 +140,7 @@
                                                         echo "<td><input type='text' class='form-control form-control-sm' data-field='name_hole' value='" . htmlspecialchars($hole->getNameHole()) . "' oninput='trackEdit(" . $hole->getRowId() . ", \"name_hole\", this.value)'></td>";
                                                         echo "<td><input type='number' class='form-control form-control-sm' data-field='par' value='" . $hole->getPar() . "' min='3' max='5' oninput='trackEdit(" . $hole->getRowId() . ", \"par\", this.value)'></td>";
                                                         echo "<td><input type='number' class='form-control form-control-sm' data-field='stroke' value='" . $hole->getStroke() . "' min='1' max='18' oninput='trackEdit(" . $hole->getRowId() . ", \"stroke\", this.value)'></td>";
-                                                        echo "<td class='text-center'><a href='/course-club/{$hole->getRowId()}/edit' class='btn btn-outline-primary btn-sm' title='Edit' style='padding: 6px 12px; font-size: 14px; line-height: 1;'>Edit</a></td>";
+                                                        echo "<td class='text-center'><a href='/course-club/{$hole->getRowId()}/edit' class='btn-action-primary btn-compact' title='Edit'>Edit</a></td>";
                                                         echo "</tr>";
                                                     }
                                                     echo "</tbody></table></div></div>";
@@ -130,7 +150,7 @@
                                                 if (!empty($backNine)) {
                                                     echo "<div class='col-md-12 col-lg-6 mb-3'>";
                                                     echo "<h6 class='text-success mb-3'>Back Nine (Holes 10-18)</h6>";
-                                                    echo "<div class='table-responsive'>";
+                                                    echo "<div class='table-responsive tw-table-wrap'>";
                                                     echo "<table class='table table-striped table-hover'>";
                                                     echo "<thead class='table-dark'><tr><th>Hole #</th><th>Hole Name</th><th>Par</th><th>Stroke</th><th class='text-center'>Actions</th></tr></thead>";
                                                     echo "<tbody>";
@@ -140,7 +160,7 @@
                                                         echo "<td><input type='text' class='form-control form-control-sm' data-field='name_hole' value='" . htmlspecialchars($hole->getNameHole()) . "' oninput='trackEdit(" . $hole->getRowId() . ", \"name_hole\", this.value)'></td>";
                                                         echo "<td><input type='number' class='form-control form-control-sm' data-field='par' value='" . $hole->getPar() . "' min='3' max='5' oninput='trackEdit(" . $hole->getRowId() . ", \"par\", this.value)'></td>";
                                                         echo "<td><input type='number' class='form-control form-control-sm' data-field='stroke' value='" . $hole->getStroke() . "' min='1' max='18' oninput='trackEdit(" . $hole->getRowId() . ", \"stroke\", this.value)'></td>";
-                                                        echo "<td class='text-center'><a href='/course-club/{$hole->getRowId()}/edit' class='btn btn-outline-primary btn-sm' title='Edit' style='padding: 6px 12px; font-size: 14px; line-height: 1;'>Edit</a></td>";
+                                                        echo "<td class='text-center'><a href='/course-club/{$hole->getRowId()}/edit' class='btn-action-primary btn-compact' title='Edit'>Edit</a></td>";
                                                         echo "</tr>";
                                                     }
                                                     echo "</tbody></table></div></div>";
@@ -173,7 +193,7 @@
                                                 if (!empty($frontNine)) {
                                                     echo "<div class='col-md-12 col-lg-6 mb-3'>";
                                                     echo "<h6 class='text-primary mb-3'>Front Nine (Holes 1-9)</h6>";
-                                                    echo "<div class='table-responsive'>";
+                                                    echo "<div class='table-responsive tw-table-wrap'>";
                                                     echo "<table class='table table-striped table-hover'>";
                                                     echo "<thead class='table-dark'><tr><th>Hole #</th><th>Hole Name</th><th>Par</th><th>Stroke</th><th class='text-center'>Actions</th></tr></thead>";
                                                     echo "<tbody>";
@@ -183,7 +203,7 @@
                                                         echo "<td><input type='text' class='form-control form-control-sm' data-field='name_hole' value='" . htmlspecialchars($hole->getNameHole()) . "' oninput='trackEdit(" . $hole->getRowId() . ", \"name_hole\", this.value)'></td>";
                                                         echo "<td><input type='number' class='form-control form-control-sm' data-field='par' value='" . $hole->getPar() . "' min='3' max='5' oninput='trackEdit(" . $hole->getRowId() . ", \"par\", this.value)'></td>";
                                                         echo "<td><input type='number' class='form-control form-control-sm' data-field='stroke' value='" . $hole->getStroke() . "' min='1' max='18' oninput='trackEdit(" . $hole->getRowId() . ", \"stroke\", this.value)'></td>";
-                                                        echo "<td class='text-center'><a href='/course-club/{$hole->getRowId()}/edit' class='btn btn-outline-primary btn-sm' title='Edit' style='padding: 6px 12px; font-size: 14px; line-height: 1;'>Edit</a></td>";
+                                                        echo "<td class='text-center'><a href='/course-club/{$hole->getRowId()}/edit' class='btn-action-primary btn-compact' title='Edit'>Edit</a></td>";
                                                         echo "</tr>";
                                                     }
                                                     echo "</tbody></table></div></div>";
@@ -193,7 +213,7 @@
                                                 if (!empty($backNine)) {
                                                     echo "<div class='col-md-12 col-lg-6 mb-3'>";
                                                     echo "<h6 class='text-success mb-3'>Back Nine (Holes 10-18)</h6>";
-                                                    echo "<div class='table-responsive'>";
+                                                    echo "<div class='table-responsive tw-table-wrap'>";
                                                     echo "<table class='table table-striped table-hover'>";
                                                     echo "<thead class='table-dark'><tr><th>Hole #</th><th>Hole Name</th><th>Par</th><th>Stroke</th><th class='text-center'>Actions</th></tr></thead>";
                                                     echo "<tbody>";
@@ -203,7 +223,7 @@
                                                         echo "<td><input type='text' class='form-control form-control-sm' data-field='name_hole' value='" . htmlspecialchars($hole->getNameHole()) . "' oninput='trackEdit(" . $hole->getRowId() . ", \"name_hole\", this.value)'></td>";
                                                         echo "<td><input type='number' class='form-control form-control-sm' data-field='par' value='" . $hole->getPar() . "' min='3' max='5' oninput='trackEdit(" . $hole->getRowId() . ", \"par\", this.value)'></td>";
                                                         echo "<td><input type='number' class='form-control form-control-sm' data-field='stroke' value='" . $hole->getStroke() . "' min='1' max='18' oninput='trackEdit(" . $hole->getRowId() . ", \"stroke\", this.value)'></td>";
-                                                        echo "<td class='text-center'><a href='/course-club/{$hole->getRowId()}/edit' class='btn btn-outline-primary btn-sm' title='Edit' style='padding: 6px 12px; font-size: 14px; line-height: 1;'>Edit</a></td>";
+                                                        echo "<td class='text-center'><a href='/course-club/{$hole->getRowId()}/edit' class='btn-action-primary btn-compact' title='Edit'>Edit</a></td>";
                                                         echo "</tr>";
                                                     }
                                                     echo "</tbody></table></div></div>";
@@ -218,22 +238,29 @@
                                 </div>
 
                             <?php else: ?>
-                                <div class="text-center py-5">
+                                <div class="text-center py-5 course-club-empty">
                                     <i class="fas fa-golf-ball fa-3x text-muted mb-3"></i>
                                     <h5 class="text-muted">No Course Holes Found</h5>
                                     <p class="text-muted">Start by adding your first course hole.</p>
-                                    <a href="/course-club/create" class="btn btn-primary">
+                                    <a href="/course-club/create" class="btn-action-primary">
                                         <i class="fas fa-plus"></i> Add First Hole
                                     </a>
                                 </div>
                             <?php endif; ?>
                         </div>
-                    </div>
-                </div>
+
+                        <div class="course-club-toolbar course-club-toolbar-bottom">
+                            <a href="/admin/menu" class="btn-secondary-pill">Back to Admin Menu</a>
+                        </div>
             </div>
         </div>
-    </div>
-    
+
+        <footer class="course-club-footer">
+            <p class="mb-0">&copy; <?php echo date('Y'); ?> Twilight Golf Scoring &bull; 2nd Wind Software</p>
+        </footer>
+    </main>
+</div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous"></script>
     <script>
@@ -482,3 +509,6 @@
         
 
     </script>
+
+</body>
+</html>

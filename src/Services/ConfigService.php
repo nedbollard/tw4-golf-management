@@ -90,7 +90,7 @@ class ConfigService
             'club_name' => ['value' => 'TW4 Golf Club', 'type' => 'string'],
             'competition_name' => ['value' => 'Twilight', 'type' => 'string'],
             'season_year' => ['value' => sprintf('%02d_%02d', $currentYear, $nextYear), 'type' => 'string'],
-            'handicap_system' => ['value' => 'modern', 'type' => 'string'],
+            'handicap_method' => ['value' => 'modern', 'type' => 'string'],
             'max_handicap' => ['value' => 54, 'type' => 'int'],
             'team_haggle_state' => ['value' => 'F', 'type' => 'string'],
             'club_number' => ['value' => 294, 'type' => 'int'],

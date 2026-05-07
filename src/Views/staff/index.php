@@ -5,98 +5,124 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($app_title); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/assets/css/style.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <link href="/assets/css/style.css?v=<?php echo urlencode((string) @filemtime(__DIR__ . '/../../../public/assets/css/style.css')); ?>" rel="stylesheet">
 </head>
-<body class="bg-light">
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-10">
-                <div class="card shadow">
-                    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">Staff Management</h4>
-                        <div>
-                            <a href="/staff/add" class="btn btn-sm btn-success">+ Add Staff</a>
-                            <a href="/admin/menu" class="btn btn-sm btn-outline-light">← Admin Menu</a>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <?php if (!empty($success)): ?>
-                            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                <?php 
-                                $successMessages = is_array($success) ? $success : [$success];
-                                foreach ($successMessages as $message): 
-                                ?>
-                                    <?php echo htmlspecialchars($message); ?><br>
-                                <?php endforeach; ?>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        <?php endif; ?>
-                        
-                        <?php if (!empty($errors)): ?>
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                <strong>Errors:</strong><br>
-                                <?php 
-                                $errorMessages = is_array($errors) ? $errors : [$errors];
-                                foreach ($errorMessages as $error): 
-                                ?>
-                                    <?php echo htmlspecialchars($error); ?><br>
-                                <?php endforeach; ?>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        <?php endif; ?>
+<body class="page-staff">
+    <?php
+    $sessionUsername = (string) ($_SESSION['username'] ?? 'admin');
+    $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
+    ?>
 
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th>Staff ID</th>
-                                        <th>Username</th>
-                                        <th>Role</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($staff as $member): ?>
-                                        <tr>
-                                            <td><?php echo htmlspecialchars($member->getRowId() ?? ''); ?></td>
-                                            <td><?php echo htmlspecialchars($member->getUsername()); ?></td>
-                                            <td>
-                                                <span class="badge bg-<?php echo $member->isAdmin() ? 'danger' : 'primary'; ?>">
-                                                    <?php echo htmlspecialchars($member->getRole()); ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-<?php echo $member->isActive() ? 'success' : 'secondary'; ?>">
-                                                    <?php echo $member->isActive() ? 'Active' : 'Inactive'; ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <a href="/staff/edit/<?php echo $member->getRowId(); ?>" class="btn btn-sm btn-outline-primary">Edit</a>
-                                                <?php if ($member->getUsername() !== ($_SESSION['username'] ?? '')): ?>
-                                                    <a href="/staff/delete/<?php echo $member->getRowId(); ?>" 
-                                                       class="btn btn-sm btn-outline-danger" 
-                                                       onclick="return confirm('Are you sure you want to delete <?php echo htmlspecialchars($member->getUsername()); ?>? This will retain them for audit purposes.')">
-                                                        Delete
-                                                    </a>
-                                                <?php endif; ?>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
+    <div class="staff-layout">
+        <header class="staff-header">
+            <h1>Twilight Golf Scoring</h1>
+        </header>
+
+        <main>
+            <div class="staff-card">
+                <h2 class="staff-card-title"><?php echo htmlspecialchars($app_title); ?> Staff Management</h2>
+                <div class="staff-card-body">
+                    <div class="section-title-wrap text-center">
+                        <h2>Manage Staff</h2>
+                        <div class="section-title-accent"></div>
+                    </div>
+
+                    <div class="staff-session" role="status" aria-live="polite">
+                        <strong>Session Active</strong>
+                        <span>
+                            Signed in as <?php echo htmlspecialchars($sessionUsername); ?>
+                            (<?php echo htmlspecialchars(ucfirst($sessionRole)); ?>)
+                        </span>
+                    </div>
+
+                    <div class="staff-toolbar">
+                        <a href="/staff/add" class="btn-action-primary">Add Staff</a>
+                    </div>
+
+                    <?php if (!empty($success)): ?>
+                        <div class="staff-alert staff-alert-success" role="status">
+                            <?php
+                            $successMessages = is_array($success) ? $success : [$success];
+                            foreach ($successMessages as $message):
+                            ?>
+                                <div><?php echo htmlspecialchars($message); ?></div>
+                            <?php endforeach; ?>
                         </div>
-                        
-                        <?php if (empty($staff)): ?>
-                            <div class="text-center py-4">
-                                <p class="text-muted">No staff members found.</p>
-                                <a href="/staff/add" class="btn btn-success">Add First Staff Member</a>
-                            </div>
-                        <?php endif; ?>
+                    <?php endif; ?>
+
+                    <?php if (!empty($errors)): ?>
+                        <div class="staff-alert staff-alert-error" role="alert">
+                            <?php
+                            $errorMessages = is_array($errors) ? $errors : [$errors];
+                            foreach ($errorMessages as $error):
+                            ?>
+                                <div><?php echo htmlspecialchars($error); ?></div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="table-responsive tw-table-wrap">
+                        <table class="table table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Staff ID</th>
+                                    <th>Username</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($staff as $member): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($member->getRowId() ?? ''); ?></td>
+                                        <td><?php echo htmlspecialchars($member->getUsername()); ?></td>
+                                        <td>
+                                            <span class="badge bg-<?php echo $member->isAdmin() ? 'danger' : 'primary'; ?>">
+                                                <?php echo htmlspecialchars($member->getRole()); ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-<?php echo $member->isActive() ? 'success' : 'secondary'; ?>">
+                                                <?php echo $member->isActive() ? 'Active' : 'Inactive'; ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="/staff/edit/<?php echo $member->getRowId(); ?>" class="btn-action-primary btn-sm">Edit</a>
+                                            <?php if ($member->getUsername() !== ($_SESSION['username'] ?? '')): ?>
+                                                <a href="/staff/delete/<?php echo $member->getRowId(); ?>"
+                                                   class="btn-action-destructive btn-sm"
+                                                   onclick="return confirm('Are you sure you want to delete <?php echo htmlspecialchars($member->getUsername()); ?>? This will retain them for audit purposes.')">
+                                                    Delete
+                                                </a>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <?php if (empty($staff)): ?>
+                        <div class="text-center py-4 staff-empty">
+                            <p class="text-muted">No staff members found.</p>
+                            <a href="/staff/add" class="btn-action-primary">Add First Staff Member</a>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="staff-toolbar staff-toolbar-bottom">
+                        <a href="/admin/menu" class="btn-secondary-pill">Back to Admin Menu</a>
                     </div>
                 </div>
             </div>
-        </div>
+
+            <footer class="staff-footer">
+                <p class="mb-0">&copy; <?php echo date('Y'); ?> Twilight Golf Scoring &bull; 2nd Wind Software</p>
+            </footer>
+        </main>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

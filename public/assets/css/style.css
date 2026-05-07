@@ -367,6 +367,824 @@ body.page-welcome {
     text-align: center;
 }
 
+/* System configuration page (scoped) */
+body.page-config {
+    background: radial-gradient(circle at top left, #dcfce7 0%, var(--color-bg-main) 45%, #ecfdf5 100%);
+    color: var(--color-text-primary);
+    font-family: var(--font-primary);
+    margin: 0;
+    min-height: 100vh;
+    padding: 16px;
+    line-height: 1.5;
+}
+
+.config-layout {
+    margin: 0 auto;
+    max-width: 1040px;
+}
+
+.config-header {
+    margin: 0 auto 24px auto;
+    text-align: center;
+}
+
+.config-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.config-card {
+    background: var(--color-surface);
+    border: 1px solid #d1fae5;
+    border-radius: var(--radius-card);
+    box-shadow: 0 18px 40px rgba(6, 78, 59, 0.14);
+    overflow: hidden;
+}
+
+.config-card-title {
+    background: var(--color-text-primary);
+    color: #ffffff;
+    margin: 0;
+    padding: 14px 18px;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.config-card-body {
+    padding: 22px;
+}
+
+.config-intro {
+    color: var(--color-muted);
+    margin-bottom: 14px;
+    text-align: center;
+}
+
+.config-session {
+    align-items: center;
+    background: #ecfdf5;
+    border: 2px solid #a7f3d0;
+    border-radius: 14px;
+    color: var(--color-text-primary);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 16px;
+    padding: 10px 14px;
+    text-align: center;
+}
+
+.config-alert {
+    border-radius: 14px;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+}
+
+.config-alert-success {
+    background: #ecfdf5;
+    border: 2px solid #86efac;
+    color: #166534;
+}
+
+.config-alert-error {
+    background: #fef2f2;
+    border: 2px solid #fecaca;
+    color: #991b1b;
+}
+
+.config-table-wrap {
+    overflow-x: auto;
+}
+
+.config-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 780px;
+    width: 100%;
+}
+
+.config-table th,
+.config-table td {
+    border-bottom: 1px solid #d1fae5;
+    padding: 12px;
+    vertical-align: top;
+}
+
+.config-table th {
+    background: #f0fdf4;
+    font-size: 0.9rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.config-badge {
+    border-radius: 999px;
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-left: 8px;
+    padding: 4px 9px;
+}
+
+.config-badge-critical {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.config-badge-int {
+    background: #dbeafe;
+    color: #1e3a8a;
+    margin-left: 0;
+}
+
+.config-badge-string {
+    background: #dcfce7;
+    color: #166534;
+    margin-left: 0;
+}
+
+.config-input {
+    border: 2px solid #d1fae5;
+    border-radius: 12px;
+    box-sizing: border-box;
+    color: var(--color-text-primary);
+    font-family: inherit;
+    padding: 10px 11px;
+    width: 100%;
+}
+
+.config-input:focus {
+    border-color: var(--color-accent-mint);
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.2);
+    outline: none;
+}
+
+.config-help {
+    color: var(--color-muted);
+    font-size: 0.82rem;
+    margin-top: 5px;
+}
+
+.config-error-inline {
+    color: #991b1b;
+    font-size: 0.82rem;
+    margin-top: 5px;
+}
+
+.config-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 18px;
+}
+
+.config-notes {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 14px;
+    margin-top: 20px;
+    padding: 14px 16px;
+}
+
+.config-notes h3 {
+    font-size: 1rem;
+    margin: 0 0 8px 0;
+}
+
+.config-notes ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.config-notes li {
+    margin-bottom: 5px;
+}
+
+.config-footer {
+    color: var(--color-muted);
+    font-size: 0.85rem;
+    margin: 24px auto 0 auto;
+    text-align: center;
+}
+
+/* Course club management page (scoped) */
+body.page-course-club {
+    background: radial-gradient(circle at top left, #dcfce7 0%, var(--color-bg-main) 45%, #ecfdf5 100%);
+    color: var(--color-text-primary);
+    font-family: var(--font-primary);
+    margin: 0;
+    min-height: 100vh;
+    padding: 16px;
+    line-height: 1.5;
+}
+
+.course-club-layout,
+.course-played-layout {
+    margin: 0 auto;
+    max-width: 1080px;
+}
+
+.course-club-header,
+.course-played-header {
+    margin: 0 auto 24px auto;
+    text-align: center;
+}
+
+.course-club-header h1,
+.course-played-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.course-club-card,
+.course-played-card {
+    background: var(--color-surface);
+    border: 1px solid #d1fae5;
+    border-radius: var(--radius-card);
+    box-shadow: 0 18px 40px rgba(6, 78, 59, 0.14);
+    overflow: hidden;
+}
+
+.course-club-card-title,
+.course-played-card-title {
+    background: var(--color-text-primary);
+    color: #ffffff;
+    margin: 0;
+    padding: 14px 18px;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.course-club-card-body,
+.course-played-card-body {
+    padding: 22px;
+}
+
+.course-club-intro,
+.course-played-intro {
+    color: var(--color-muted);
+    margin-bottom: 14px;
+    text-align: center;
+}
+
+.course-club-session,
+.course-played-session {
+    align-items: center;
+    background: #ecfdf5;
+    border: 2px solid #a7f3d0;
+    border-radius: 14px;
+    color: var(--color-text-primary);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 14px;
+    padding: 10px 14px;
+    text-align: center;
+}
+
+.course-club-toolbar,
+.course-played-toolbar {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+.course-club-toolbar-bottom,
+.course-played-toolbar-bottom {
+    margin-bottom: 0;
+    margin-top: 18px;
+}
+
+.course-club-alert,
+.course-played-alert {
+    border-radius: 14px;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+}
+
+.course-club-alert-success,
+.course-played-alert-success {
+    background: #ecfdf5;
+    border: 2px solid #86efac;
+    color: #166534;
+}
+
+.course-club-alert-error,
+.course-played-alert-error {
+    background: #fef2f2;
+    border: 2px solid #fecaca;
+    color: #991b1b;
+}
+
+.course-club-alert-info {
+    background: #ecfeff;
+    border: 2px solid #a5f3fc;
+    color: #0e7490;
+}
+
+body.page-course-club .form-select,
+body.page-course-club .form-control {
+    border: 2px solid #d1fae5;
+}
+
+body.page-course-club .form-select:focus,
+body.page-course-club .form-control:focus {
+    border-color: var(--color-accent-mint);
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.2);
+}
+
+.tw-table-wrap .table {
+    margin-bottom: 0;
+}
+
+.tw-table-wrap .table thead th {
+    background: #064e3b;
+    color: #ffffff;
+}
+
+.course-club-empty,
+.course-played-empty {
+    background: #f8fffb;
+    border: 1px solid #d1fae5;
+    border-radius: 14px;
+}
+
+.course-club-footer,
+.course-played-footer {
+    color: var(--color-muted);
+    font-size: 0.85rem;
+    margin: 24px auto 0 auto;
+    text-align: center;
+}
+
+/* Course played management page (scoped) */
+body.page-course-played {
+    background: radial-gradient(circle at top left, #dcfce7 0%, var(--color-bg-main) 45%, #ecfdf5 100%);
+    color: var(--color-text-primary);
+    font-family: var(--font-primary);
+    margin: 0;
+    min-height: 100vh;
+    padding: 16px;
+    line-height: 1.5;
+}
+
+body.page-course-played .table tbody td {
+    vertical-align: middle;
+}
+
+/* Shared management/form pages (scoped) */
+body.page-course-club-form,
+body.page-course-played-form,
+body.page-roster,
+body.page-roster-form,
+body.page-roster-show,
+body.page-staff,
+body.page-staff-form,
+body.page-scoring-state,
+body.page-logs {
+    background: radial-gradient(circle at top left, #dcfce7 0%, var(--color-bg-main) 45%, #ecfdf5 100%);
+    color: var(--color-text-primary);
+    font-family: var(--font-primary);
+    min-height: 100vh;
+}
+
+body.page-course-club-form .card,
+body.page-course-played-form .card,
+body.page-roster .card,
+body.page-roster-form .card,
+body.page-roster-show .card,
+body.page-staff .card,
+body.page-staff-form .card,
+body.page-scoring-state .card,
+body.page-logs .card {
+    background: var(--color-surface);
+    border: 1px solid #d1fae5;
+    border-radius: var(--radius-card);
+    box-shadow: 0 18px 40px rgba(6, 78, 59, 0.14);
+    overflow: hidden;
+}
+
+body.page-course-club-form .card-header,
+body.page-course-played-form .card-header,
+body.page-roster .card-header,
+body.page-roster-form .card-header,
+body.page-roster-show .card-header,
+body.page-staff .card-header,
+body.page-staff-form .card-header,
+body.page-scoring-state .card-header,
+body.page-logs .card-header {
+    background: var(--color-text-primary) !important;
+    color: #ffffff !important;
+}
+
+body.page-course-club-form .form-control,
+body.page-course-club-form .form-select,
+body.page-course-played-form .form-control,
+body.page-course-played-form .form-select,
+body.page-roster .form-control,
+body.page-roster .form-select,
+body.page-roster-form .form-control,
+body.page-roster-form .form-select,
+body.page-roster-show .form-control,
+body.page-roster-show .form-select,
+body.page-staff .form-control,
+body.page-staff .form-select,
+body.page-staff-form .form-control,
+body.page-staff-form .form-select,
+body.page-logs .form-control,
+body.page-logs .form-select {
+    border: 2px solid #d1fae5;
+}
+
+body.page-course-club-form .form-control:focus,
+body.page-course-club-form .form-select:focus,
+body.page-course-played-form .form-control:focus,
+body.page-course-played-form .form-select:focus,
+body.page-roster .form-control:focus,
+body.page-roster .form-select:focus,
+body.page-roster-form .form-control:focus,
+body.page-roster-form .form-select:focus,
+body.page-roster-show .form-control:focus,
+body.page-roster-show .form-select:focus,
+body.page-staff .form-control:focus,
+body.page-staff .form-select:focus,
+body.page-staff-form .form-control:focus,
+body.page-staff-form .form-select:focus,
+body.page-logs .form-control:focus,
+body.page-logs .form-select:focus {
+    border-color: var(--color-accent-mint);
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.2);
+}
+
+body.page-course-club-form .alert,
+body.page-course-played-form .alert,
+body.page-roster .alert,
+body.page-roster-form .alert,
+body.page-roster-show .alert,
+body.page-staff .alert,
+body.page-staff-form .alert,
+body.page-scoring-state .alert,
+body.page-logs .alert {
+    border-radius: 14px;
+}
+
+body.page-course-club-form .table thead th,
+body.page-course-played-form .table thead th,
+body.page-roster .table thead th,
+body.page-roster-show .table thead th,
+body.page-staff .table thead th,
+body.page-logs .table thead th {
+    background: #064e3b;
+    color: #ffffff;
+}
+
+body.page-course-club-form .btn-danger,
+body.page-course-played-form .btn-danger,
+body.page-roster .btn-danger,
+body.page-roster-form .btn-danger,
+body.page-roster-show .btn-danger,
+body.page-staff .btn-danger,
+body.page-staff-form .btn-danger,
+body.page-scoring-state .btn-danger,
+body.page-logs .btn-danger {
+    background: #b91c1c;
+    border-color: #b91c1c;
+}
+
+body.page-course-club-form .btn-primary,
+body.page-course-played-form .btn-primary,
+body.page-roster .btn-primary,
+body.page-roster-form .btn-primary,
+body.page-roster-show .btn-primary,
+body.page-staff .btn-primary,
+body.page-staff-form .btn-primary,
+body.page-scoring-state .btn-primary,
+body.page-logs .btn-primary {
+    background: #0f766e;
+    border-color: #0f766e;
+}
+
+body.page-course-club-form .btn-secondary,
+body.page-course-played-form .btn-secondary,
+body.page-roster .btn-secondary,
+body.page-roster-form .btn-secondary,
+body.page-roster-show .btn-secondary,
+body.page-staff .btn-secondary,
+body.page-staff-form .btn-secondary,
+body.page-scoring-state .btn-secondary,
+body.page-logs .btn-secondary {
+    background: #4b5563;
+    border-color: #4b5563;
+}
+
+.logs-layout,
+.roster-layout,
+.staff-layout,
+.scoring-state-layout {
+    margin: 0 auto;
+    max-width: 1100px;
+    padding: 16px;
+}
+
+.logs-header,
+.roster-header,
+.staff-header,
+.scoring-state-header {
+    margin: 0 auto 24px auto;
+    text-align: center;
+}
+
+.logs-header h1,
+.roster-header h1,
+.staff-header h1,
+.scoring-state-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.logs-card,
+.roster-card,
+.staff-card,
+.scoring-state-card {
+    background: var(--color-surface);
+    border: 1px solid #d1fae5;
+    border-radius: var(--radius-card);
+    box-shadow: 0 18px 40px rgba(6, 78, 59, 0.14);
+    overflow: hidden;
+}
+
+.logs-card-title,
+.roster-card-title,
+.staff-card-title,
+.scoring-state-card-title {
+    background: var(--color-text-primary);
+    color: #ffffff;
+    margin: 0;
+    padding: 14px 18px;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.logs-card-body,
+.roster-card-body,
+.staff-card-body,
+.scoring-state-card-body {
+    padding: 22px;
+}
+
+.logs-session,
+.roster-session,
+.staff-session,
+.scoring-state-session {
+    align-items: center;
+    background: #ecfdf5;
+    border: 2px solid #a7f3d0;
+    border-radius: 14px;
+    color: var(--color-text-primary);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 14px;
+    padding: 10px 14px;
+    text-align: center;
+}
+
+.logs-toolbar,
+.roster-toolbar,
+.staff-toolbar,
+.scoring-state-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+.logs-toolbar-bottom,
+.roster-toolbar-bottom,
+.staff-toolbar-bottom,
+.scoring-state-toolbar-bottom {
+    margin-bottom: 0;
+    margin-top: 18px;
+}
+
+.logs-summary {
+    background: #ecfeff;
+    border: 2px solid #a5f3fc;
+    border-radius: 14px;
+    color: #0e7490;
+    margin-bottom: 14px;
+    padding: 10px 14px;
+}
+
+.roster-alert,
+.staff-alert,
+.scoring-state-alert {
+    border-radius: 14px;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+}
+
+.roster-alert-success,
+.staff-alert-success,
+.scoring-state-alert-success {
+    background: #ecfdf5;
+    border: 2px solid #86efac;
+    color: #166534;
+}
+
+.roster-alert-error,
+.staff-alert-error,
+.scoring-state-alert-error {
+    background: #fef2f2;
+    border: 2px solid #fecaca;
+    color: #991b1b;
+}
+
+.logs-empty,
+.roster-empty,
+.staff-empty {
+    background: #f8fffb;
+    border: 1px solid #d1fae5;
+    border-radius: 14px;
+}
+
+.scoring-state-panel {
+    background: #f8fffb;
+    border: 1px solid #bbf7d0;
+    border-radius: 14px;
+    padding: 14px 16px;
+}
+
+.scoring-state-panel h3 {
+    font-size: 1rem;
+    margin: 0 0 10px 0;
+}
+
+.scoring-state-panel p {
+    margin-bottom: 10px;
+}
+
+.scoring-state-panel .btn {
+    font-weight: 700;
+    padding-left: 14px;
+    padding-right: 14px;
+}
+
+.scoring-state-panel-danger {
+    border-color: #fecaca;
+}
+
+.logs-footer,
+.roster-footer,
+.staff-footer,
+.scoring-state-footer {
+    color: var(--color-muted);
+    font-size: 0.85rem;
+    margin: 24px auto 0 auto;
+    text-align: center;
+}
+
+.staff-form-layout {
+    margin: 0 auto;
+    max-width: 860px;
+    padding: 16px;
+}
+
+.roster-form-layout {
+    margin: 0 auto;
+    max-width: 860px;
+    padding: 16px;
+}
+
+.staff-form-header {
+    margin: 0 auto 24px auto;
+    text-align: center;
+}
+
+.roster-form-header {
+    margin: 0 auto 24px auto;
+    text-align: center;
+}
+
+.staff-form-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.roster-form-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.staff-form-card {
+    background: var(--color-surface);
+    border: 1px solid #d1fae5;
+    border-radius: var(--radius-card);
+    box-shadow: 0 18px 40px rgba(6, 78, 59, 0.14);
+    overflow: hidden;
+}
+
+.roster-form-card {
+    background: var(--color-surface);
+    border: 1px solid #d1fae5;
+    border-radius: var(--radius-card);
+    box-shadow: 0 18px 40px rgba(6, 78, 59, 0.14);
+    overflow: hidden;
+}
+
+.staff-form-card-title {
+    background: var(--color-text-primary);
+    color: #ffffff;
+    margin: 0;
+    padding: 14px 18px;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.roster-form-card-title {
+    background: var(--color-text-primary);
+    color: #ffffff;
+    margin: 0;
+    padding: 14px 18px;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.staff-form-card-body {
+    padding: 22px;
+}
+
+.roster-form-card-body {
+    padding: 22px;
+}
+
+.staff-form-footer {
+    color: var(--color-muted);
+    font-size: 0.85rem;
+    margin: 24px auto 0 auto;
+    text-align: center;
+}
+
+.roster-form-footer {
+    color: var(--color-muted);
+    font-size: 0.85rem;
+    margin: 24px auto 0 auto;
+    text-align: center;
+}
+
+.roster-form-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: space-between;
+}
+
+.roster-detail-table td:first-child {
+    width: 44%;
+}
+
+@media (max-width: 768px) {
+    .course-club-toolbar a,
+    .course-played-toolbar a {
+        width: 100%;
+        text-align: center;
+    }
+
+    .logs-toolbar a,
+    .roster-toolbar a,
+    .staff-toolbar a,
+    .scoring-state-toolbar a {
+        width: 100%;
+        text-align: center;
+    }
+
+    .roster-form-actions {
+        flex-direction: column;
+    }
+
+    .roster-form-actions > * {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .config-actions > * {
+        width: 100%;
+    }
+}
+
 /* Staff login page (scoped) */
 body.page-login {
     background: radial-gradient(circle at top left, #dcfce7 0%, var(--color-bg-main) 45%, #ecfdf5 100%);
@@ -650,6 +1468,253 @@ body.page-leaderboard {
     font-size: 0.85rem;
     margin: 24px auto 0 auto;
     text-align: center;
+}
+
+/* Admin menu page (scoped) */
+body.page-admin-menu {
+    background: radial-gradient(circle at top left, #dcfce7 0%, var(--color-bg-main) 45%, #ecfdf5 100%);
+    color: var(--color-text-primary);
+    font-family: var(--font-primary);
+    margin: 0;
+    min-height: 100vh;
+    padding: 16px;
+    line-height: 1.5;
+}
+
+.admin-layout {
+    margin: 0 auto;
+    max-width: 940px;
+}
+
+.admin-header {
+    margin: 0 auto 24px auto;
+    text-align: center;
+}
+
+.admin-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.admin-card {
+    background: var(--color-surface);
+    border: 1px solid #d1fae5;
+    border-radius: var(--radius-card);
+    box-shadow: 0 18px 40px rgba(6, 78, 59, 0.14);
+    overflow: hidden;
+}
+
+.admin-card-title {
+    background: var(--color-text-primary);
+    color: #ffffff;
+    margin: 0;
+    padding: 14px 18px;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.admin-card-body {
+    padding: 22px;
+}
+
+.admin-intro {
+    color: var(--color-muted);
+    margin-bottom: 14px;
+    text-align: center;
+}
+
+.admin-session {
+    align-items: center;
+    background: #ecfdf5;
+    border: 2px solid #a7f3d0;
+    border-radius: 14px;
+    color: var(--color-text-primary);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 18px;
+    padding: 10px 14px;
+    text-align: center;
+}
+
+.admin-grid {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-panel {
+    border: 1px solid #bbf7d0;
+    border-radius: var(--radius-card);
+    padding: 16px;
+    text-align: center;
+}
+
+.admin-panel h3 {
+    font-size: 1rem;
+    margin: 0 0 8px 0;
+}
+
+.admin-panel p {
+    color: var(--color-muted);
+    margin: 0 0 12px 0;
+}
+
+.btn-admin-config,
+.btn-admin-staff,
+.btn-admin-course,
+.btn-admin-played,
+.btn-admin-logs,
+.btn-admin-scoring {
+    border: none;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    display: inline-block;
+    font-family: inherit;
+    font-weight: 700;
+    padding: 10px 18px;
+    text-decoration: none;
+    transition: background 0.2s ease;
+}
+
+.btn-admin-config {
+    background: #0f766e;
+    color: #ffffff;
+}
+
+.btn-admin-config:hover,
+.btn-admin-config:focus {
+    background: #115e59;
+    color: #ffffff;
+}
+
+.btn-admin-staff {
+    background: var(--color-accent-mint);
+    color: var(--color-text-primary);
+}
+
+.btn-admin-staff:hover,
+.btn-admin-staff:focus {
+    background: #2bbd84;
+    color: var(--color-text-primary);
+}
+
+.btn-admin-course {
+    background: var(--color-accent-gold);
+    color: #1f2937;
+}
+
+.btn-admin-course:hover,
+.btn-admin-course:focus {
+    background: #d97706;
+    color: #1f2937;
+}
+
+.btn-admin-played {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+.btn-admin-played:hover,
+.btn-admin-played:focus {
+    background: #1d4ed8;
+    color: #ffffff;
+}
+
+.btn-admin-logs {
+    background: #166534;
+    color: #ffffff;
+}
+
+.btn-admin-logs:hover,
+.btn-admin-logs:focus {
+    background: #14532d;
+    color: #ffffff;
+}
+
+.btn-admin-scoring {
+    background: #4b5563;
+    color: #ffffff;
+}
+
+.btn-admin-scoring:hover,
+.btn-admin-scoring:focus {
+    background: #374151;
+    color: #ffffff;
+}
+
+.btn-action-primary,
+.btn-action-destructive {
+    border: none;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    display: inline-block;
+    font-family: inherit;
+    font-weight: 700;
+    padding: 10px 18px;
+    text-decoration: none;
+    transition: background 0.2s ease;
+}
+
+.btn-action-primary {
+    background: #0f766e;
+    color: #ffffff;
+}
+
+.btn-action-primary:hover,
+.btn-action-primary:focus {
+    background: #115e59;
+    color: #ffffff;
+}
+
+.btn-action-destructive {
+    background: #b91c1c;
+    color: #ffffff;
+}
+
+.btn-action-destructive:hover,
+.btn-action-destructive:focus {
+    background: #991b1b;
+    color: #ffffff;
+}
+
+.btn-action-primary.btn-sm,
+.btn-action-destructive.btn-sm {
+    font-size: 0.85rem;
+    padding: 6px 12px;
+}
+
+.btn-compact {
+    font-size: 0.85rem;
+    line-height: 1;
+    padding: 6px 12px;
+}
+
+.admin-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 18px;
+}
+
+.admin-footer {
+    color: var(--color-muted);
+    font-size: 0.85rem;
+    margin: 24px auto 0 auto;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .admin-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-actions a {
+        width: 100%;
+    }
 }
 
 @media (max-width: 576px) {

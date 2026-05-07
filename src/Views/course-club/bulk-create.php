@@ -5,16 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Course Holes - <?php echo htmlspecialchars($app_title); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/assets/css/style.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <link href="/assets/css/style.css?v=<?php echo urlencode((string) @filemtime(__DIR__ . '/../../../public/assets/css/style.css')); ?>" rel="stylesheet">
 </head>
-<body class="bg-light">
+<body class="page-course-club-form">
     <div class="container mt-5">
         <div class="row justify-content-center">
             <div class="col-md-12">
                 <div class="card shadow">
                     <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
                         <h4 class="mb-0">Add Course Holes - <?php echo htmlspecialchars($courseName); ?></h4>
-                        <a href="/course-club" class="btn btn-sm btn-outline-light">Cancel</a>
                     </div>
                     <div class="card-body">
                         <div id="validationMessage" class="alert alert-warning" role="alert" style="display: none;">
@@ -159,7 +161,7 @@
                             <!-- Action Buttons -->
                             <div class="d-flex justify-content-between mt-4">
                                 <a href="/course-club" class="btn btn-secondary">Cancel</a>
-                                <button type="submit" class="btn btn-success">
+                                <button type="submit" class="btn-action-primary">
                                     <i class="fas fa-save"></i> Save All Holes
                                 </button>
                             </div>

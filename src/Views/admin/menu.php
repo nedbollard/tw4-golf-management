@@ -3,94 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($app_title); ?></title>
+    <title><?php echo htmlspecialchars($app_title); ?> - Admin Menu</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/assets/css/style.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <link href="/assets/css/style.css?v=<?php echo urlencode((string) @filemtime(__DIR__ . '/../../../public/assets/css/style.css')); ?>" rel="stylesheet">
 </head>
-<body class="bg-light">
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-8 col-lg-6">
-                <div class="card shadow">
-                    <div class="card-header bg-danger text-white">
-                        <h4 class="mb-0">Admin Menu</h4>
-                    </div>
-                    <div class="card-body">
-                        <h5 class="card-title text-center mb-4">Administrator Options</h5>
-                        <p class="text-center text-muted">System administration functions</p>
-                        
-                        <div class="d-grid gap-3">
-                            <!-- Configure System -->
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <i class="fas fa-cog fa-3x text-danger mb-3"></i>
-                                    <h6 class="card-title">Configure System</h6>
-                                    <p class="card-text text-muted">Manage system settings and configuration</p>
-                                    <a href="/config" class="btn btn-danger">Configure System</a>
-                                </div>
-                            </div>
-                            
-                            <!-- Staff Management -->
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <i class="fas fa-users fa-3x text-primary mb-3"></i>
-                                    <h6 class="card-title">Staff Management</h6>
-                                    <p class="card-text text-muted">Add, update, and manage staff accounts</p>
-                                    <a href="/staff" class="btn btn-primary">Manage Staff</a>
-                                </div>
-                            </div>
-                            
-                            <!-- Course Club Management -->
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <i class="fas fa-golf-ball fa-3x text-warning mb-3"></i>
-                                    <h6 class="card-title">Course Club Management</h6>
-                                    <p class="card-text text-muted">Manage course holes and club configuration</p>
-                                    <a href="/course-club" class="btn btn-warning">Manage Course</a>
-                                </div>
-                            </div>
+<body class="page-admin-menu">
+<?php
+$sessionUsername = (string) ($_SESSION['username'] ?? 'admin');
+$sessionRole = (string) ($_SESSION['role'] ?? 'admin');
+?>
+<div class="admin-layout">
+    <header class="admin-header">
+        <h1>Twilight Golf Scoring</h1>
+    </header>
 
-                            <!-- Course Played Management -->
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <i class="fas fa-route fa-3x text-info mb-3"></i>
-                                    <h6 class="card-title">Course Played Management</h6>
-                                    <p class="card-text text-muted">Create and maintain played 9-hole course definitions</p>
-                                    <a href="/course-played" class="btn btn-info">Manage Course Played</a>
-                                </div>
-                            </div>
-                            
-                            <!-- View Logs -->
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <i class="fas fa-list-alt fa-3x text-success mb-3"></i>
-                                    <h6 class="card-title">View Logs</h6>
-                                    <p class="card-text text-muted">View system logs and events</p>
-                                    <a href="/logs" class="btn btn-success">View Logs</a>
-                                </div>
-                            </div>
+    <main>
+        <div class="admin-card">
+            <h2 class="admin-card-title"><?php echo htmlspecialchars($app_title); ?> Admin Menu</h2>
+            <div class="admin-card-body">
+                <div class="section-title-wrap text-center">
+                    <h2>Administrator Options</h2>
+                    <div class="section-title-accent"></div>
+                </div>
 
-                            <!-- Scoring State Management -->
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <i class="fas fa-flag-checkered fa-3x text-dark mb-3"></i>
-                                    <h6 class="card-title">Scoring State Management</h6>
-                                    <p class="card-text text-muted">Admin-only scoring process controls</p>
-                                    <a href="/admin/scoring-state" class="btn btn-dark">Manage Scoring State</a>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="text-center mt-4">
-                            <a href="/" class="btn btn-secondary">← Back to Main Menu</a>
-                        </div>
+                <p class="admin-intro">System administration functions</p>
+
+                <div class="admin-session" role="status" aria-live="polite">
+                    <strong>Session Active</strong>
+                    <span>
+                        Signed in as <?php echo htmlspecialchars($sessionUsername); ?>
+                        (<?php echo htmlspecialchars(ucfirst($sessionRole)); ?>)
+                    </span>
+                </div>
+
+                <div class="admin-grid" role="list" aria-label="Admin actions">
+                    <div class="admin-panel" role="listitem">
+                        <h3>Configure System</h3>
+                        <p>Manage system settings and configuration.</p>
+                        <a href="/config" class="btn-admin-config">Configure System</a>
                     </div>
+
+                    <div class="admin-panel" role="listitem">
+                        <h3>Scoring State Management</h3>
+                        <p>Admin-only controls for workflow and lock state.</p>
+                        <a href="/admin/scoring-state" class="btn-admin-scoring">Manage Scoring State</a>
+                    </div>
+
+                    <div class="admin-panel" role="listitem">
+                        <h3>View Logs</h3>
+                        <p>View system logs and key audit events.</p>
+                        <a href="/logs" class="btn-admin-logs">View Logs</a>
+                    </div>
+
+                    <div class="admin-panel" role="listitem">
+                        <h3>Staff Management</h3>
+                        <p>Add, update, and manage staff accounts.</p>
+                        <a href="/staff" class="btn-admin-staff">Manage Staff</a>
+                    </div>
+
+                    <div class="admin-panel" role="listitem">
+                        <h3>Course Club Management</h3>
+                        <p>Manage course holes and club configuration.</p>
+                        <a href="/course-club" class="btn-admin-course">Manage Course</a>
+                    </div>
+
+                    <div class="admin-panel" role="listitem">
+                        <h3>Course Played Management</h3>
+                        <p>Create and maintain played 9-hole course definitions.</p>
+                        <a href="/course-played" class="btn-admin-played">Manage Course Played</a>
+                    </div>
+                </div>
+
+                <div class="admin-actions">
+                    <a href="/" class="btn-secondary-pill">Back to Main Menu</a>
+                    <a href="/logout" class="btn-primary-pill">Logout</a>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
+        <footer class="admin-footer">
+            <p class="mb-0">&copy; <?php echo date('Y'); ?> Twilight Golf Scoring &bull; 2nd Wind Software</p>
+        </footer>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

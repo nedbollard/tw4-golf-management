@@ -166,6 +166,28 @@ class ConfigController extends BaseController
             }
             return ['valid' => true, 'value' => (int)$value];
         } elseif ($type === 'string') {
+            if (in_array($name, ['handicap_method', 'handicap_system', 'handicap_sytem'], true)) {
+                $normalized = strtolower(trim($value));
+                $allowed = [
+                    'modern' => 'modern',
+                    'legacy' => 'legacy',
+                    'none' => 'none',
+                    'm' => 'modern',
+                    'l' => 'legacy',
+                    'n' => 'none',
+                ];
+
+                if (!isset($allowed[$normalized])) {
+                    return [
+                        'valid' => false,
+                        'message' => 'Handicap method must be modern, legacy, or none',
+                        'value' => $value,
+                    ];
+                }
+
+                return ['valid' => true, 'value' => $allowed[$normalized]];
+            }
+
             if ($name === 'season_year' && preg_match('/^\d{2}_\d{2}$/', trim($value)) !== 1) {
                 return ['valid' => false, 'message' => 'Season year must use the format NN_NN, for example 25_26', 'value' => $value];
             }

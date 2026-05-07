@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Course Hole - <?php echo htmlspecialchars($app_title); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/assets/css/style.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <link href="/assets/css/style.css?v=<?php echo urlencode((string) @filemtime(__DIR__ . '/../../../public/assets/css/style.css')); ?>" rel="stylesheet">
 </head>
-<body class="bg-light">
+<body class="page-course-club-form">
     <div class="container mt-5">
         <div class="row justify-content-center">
             <div class="col-md-8">
@@ -120,10 +123,10 @@
                             </div>
 
                             <div class="text-end">
-                                <a href="/course-club" style="display: inline-block; padding: 2px 8px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px; font-size: 14px; margin-right: 8px; border: 1px solid #6c757d; line-height: 1;">
+                                <a href="/course-club" class="btn btn-secondary btn-sm me-2">
                                     Cancel
                                 </a>
-                                <button type="submit" style="padding: 2px 8px; background-color: #0d6efd; color: white; border: 1px solid #0d6efd; border-radius: 4px; font-size: 14px; line-height: 1;">
+                                <button type="submit" class="btn-action-primary btn-sm">
                                     Update Hole
                                 </button>
                             </div>
