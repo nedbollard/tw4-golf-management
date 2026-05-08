@@ -2939,3 +2939,107 @@ body.page-results-recorded {
         width: 100%;
     }
 }
+
+/* Shared Twilight header icon */
+.uc-header h1,
+.welcome-header h1,
+.config-header h1,
+.course-club-header h1,
+.course-played-header h1,
+.logs-header h1,
+.roster-header h1,
+.staff-header h1,
+.scoring-state-header h1,
+.staff-form-header h1,
+.roster-form-header h1,
+.login-header h1,
+.leaderboard-header h1,
+.admin-header h1,
+.scorer-header h1,
+.start-round-header h1,
+.enter-card-header h1,
+.select-player-header h1,
+.present-results-header h1,
+.results-recorded-header h1 {
+    align-items: center;
+    display: inline-flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.uc-header h1::before,
+.welcome-header h1::before,
+.config-header h1::before,
+.course-club-header h1::before,
+.course-played-header h1::before,
+.logs-header h1::before,
+.roster-header h1::before,
+.staff-header h1::before,
+.scoring-state-header h1::before,
+.staff-form-header h1::before,
+.roster-form-header h1::before,
+.login-header h1::before,
+.leaderboard-header h1::before,
+.admin-header h1::before,
+.scorer-header h1::before,
+.start-round-header h1::before,
+.enter-card-header h1::before,
+.select-player-header h1::before,
+.present-results-header h1::before,
+.results-recorded-header h1::before {
+    background: url('/assets/img/twg-monogram.svg') center / contain no-repeat;
+    content: '';
+    flex: 0 0 34px;
+    height: 34px;
+    width: 34px;
+}
+
+@media (max-width: 768px) {
+    .uc-header h1,
+    .welcome-header h1,
+    .config-header h1,
+    .course-club-header h1,
+    .course-played-header h1,
+    .logs-header h1,
+    .roster-header h1,
+    .staff-header h1,
+    .scoring-state-header h1,
+    .staff-form-header h1,
+    .roster-form-header h1,
+    .login-header h1,
+    .leaderboard-header h1,
+    .admin-header h1,
+    .scorer-header h1,
+    .start-round-header h1,
+    .enter-card-header h1,
+    .select-player-header h1,
+    .present-results-header h1,
+    .results-recorded-header h1 {
+        gap: 10px;
+    }
+
+    .uc-header h1::before,
+    .welcome-header h1::before,
+    .config-header h1::before,
+    .course-club-header h1::before,
+    .course-played-header h1::before,
+    .logs-header h1::before,
+    .roster-header h1::before,
+    .staff-header h1::before,
+    .scoring-state-header h1::before,
+    .staff-form-header h1::before,
+    .roster-form-header h1::before,
+    .login-header h1::before,
+    .leaderboard-header h1::before,
+    .admin-header h1::before,
+    .scorer-header h1::before,
+    .start-round-header h1::before,
+    .enter-card-header h1::before,
+    .select-player-header h1::before,
+    .present-results-header h1::before,
+    .results-recorded-header h1::before {
+        flex-basis: 30px;
+        height: 30px;
+        width: 30px;
+    }
+}

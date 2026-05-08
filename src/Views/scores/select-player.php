@@ -25,10 +25,6 @@
                     <div class="section-title-accent"></div>
                 </div>
 
-                <div class="select-player-intro">
-                    Choose the player whose card you want to enter.
-                </div>
-
                 <?php if (!empty($success)): ?>
                     <div class="select-player-alert select-player-alert-success" role="status">
                         <?php echo htmlspecialchars((string) $success); ?>
@@ -67,6 +63,7 @@
                                 </option>
                             <?php endforeach; ?>
                         </select>
+
                     </form>
                 <?php endif; ?>
 

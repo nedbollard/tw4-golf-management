@@ -11,7 +11,12 @@
     <link href="/assets/css/style.css?v=<?php echo urlencode((string) @filemtime(__DIR__ . '/../../../public/assets/css/style.css')); ?>" rel="stylesheet">
 </head>
 <body class="page-course-club-form">
-    <div class="container mt-5">
+    <div class="course-club-layout">
+        <header class="course-club-header">
+            <h1>Twilight Golf Scoring</h1>
+        </header>
+    </div>
+    <div class="container mt-3">
         <div class="row justify-content-center">
             <div class="col-md-12">
                 <div class="card shadow">
