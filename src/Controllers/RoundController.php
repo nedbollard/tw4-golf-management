@@ -137,39 +137,68 @@ class RoundController extends BaseController
         $this->requireRole('scorer');
 
         $user = $this->app->getDatabase()->getAuth()->getUser();
+        $staffId = (int) ($user['user_id'] ?? 0);
         $username = (string) ($user['username'] ?? 'system');
+        $lockService = new RoundLockService($this->app->getDatabase());
         $workflow = new RoundWorkflowService($this->app->getDatabase());
         $active = $workflow->getActiveRoundForScorerMenu();
 
-        if ($active) {
-            $beforeState = $this->app->getDatabase()->fetchOne(
-                'SELECT row_id, workflow_step, card_count FROM TW4_live.round WHERE row_id = ?',
-                [(int) ($active['round_id'] ?? 0)]
-            );
-
-            $workflow->finishRound((int) $active['round_id'], (int) ($user['user_id'] ?? 0));
-
-            $afterState = $this->app->getDatabase()->fetchOne(
-                'SELECT row_id, workflow_step, card_count, finished_at FROM TW4_live.round WHERE row_id = ?',
-                [(int) ($active['round_id'] ?? 0)]
-            );
-
-            $this->logger->log(
-                Logger::LEVEL_INFO,
-                Logger::EVENT_SYSTEM,
-                'Scoring workflow changed to not_started (round finished, state applied)',
-                [
-                    'round_id' => (int) ($active['round_id'] ?? 0),
-                    'staff_id' => (int) ($user['user_id'] ?? 0),
-                    'before_workflow_step' => (string) ($beforeState['workflow_step'] ?? 'unknown'),
-                    'before_card_count' => (int) ($beforeState['card_count'] ?? 0),
-                    'after_workflow_step' => (string) ($afterState['workflow_step'] ?? 'unknown'),
-                    'after_card_count' => (int) ($afterState['card_count'] ?? 0),
-                    'finished_at' => $afterState['finished_at'] ?? null,
-                ],
-                $username
-            );
+        if (!$active) {
+            $_SESSION['errors'] = ['No active round found to finish.'];
+            $this->redirect('/scorer/menu');
+            return;
         }
+
+        $roundId = (int) ($active['round_id'] ?? 0);
+
+        if (!$lockService->assertLockHeld($roundId, $staffId)
+            && !$lockService->acquireLock($roundId, $staffId)) {
+            $_SESSION['errors'] = ['Unable to acquire the scoring lock to finish the round.'];
+            $this->redirect('/scorer/menu');
+            return;
+        }
+
+        $beforeState = $this->app->getDatabase()->fetchOne(
+            'SELECT row_id, workflow_step, card_count FROM TW4_live.round WHERE row_id = ?',
+            [$roundId]
+        );
+
+        try {
+            $finished = $workflow->finishRound($roundId, $staffId);
+        } catch (\Throwable $e) {
+            $_SESSION['errors'] = [$e->getMessage()];
+            $this->redirect('/scorer/menu');
+            return;
+        }
+
+        if (!$finished) {
+            $_SESSION['errors'] = ['Round could not be finished. Ensure workflow is results_presented and your lock is active.'];
+            $this->redirect('/scorer/menu');
+            return;
+        }
+
+        $afterState = $this->app->getDatabase()->fetchOne(
+            'SELECT row_id, workflow_step, card_count, finished_at FROM TW4_live.round WHERE row_id = ?',
+            [$roundId]
+        );
+
+        $this->logger->log(
+            Logger::LEVEL_INFO,
+            Logger::EVENT_SYSTEM,
+            'Scoring workflow changed to not_started (round finished, state applied)',
+            [
+                'round_id' => $roundId,
+                'staff_id' => $staffId,
+                'before_workflow_step' => (string) ($beforeState['workflow_step'] ?? 'unknown'),
+                'before_card_count' => (int) ($beforeState['card_count'] ?? 0),
+                'after_workflow_step' => (string) ($afterState['workflow_step'] ?? 'unknown'),
+                'after_card_count' => (int) ($afterState['card_count'] ?? 0),
+                'finished_at' => $afterState['finished_at'] ?? null,
+            ],
+            $username
+        );
+
+        $_SESSION['success'] = 'Round finished. Workflow reset to not_started and roster statuses reset to active.';
 
         $this->redirect('/scorer/menu');
     }

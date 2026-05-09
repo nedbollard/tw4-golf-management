@@ -24,6 +24,10 @@ TW4 is a complete rewrite of the Twilight golf scoring application using modern 
 3. Configure web server to point to `public/` directory
 4. Access via: `http://localhost/tw4/public/`
 
+## Deployment
+
+For a production hosting plan and launch checklist, see [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## Docker Development
 
 ### Quick Start

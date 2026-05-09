@@ -69,20 +69,6 @@ unset($_SESSION['errors'], $_SESSION['success']);
                     <?php endif; ?>
                 </div>
 
-        <?php if (!empty($success)): ?>
-            <div class="scorer-alert scorer-alert-success" role="status">
-                <?php echo htmlspecialchars((string) $success); ?>
-            </div>
-        <?php endif; ?>
-
-        <?php if (!empty($errors)): ?>
-            <div class="scorer-alert scorer-alert-error" role="alert">
-                <?php foreach ($errors as $error): ?>
-                    <div><?php echo htmlspecialchars((string) $error); ?></div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
-
         <?php if ($lock && isset($lock['blocked']) && $lock['blocked']): ?>
             <!-- Another scorer holds the lock -->
             <div class="lock-banner lock-blocked" role="alert">
@@ -178,6 +164,20 @@ unset($_SESSION['errors'], $_SESSION['success']);
                 </div>
             </div>
         </div>
+
+        <?php if (!empty($success)): ?>
+            <div class="scorer-alert scorer-alert-success" role="status">
+                <?php echo htmlspecialchars((string) $success); ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if (!empty($errors)): ?>
+            <div class="scorer-alert scorer-alert-error" role="alert">
+                <?php foreach ($errors as $error): ?>
+                    <div><?php echo htmlspecialchars((string) $error); ?></div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
 
         <footer class="scorer-footer">
             <p class="mb-0">&copy; <?php echo date('Y'); ?> Twilight Golf Scoring &bull; 2nd Wind Software</p>

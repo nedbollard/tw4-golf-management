@@ -11,6 +11,65 @@ use PHPUnit\Framework\TestCase;
 #[AllowMockObjectsWithoutExpectations]
 class RoundWorkflowServiceTest extends TestCase
 {
+    public function testFinishRoundRetainsLiveCardsAndResetsWorkflow(): void
+    {
+        $_SESSION['username'] = 'scorer_user';
+
+        /** @var Database|MockObject $db */
+        $db = $this->createMock(Database::class);
+
+        $db->expects($this->exactly(2))
+            ->method('fetchOne')
+            ->willReturnCallback(static function (string $sql, array $params = []): ?array {
+                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'locked_by_staff_id = ?')) {
+                    return ['row_id' => 7];
+                }
+
+                if (str_contains($sql, 'SELECT workflow_step FROM TW4_live.round WHERE row_id = ?')) {
+                    return ['workflow_step' => 'results_presented'];
+                }
+
+                return null;
+            });
+
+        $db->expects($this->once())
+            ->method('beginTransaction');
+
+        $db->expects($this->once())
+            ->method('commit');
+
+        $db->expects($this->never())
+            ->method('rollback');
+
+        $fakeStatement = $this->createMock(\PDOStatement::class);
+        $fakeStatement->method('rowCount')->willReturn(1);
+
+        $queryCalls = 0;
+        $db->expects($this->exactly(2))
+            ->method('query')
+            ->willReturnCallback(function (string $sql, array $params = []) use (&$queryCalls, $fakeStatement) {
+                $queryCalls++;
+
+                $this->assertStringNotContainsString('DELETE FROM TW4_live.card', $sql);
+                $this->assertStringNotContainsString('DELETE FROM TW4_live.results', $sql);
+
+                if ($queryCalls === 1) {
+                    $this->assertStringContainsString('UPDATE TW4_base.roster', $sql);
+                    $this->assertSame(['scorer_user'], $params);
+                    return $fakeStatement;
+                }
+
+                $this->assertStringContainsString('UPDATE TW4_live.round', $sql);
+                $this->assertStringContainsString("workflow_step = 'not_started'", $sql);
+                $this->assertSame(['scorer_user', 7], $params);
+
+                return $fakeStatement;
+            });
+
+        $service = new RoundWorkflowService($db);
+        $this->assertTrue($service->finishRound(7, 11));
+    }
+
     public function testGetStartRoundFormDataResetsRoundNumberWhenSeasonChanges(): void
     {
         /** @var Database|MockObject $db */
