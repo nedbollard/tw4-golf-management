@@ -265,19 +265,33 @@ class Logger
      */
     private function writeToFile(string $message): void
     {
-        $logDir = dirname($this->logFile);
-        if (!is_dir($logDir)) {
-            // Try to create directory with proper permissions
-            if (!mkdir($logDir, 0755, true)) {
-                // If we can't create the directory, just skip file logging
+        $targetFile = $this->logFile;
+        $logDir = dirname($targetFile);
+
+        if (!is_dir($logDir) && !@mkdir($logDir, 0755, true)) {
+            $fallbackDir = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'tw4-logs';
+            if (!is_dir($fallbackDir) && !@mkdir($fallbackDir, 0755, true)) {
                 return;
             }
+
+            $targetFile = $fallbackDir . DIRECTORY_SEPARATOR . 'application.log';
+            $logDir = $fallbackDir;
         }
-        
-        // Only write if directory exists and is writable
-        if (is_dir($logDir) && is_writable($logDir)) {
-            file_put_contents($this->logFile, $message, FILE_APPEND | LOCK_EX);
+
+        if (!is_writable($logDir)) {
+            $fallbackDir = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'tw4-logs';
+            if (!is_dir($fallbackDir) && !@mkdir($fallbackDir, 0755, true)) {
+                return;
+            }
+
+            if (!is_writable($fallbackDir)) {
+                return;
+            }
+
+            $targetFile = $fallbackDir . DIRECTORY_SEPARATOR . 'application.log';
         }
+
+        @file_put_contents($targetFile, $message, FILE_APPEND | LOCK_EX);
     }
     
     public function debug(string $message, array $context = [], string $username = null): void
