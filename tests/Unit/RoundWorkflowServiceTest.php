@@ -18,7 +18,7 @@ class RoundWorkflowServiceTest extends TestCase
         /** @var Database|MockObject $db */
         $db = $this->createMock(Database::class);
 
-        $db->expects($this->exactly(2))
+        $db->expects($this->exactly(4))
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
                 if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'locked_by_staff_id = ?')) {
@@ -29,8 +29,24 @@ class RoundWorkflowServiceTest extends TestCase
                     return ['workflow_step' => 'results_presented'];
                 }
 
+                if (str_contains($sql, 'SELECT row_id, season_year, number_round') && str_contains($sql, 'FROM TW4_live.round')) {
+                    return [
+                        'row_id' => 7,
+                        'season_year' => '25_26',
+                        'number_round' => 12,
+                    ];
+                }
+
+                if (str_contains($sql, 'FROM TW4_base.config_application') && $params === ['handicap_method']) {
+                    return ['method' => 'modern'];
+                }
+
                 return null;
             });
+
+        $db->expects($this->once())
+            ->method('fetchAll')
+            ->willReturn([]);
 
         $db->expects($this->once())
             ->method('beginTransaction');
@@ -44,30 +60,57 @@ class RoundWorkflowServiceTest extends TestCase
         $fakeStatement = $this->createMock(\PDOStatement::class);
         $fakeStatement->method('rowCount')->willReturn(1);
 
-        $queryCalls = 0;
-        $db->expects($this->exactly(2))
+        $executedSql = [];
+        $db->expects($this->exactly(11))
             ->method('query')
-            ->willReturnCallback(function (string $sql, array $params = []) use (&$queryCalls, $fakeStatement) {
-                $queryCalls++;
+            ->willReturnCallback(function (string $sql, array $params = []) use (&$executedSql, $fakeStatement) {
+                $executedSql[] = ['sql' => $sql, 'params' => $params];
 
                 $this->assertStringNotContainsString('DELETE FROM TW4_live.card', $sql);
                 $this->assertStringNotContainsString('DELETE FROM TW4_live.results', $sql);
-
-                if ($queryCalls === 1) {
-                    $this->assertStringContainsString('UPDATE TW4_base.roster', $sql);
-                    $this->assertSame(['scorer_user'], $params);
-                    return $fakeStatement;
-                }
-
-                $this->assertStringContainsString('UPDATE TW4_live.round', $sql);
-                $this->assertStringContainsString("workflow_step = 'not_started'", $sql);
-                $this->assertSame(['scorer_user', 7], $params);
 
                 return $fakeStatement;
             });
 
         $service = new RoundWorkflowService($db);
         $this->assertTrue($service->finishRound(7, 11));
+
+        $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_history.card_by_hole'));
+        $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_history.results'));
+        $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_history.card'));
+        $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_history.round'));
+        $this->assertTrue($this->containsSql($executedSql, 'INSERT INTO TW4_history.round'));
+        $this->assertTrue($this->containsSql($executedSql, 'INSERT INTO TW4_history.card'));
+        $this->assertTrue($this->containsSql($executedSql, 'INSERT INTO TW4_history.card_by_hole'));
+        $this->assertTrue($this->containsSql($executedSql, 'INSERT INTO TW4_history.results'));
+        $this->assertTrue($this->containsSql($executedSql, 'UPDATE TW4_base.roster'));
+        $this->assertTrue($this->containsSql($executedSql, 'UPDATE TW4_live.round'));
+        $this->assertTrue($this->containsSql($executedSql, 'INNER JOIN TW4_live.card'));
+
+        $this->assertTrue($this->containsSqlAndParams($executedSql, 'UPDATE TW4_base.roster', ['scorer_user']));
+        $this->assertTrue($this->containsSqlAndParams($executedSql, 'UPDATE TW4_live.round', ['scorer_user', 7]));
+    }
+
+    private function containsSql(array $executedSql, string $needle): bool
+    {
+        foreach ($executedSql as $item) {
+            if (str_contains($item['sql'], $needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function containsSqlAndParams(array $executedSql, string $needle, array $params): bool
+    {
+        foreach ($executedSql as $item) {
+            if (str_contains($item['sql'], $needle) && $item['params'] === $params) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function testGetStartRoundFormDataResetsRoundNumberWhenSeasonChanges(): void

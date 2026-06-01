@@ -278,14 +278,33 @@ class RoundWorkflowService
             return false;
         }
 
+        $round = $this->db->fetchOne(
+            'SELECT row_id, season_year, number_round
+             FROM TW4_live.round
+             WHERE row_id = ?',
+            [$roundId]
+        );
+
+        $seasonYear = trim((string) ($round['season_year'] ?? ''));
+        $numberRound = (int) ($round['number_round'] ?? 0);
+
+        if ($seasonYear === '' || $numberRound < 1) {
+            throw new \RuntimeException('Round identity is incomplete. season_year and number_round are required before finish.');
+        }
+
+        $updatedBy = (string) ($_SESSION['username'] ?? 'system');
+
         $this->db->beginTransaction();
 
         try {
+            $this->applyHandicapUpdatesBeforeHistory($updatedBy);
+            $this->replaceHistorySnapshot($roundId, $seasonYear, $numberRound, $updatedBy);
+
             $this->db->query(
                 "UPDATE TW4_base.roster
                  SET status = 'active', updated_by = ?
                  WHERE status = 'scored'",
-                [$_SESSION['username'] ?? 'system']
+                [$updatedBy]
             );
 
             $stmt = $this->db->query(
@@ -299,11 +318,12 @@ class RoundWorkflowService
                      locked_by_staff_id = NULL,
                      lock_acquired_at = NULL,
                      lock_expires_at = NULL,
+                     lock_released_by_staff_id = NULL,
                      lock_released_at = NOW(),
                      lock_release_reason = 'finished',
                      updated_by = ?
                  WHERE row_id = ?",
-                [$_SESSION['username'] ?? 'system', $roundId]
+                [$updatedBy, $roundId]
             );
 
             $this->db->commit();
@@ -312,6 +332,204 @@ class RoundWorkflowService
             $this->db->rollback();
             throw $e;
         }
+    }
+
+    private function applyHandicapUpdatesBeforeHistory(string $updatedBy): void
+    {
+        $method = $this->getConfiguredHandicapMethod();
+
+        if ($method === 'none') {
+            $this->db->query(
+                'UPDATE TW4_live.card
+                 SET handicap_updated = handicap_applied,
+                     updated_by = ?
+                 WHERE handicap_updated IS NULL OR handicap_updated <> handicap_applied',
+                [$updatedBy]
+            );
+
+            $this->syncRosterHandicapsFromLiveCards($updatedBy);
+            return;
+        }
+
+        $rows = $this->db->fetchAll(
+            'SELECT c.row_id AS card_row_id,
+                    c.handicap_applied,
+                    COALESCE(SUM(cbh.points), 0) AS pts_scored,
+                    COALESCE(SUM(CASE WHEN cbh.points = 0 THEN 1 ELSE cbh.points END), 0) AS pts_adjusted
+             FROM TW4_live.card c
+             LEFT JOIN TW4_live.card_by_hole cbh ON cbh.row_id_card = c.row_id
+             GROUP BY c.row_id, c.handicap_applied'
+        );
+
+        foreach ($rows as $row) {
+            $cardId = (int) ($row['card_row_id'] ?? 0);
+            $handicapApplied = (int) ($row['handicap_applied'] ?? 0);
+            $ptsAdjusted = (int) ($row['pts_adjusted'] ?? 0);
+
+            $change = $method === 'modern'
+                ? $this->calculateModernHandicapChange($ptsAdjusted)
+                : $this->calculateLegacyHandicapChange($ptsAdjusted);
+
+            $handicapUpdated = $this->clampHandicap($handicapApplied + $change);
+
+            $this->db->query(
+                'UPDATE TW4_live.card
+                 SET handicap_updated = ?,
+                     updated_by = ?
+                 WHERE row_id = ?',
+                [$handicapUpdated, $updatedBy, $cardId]
+            );
+        }
+
+        $this->syncRosterHandicapsFromLiveCards($updatedBy);
+    }
+
+    private function getConfiguredHandicapMethod(): string
+    {
+        $row = $this->db->fetchOne(
+            'SELECT LOWER(TRIM(config_value_string)) AS method
+             FROM TW4_base.config_application
+             WHERE config_name = ?
+             LIMIT 1',
+            ['handicap_method']
+        );
+
+        $value = (string) ($row['method'] ?? 'legacy');
+
+        if (in_array($value, ['none', 'n'], true)) {
+            return 'none';
+        }
+
+        if (in_array($value, ['modern', 'm'], true)) {
+            return 'modern';
+        }
+
+        return 'legacy';
+    }
+
+    private function calculateModernHandicapChange(int $ptsAdjusted): int
+    {
+        if ($ptsAdjusted < 16) {
+            return 16 - $ptsAdjusted;
+        }
+
+        if ($ptsAdjusted > 20) {
+            return 20 - $ptsAdjusted;
+        }
+
+        return 0;
+    }
+
+    private function calculateLegacyHandicapChange(int $ptsAdjusted): int
+    {
+        return match (true) {
+            $ptsAdjusted >= 9 && $ptsAdjusted <= 12 => 2,
+            $ptsAdjusted >= 13 && $ptsAdjusted <= 16 => 1,
+            $ptsAdjusted >= 17 && $ptsAdjusted <= 21 => 0,
+            $ptsAdjusted >= 22 && $ptsAdjusted <= 23 => -1,
+            $ptsAdjusted >= 24 && $ptsAdjusted <= 25 => -2,
+            $ptsAdjusted >= 26 && $ptsAdjusted <= 27 => -3,
+            default => -4,
+        };
+    }
+
+    private function clampHandicap(int $value): int
+    {
+        return max(0, min(54, $value));
+    }
+
+    private function syncRosterHandicapsFromLiveCards(string $updatedBy): void
+    {
+        $this->db->query(
+            'UPDATE TW4_base.roster r
+             INNER JOIN TW4_live.card c ON c.row_id_player = r.row_id
+             SET r.handicap = c.handicap_updated,
+                 r.updated_by = ?
+             WHERE c.handicap_updated IS NOT NULL
+               AND (r.handicap IS NULL OR r.handicap <> c.handicap_updated)',
+            [$updatedBy]
+        );
+    }
+
+    private function replaceHistorySnapshot(int $roundId, string $seasonYear, int $numberRound, string $updatedBy): void
+    {
+        // Replace strategy: remove existing snapshot rows for this business key,
+        // then insert fresh rows from current TW4_live tables.
+        $this->db->query(
+            'DELETE FROM TW4_history.card_by_hole
+             WHERE season_year = ? AND number_round = ?',
+            [$seasonYear, $numberRound]
+        );
+
+        $this->db->query(
+            'DELETE FROM TW4_history.results
+             WHERE season_year = ? AND number_round = ?',
+            [$seasonYear, $numberRound]
+        );
+
+        $this->db->query(
+            'DELETE FROM TW4_history.card
+             WHERE season_year = ? AND number_round = ?',
+            [$seasonYear, $numberRound]
+        );
+
+        $this->db->query(
+            'DELETE FROM TW4_history.round
+             WHERE season_year = ? AND number_round = ?',
+            [$seasonYear, $numberRound]
+        );
+
+        $this->db->query(
+            'INSERT INTO TW4_history.round
+                (season_year, number_round, round_date, course_played_id, card_count,
+                 results_presented_at, finished_at, updated_by, updated_ts,
+                 hist_updated_by, hist_updated_ts)
+             SELECT season_year, number_round, round_date, course_played_id, card_count,
+                    results_presented_at, finished_at, updated_by, updated_ts,
+                    ?, NOW()
+             FROM TW4_live.round
+             WHERE row_id = ?',
+            [$updatedBy, $roundId]
+        );
+
+        $this->db->query(
+            'INSERT INTO TW4_history.card
+                (season_year, number_round, row_id_round, row_id_player, handicap_applied, score, points,
+                 handicap_updated, updated_by, updated_ts, hist_updated_by, hist_updated_ts)
+             SELECT ?, ?, hr.row_id, lc.row_id_player, lc.handicap_applied, lc.score, lc.points,
+                    lc.handicap_updated, lc.updated_by, lc.updated_ts, ?, NOW()
+             FROM TW4_live.card lc
+             INNER JOIN TW4_history.round hr
+                ON hr.season_year = ?
+               AND hr.number_round = ?',
+                [$seasonYear, $numberRound, $updatedBy, $seasonYear, $numberRound]
+        );
+
+        $this->db->query(
+            'INSERT INTO TW4_history.card_by_hole
+                (season_year, number_round, row_id_card, hole, score, shots, points,
+                 updated_by, updated_ts, hist_updated_by, hist_updated_ts)
+             SELECT ?, ?, hc.row_id, lcbh.hole, lcbh.score, lcbh.shots, lcbh.points,
+                    lcbh.updated_by, lcbh.updated_ts, ?, NOW()
+             FROM TW4_live.card_by_hole lcbh
+             INNER JOIN TW4_live.card lc
+                ON lc.row_id = lcbh.row_id_card
+             INNER JOIN TW4_history.card hc
+                ON hc.season_year = ?
+               AND hc.number_round = ?
+               AND hc.row_id_player = lc.row_id_player',
+                [$seasonYear, $numberRound, $updatedBy, $seasonYear, $numberRound]
+        );
+
+        $this->db->query(
+            'INSERT INTO TW4_history.results
+                (season_year, number_round, type_result, number_result, player_identifier, value_result,
+                 updated_by, updated_ts, hist_updated_by, hist_updated_ts)
+             SELECT ?, ?, type_result, number_result, player_identifier, value_result,
+                    updated_by, updated_ts, ?, NOW()
+             FROM TW4_live.results',
+            [$seasonYear, $numberRound, $updatedBy]
+        );
     }
 
     public function validateCanPresentResults(int $roundId): bool
