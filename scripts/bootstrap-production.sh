@@ -3,8 +3,8 @@
 set -euo pipefail
 
 # TW4 Production Bootstrap
-# Rebuilds TW4_base and TW4_live from canonical baseline schema files,
-# then applies controlled seed data for config_application and staff.
+# Rebuilds TW4_base, TW4_live, and TW4_history from canonical baseline schema
+# files, then applies controlled seed data for config_application and staff.
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -26,9 +26,10 @@ fi
 
 BASE_SCHEMA_FILE="database/baseline/TW4_base_schema.sql"
 LIVE_SCHEMA_FILE="database/baseline/TW4_live_schema.sql"
+HISTORY_SCHEMA_FILE="database/baseline/TW4_history_schema.sql"
 BASE_SEED_FILE="database/baseline/TW4_base_seed.sql"
 
-for required_file in "$BASE_SCHEMA_FILE" "$LIVE_SCHEMA_FILE" "$BASE_SEED_FILE"; do
+for required_file in "$BASE_SCHEMA_FILE" "$LIVE_SCHEMA_FILE" "$HISTORY_SCHEMA_FILE" "$BASE_SEED_FILE"; do
     if [ ! -f "$required_file" ]; then
         print_error "Required file not found: $required_file"
         exit 1
@@ -50,9 +51,9 @@ until docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWO
     echo "Waiting for MySQL..."
 done
 
-print_status "Dropping and recreating TW4_base and TW4_live..."
+print_status "Dropping and recreating TW4_base, TW4_live, and TW4_history..."
 docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
-    mysql -u root -e "DROP DATABASE IF EXISTS TW4_base; DROP DATABASE IF EXISTS TW4_live; CREATE DATABASE TW4_base; CREATE DATABASE TW4_live;"
+    mysql -u root -e "DROP DATABASE IF EXISTS TW4_base; DROP DATABASE IF EXISTS TW4_live; DROP DATABASE IF EXISTS TW4_history; CREATE DATABASE TW4_base; CREATE DATABASE TW4_live; CREATE DATABASE TW4_history;"
 
 print_status "Importing TW4_base schema..."
 docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
@@ -62,13 +63,17 @@ print_status "Importing TW4_live schema..."
 docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -u root < "$LIVE_SCHEMA_FILE"
 
+print_status "Importing TW4_history schema..."
+docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    mysql -u root < "$HISTORY_SCHEMA_FILE"
+
 print_status "Applying controlled TW4_base seed data..."
 docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -u root TW4_base < "$BASE_SEED_FILE"
 
 print_status "Verifying required databases and tables..."
 docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
-    mysql -N -s -u root -e "SHOW DATABASES LIKE 'TW4_base'; SHOW DATABASES LIKE 'TW4_live'; SHOW TABLES IN TW4_base LIKE 'staff'; SHOW TABLES IN TW4_base LIKE 'config_application'; SHOW TABLES IN TW4_live LIKE 'round'; SHOW TABLES IN TW4_live LIKE 'card'; SHOW TABLES IN TW4_live LIKE 'card_by_hole'; SHOW TABLES IN TW4_live LIKE 'results';"
+    mysql -N -s -u root -e "SHOW DATABASES LIKE 'TW4_base'; SHOW DATABASES LIKE 'TW4_live'; SHOW DATABASES LIKE 'TW4_history'; SHOW TABLES IN TW4_base LIKE 'staff'; SHOW TABLES IN TW4_base LIKE 'config_application'; SHOW TABLES IN TW4_live LIKE 'round'; SHOW TABLES IN TW4_live LIKE 'card'; SHOW TABLES IN TW4_live LIKE 'card_by_hole'; SHOW TABLES IN TW4_live LIKE 'results'; SHOW TABLES IN TW4_history LIKE 'round'; SHOW TABLES IN TW4_history LIKE 'card'; SHOW TABLES IN TW4_history LIKE 'card_by_hole'; SHOW TABLES IN TW4_history LIKE 'results';"
 
 ADMIN_ROW="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SELECT username, role, is_active FROM TW4_base.staff WHERE username='admin' LIMIT 1;")"

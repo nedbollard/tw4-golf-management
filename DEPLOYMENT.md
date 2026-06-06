@@ -151,8 +151,9 @@ To follow the logs:
 docker compose -f docker-compose.prod.yml logs -f
 ```
 
-The bootstrap script will start the database container, create the `TW4_base`
-and `TW4_live` databases, and replay the repository migrations in order.
+The bootstrap script will start the database container, rebuild the `TW4_base`,
+`TW4_live`, and `TW4_history` databases from canonical baseline schema files,
+then apply controlled seed data for `TW4_base`.
 
 ## Server Install Checklist
 
