@@ -175,6 +175,39 @@ If anything fails during step 5 or 6, check the logs with:
 docker compose -f docker-compose.prod.yml logs -f
 ```
 
+## Post-Deploy Smoke Checklist
+
+After a production deploy or rebuild, run these checks in order:
+
+1. Confirm the production containers are the ones serving traffic:
+
+```bash
+docker compose -f docker-compose.prod.yml ps
+```
+
+2. Confirm the public site responds to real GET requests. Do not use `curl -I` for router verification, because the application only defines `GET` and `POST` routes and may return 404 for `HEAD`.
+
+```bash
+curl -k -s -o /dev/null -w "ROOT %{http_code}\n" https://your-domain/
+curl -k -s -o /dev/null -w "LOGIN %{http_code}\n" https://your-domain/login
+```
+
+3. Confirm the database bootstrap created all required schemas:
+
+```bash
+DB_PASSWORD=$(awk -F= '/^DB_PASSWORD=/{print substr($0, index($0,"=")+1); exit}' .env)
+docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+	mysql -u root -N -s -e "SHOW DATABASES LIKE 'TW4_base'; SHOW DATABASES LIKE 'TW4_live'; SHOW DATABASES LIKE 'TW4_history';"
+```
+
+4. Open the site in a browser and confirm `/` loads the main menu and `/login` loads the login page.
+
+## Deployment Notes
+
+1. `CADDY_EMAIL` must be a real email address you control. Placeholder addresses such as `you@example.com` will cause ACME registration to fail and HTTPS will not come up.
+2. If `docker compose -f docker-compose.prod.yml up` reports port 80 or 443 already in use, check for a host-level `caddy` service before assuming Docker is at fault.
+3. If the production compose run warns about orphan containers, inspect them before removing them. A leftover phpMyAdmin container may be harmless, but an old frontend container on 80 or 443 will block the intended stack.
+
 ## What Not To Use
 
 1. Shared hosting, because it is usually awkward for Docker, persistent sessions, and database bootstrap.
