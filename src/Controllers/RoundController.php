@@ -6,6 +6,7 @@ use App\Controllers\BaseController;
 use App\Core\Application;
 use App\Services\Logger;
 use App\Services\RoundLockService;
+use App\Services\SnapshotExportService;
 use App\Services\RoundWorkflowService;
 
 /**
@@ -198,6 +199,57 @@ class RoundController extends BaseController
             $username
         );
 
+        $seasonYear = (string) ($active['season_year'] ?? '');
+        $roundNumber = (int) ($active['round_number'] ?? 0);
+
+        $this->logger->log(
+            Logger::LEVEL_INFO,
+            Logger::EVENT_SYSTEM,
+            'Extract season_year and round_number for export',
+            [
+                'season_year' => $seasonYear,
+                'round_number' => $roundNumber,
+                'active_keys' => array_keys($active),
+            ],
+            $username
+        );
+
+        if ($seasonYear !== '' && $roundNumber > 0) {
+            try {
+                $exportService = new SnapshotExportService($this->app->getDatabase());
+                $exportResult = $exportService->exportRoundSnapshots($seasonYear, $roundNumber, true);
+
+                $this->logger->log(
+                    Logger::LEVEL_INFO,
+                    Logger::EVENT_SYSTEM,
+                    'Round snapshots exported after finish round',
+                    [
+                        'season_year' => $seasonYear,
+                        'round_number' => $roundNumber,
+                        'round_slug' => $exportResult['round_slug'] ?? null,
+                        'directory' => $exportResult['directory'] ?? null,
+                        'written_count' => count($exportResult['written'] ?? []),
+                    ],
+                    $username
+                );
+            } catch (\Throwable $e) {
+                $this->logger->log(
+                    Logger::LEVEL_ERROR,
+                    Logger::EVENT_SYSTEM,
+                    'Round snapshots export failed after finish round',
+                    [
+                        'season_year' => $seasonYear,
+                        'round_number' => $roundNumber,
+                        'error_message' => $e->getMessage(),
+                    ],
+                    $username
+                );
+                // Don't fail the entire finish-round operation; snapshots are secondary
+            }
+        }
+
+        unset($_SESSION['errors']);
+        $_SESSION['just_finished_round'] = true;
         $_SESSION['success'] = 'Round finished. Workflow reset to not_started and roster statuses reset to active.';
 
         $this->redirect('/scorer/menu');

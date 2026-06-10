@@ -87,7 +87,7 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'scorer');
 
                     <div class="roster-form-actions">
                         <a href="/roster" class="btn-secondary-pill">Cancel</a>
-                        <button type="submit" class="btn-action-primary">Add to Roster</button>
+                        <button type="submit" class="btn-action-primary" id="save-button">Add to Roster</button>
                     </div>
                 </form>
             </div>
@@ -98,6 +98,38 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'scorer');
         </footer>
     </main>
 </div>
+
+<script>
+(() => {
+    const form = document.querySelector('form');
+    const saveButton = document.getElementById('save-button');
+
+    if (!form || !saveButton) {
+        return;
+    }
+
+    saveButton.addEventListener('click', (e) => {
+        if (form.dataset.saveLocked === 'true') {
+            e.preventDefault();
+            return;
+        }
+
+        if (!form.reportValidity()) {
+            return;
+        }
+
+        form.dataset.saveLocked = 'true';
+        saveButton.textContent = 'Saving ...';
+        saveButton.style.pointerEvents = 'none';
+        saveButton.style.opacity = '1';
+        saveButton.setAttribute('aria-disabled', 'true');
+
+        window.setTimeout(() => {
+            form.submit();
+        }, 300);
+    });
+})();
+</script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

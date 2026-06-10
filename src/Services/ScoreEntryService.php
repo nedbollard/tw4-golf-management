@@ -29,7 +29,7 @@ class ScoreEntryService
              FROM TW4_base.roster r
              LEFT JOIN TW4_live.card c
                     ON c.row_id_player = r.row_id
-             WHERE r.status = "active"
+                      WHERE r.status = "active"
              ORDER BY r.last_name, r.first_name'
         );
     }
@@ -55,7 +55,7 @@ class ScoreEntryService
         $player = $this->db->fetchOne(
             'SELECT row_id, first_name, last_name, alias, player_identifier, gender, handicap
              FROM TW4_base.roster
-             WHERE row_id = ? AND status = "active"',
+             WHERE row_id = ? AND status IN ("active", "scored")',
             [$playerId]
         );
 

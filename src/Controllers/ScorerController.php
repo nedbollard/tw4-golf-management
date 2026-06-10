@@ -29,6 +29,15 @@ class ScorerController extends BaseController
             (int) ($user['user_id'] ?? 0)
         );
 
+        if (!empty($_SESSION['just_finished_round']) && isset($roundState['steps']) && is_array($roundState['steps'])) {
+            foreach ($roundState['steps'] as &$step) {
+                $step['status'] = 'completed';
+                $step['enabled'] = false;
+            }
+            unset($step);
+            unset($_SESSION['just_finished_round']);
+        }
+
         $this->render('scorer/menu', [
             'user'       => $user,
             'roundState' => $roundState,

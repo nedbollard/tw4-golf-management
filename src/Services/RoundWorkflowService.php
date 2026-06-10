@@ -297,7 +297,7 @@ class RoundWorkflowService
         $this->db->beginTransaction();
 
         try {
-            $this->applyHandicapUpdatesBeforeHistory($updatedBy);
+            $this->applyHandicapUpdatesBeforeHistory($updatedBy, $seasonYear, $numberRound);
             $this->replaceHistorySnapshot($roundId, $seasonYear, $numberRound, $updatedBy);
 
             $this->db->query(
@@ -334,7 +334,7 @@ class RoundWorkflowService
         }
     }
 
-    private function applyHandicapUpdatesBeforeHistory(string $updatedBy): void
+    private function applyHandicapUpdatesBeforeHistory(string $updatedBy, string $seasonYear, int $numberRound): void
     {
         $method = $this->getConfiguredHandicapMethod();
 
@@ -347,7 +347,7 @@ class RoundWorkflowService
                 [$updatedBy]
             );
 
-            $this->syncRosterHandicapsFromLiveCards($updatedBy);
+            $this->syncRosterHandicapsFromLiveCards($updatedBy, $seasonYear, $numberRound);
             return;
         }
 
@@ -381,7 +381,7 @@ class RoundWorkflowService
             );
         }
 
-        $this->syncRosterHandicapsFromLiveCards($updatedBy);
+        $this->syncRosterHandicapsFromLiveCards($updatedBy, $seasonYear, $numberRound);
     }
 
     private function getConfiguredHandicapMethod(): string
@@ -438,8 +438,18 @@ class RoundWorkflowService
         return max(0, min(54, $value));
     }
 
-    private function syncRosterHandicapsFromLiveCards(string $updatedBy): void
+    private function syncRosterHandicapsFromLiveCards(string $updatedBy, string $seasonYear, int $numberRound): void
     {
+        $changedRows = $this->db->fetchAll(
+            'SELECT r.row_id AS row_id_player,
+                    r.handicap AS handicap_previous,
+                    c.handicap_updated AS handicap_new
+             FROM TW4_base.roster r
+             INNER JOIN TW4_live.card c ON c.row_id_player = r.row_id
+             WHERE c.handicap_updated IS NOT NULL
+               AND (r.handicap IS NULL OR r.handicap <> c.handicap_updated)'
+        );
+
         $this->db->query(
             'UPDATE TW4_base.roster r
              INNER JOIN TW4_live.card c ON c.row_id_player = r.row_id
@@ -449,6 +459,20 @@ class RoundWorkflowService
                AND (r.handicap IS NULL OR r.handicap <> c.handicap_updated)',
             [$updatedBy]
         );
+
+        foreach ($changedRows as $row) {
+            $this->db->insert('TW4_base.handicap_audit', [
+                'row_id_player' => (int) ($row['row_id_player'] ?? 0),
+                'handicap_previous' => (int) ($row['handicap_previous'] ?? 0),
+                'handicap_new' => (int) ($row['handicap_new'] ?? 0),
+                'handicap_source' => 'card_scoring',
+                'season_year' => $seasonYear,
+                'number_round' => $numberRound,
+                'reason' => 'finish_round_card_scoring',
+                'changed_by' => $updatedBy,
+                'updated_by' => $updatedBy,
+            ]);
+        }
     }
 
     private function replaceHistorySnapshot(int $roundId, string $seasonYear, int $numberRound, string $updatedBy): void

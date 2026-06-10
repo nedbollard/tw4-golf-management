@@ -44,9 +44,19 @@ class RoundWorkflowServiceTest extends TestCase
                 return null;
             });
 
-        $db->expects($this->once())
+        $db->expects($this->exactly(2))
             ->method('fetchAll')
-            ->willReturn([]);
+            ->willReturnCallback(static function (string $sql, array $params = []): array {
+                if (str_contains($sql, 'FROM TW4_live.card c') && str_contains($sql, 'card_by_hole')) {
+                    return [];
+                }
+
+                if (str_contains($sql, 'FROM TW4_base.roster r') && str_contains($sql, 'INNER JOIN TW4_live.card c')) {
+                    return [];
+                }
+
+                return [];
+            });
 
         $db->expects($this->once())
             ->method('beginTransaction');

@@ -8,3 +8,5 @@ private/logs/
 /nbproject/private/
 .phpunit.cache/
 cookies.txt
+# Generated finish-round snapshot/report output (runtime data)
+public/reports/

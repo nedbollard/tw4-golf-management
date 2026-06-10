@@ -249,7 +249,29 @@ $sfpTotalClass = static function ($points): string {
             return;
         }
 
-        submitForm('calculate');
+        actionField.value = 'calculate';
+
+        scoreInputs.forEach((input) => {
+            normalizeScoreInput(input);
+        });
+
+        if (!form.reportValidity()) {
+            return;
+        }
+
+        form.dataset.saveLocked = 'true';
+        calculateButton.textContent = 'Calculating ...';
+        calculateButton.style.pointerEvents = 'none';
+        calculateButton.style.opacity = '1';
+        calculateButton.setAttribute('aria-disabled', 'true');
+
+        saveButton.style.pointerEvents = 'none';
+        saveButton.style.opacity = '0.65';
+        saveButton.setAttribute('aria-disabled', 'true');
+
+        window.setTimeout(() => {
+            form.submit();
+        }, 300);
     });
 
     saveButton.addEventListener('click', () => {

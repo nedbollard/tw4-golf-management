@@ -190,8 +190,8 @@ return [
         ],
         '/results' => [
             'path' => '/results',
-            'controller' => 'App\\Controllers\\HomeController',
-            'method' => 'underConstruction'
+            'controller' => 'App\\Controllers\\ResultsArchiveController',
+            'method' => 'index'
         ],
         '/leaderboard' => [
             'path' => '/leaderboard',
