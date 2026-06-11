@@ -83,20 +83,20 @@
 
                     <div class="scoring-state-panel mb-3 scoring-state-panel-danger">
                         <h3>Item 2: Reset Results Complete to Cards Entry Open</h3>
-                        <p class="mb-2">Moves workflow from <strong>results_presented</strong> back to <strong>card_entry_open</strong>.</p>
+                        <p class="mb-2">Moves workflow from <strong>not_started</strong> or <strong>results_presented</strong> back to <strong>card_entry_open</strong>.</p>
                         <p class="mb-3">This clears <strong>TW4_live.results</strong> and logs the admin action.</p>
                         <form method="POST" action="/admin/scoring-state/reset-results" onsubmit="return confirm('Reset from results complete to cards entry open and clear live results?');">
                             <button
                                 type="submit"
                                 class="btn-action-destructive"
-                                <?php echo $workflowStep === 'results_presented' ? '' : 'disabled aria-disabled="true"'; ?>
+                                <?php echo in_array($workflowStep, ['not_started', 'results_presented'], true) ? '' : 'disabled aria-disabled="true"'; ?>
                             >
                                 Reset to Cards Entry Open
                             </button>
                         </form>
-                        <?php if ($workflowStep !== 'results_presented'): ?>
+                        <?php if (!in_array($workflowStep, ['not_started', 'results_presented'], true)): ?>
                             <div class="form-text text-danger mt-2">
-                                This action is enabled only when workflow step is results_presented.
+                                This action is enabled only when workflow step is not_started or results_presented.
                             </div>
                         <?php endif; ?>
                     </div>

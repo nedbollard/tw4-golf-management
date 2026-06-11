@@ -201,8 +201,8 @@ class RoundWorkflowService
         }
 
         $currentStep = (string) ($round['workflow_step'] ?? 'not_started');
-        if ($currentStep !== 'results_presented') {
-            throw new \RuntimeException('Reset is only allowed when workflow_step is results_presented.');
+        if (!in_array($currentStep, ['not_started', 'results_presented'], true)) {
+            throw new \RuntimeException('Reset is only allowed when workflow_step is not_started or results_presented.');
         }
 
         $resultsCountRow = $this->db->fetchOne('SELECT COUNT(*) AS total FROM TW4_live.results');
@@ -210,9 +210,7 @@ class RoundWorkflowService
 
         $cardCountRow = $this->db->fetchOne(
             'SELECT COUNT(*) AS total
-             FROM TW4_live.card
-             WHERE row_id_round = ?',
-            [$roundId]
+             FROM TW4_live.card'
         );
         $cardCount = (int) ($cardCountRow['total'] ?? 0);
 

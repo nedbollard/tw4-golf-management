@@ -32,7 +32,20 @@ class AdminScoringStateFeatureTest extends TestCase
 
         $this->assertStringContainsString('action="/admin/scoring-state/reset-results"', $html);
         $this->assertStringContainsString('disabled aria-disabled="true"', $html);
-        $this->assertStringContainsString('enabled only when workflow step is results_presented', $html);
+        $this->assertStringContainsString('<strong>not_started</strong> or <strong>results_presented</strong>', $html);
+    }
+
+    public function testScoringStateViewEnablesResetButtonWhenNotStarted(): void
+    {
+        $html = $this->renderScoringStateView('not_started');
+
+        $this->assertStringContainsString('action="/admin/scoring-state/reset-results"', $html);
+
+        $this->assertDoesNotMatchRegularExpression(
+            '/<button\s+[^>]*class="btn-action-destructive"[^>]*disabled\s+aria-disabled="true"/s',
+            $html
+        );
+        $this->assertStringContainsString('<strong>not_started</strong> or <strong>results_presented</strong>', $html);
     }
 
     public function testScoringStateViewEnablesResetButtonWhenResultsPresented(): void
@@ -70,7 +83,7 @@ class AdminScoringStateFeatureTest extends TestCase
 
         $this->assertStringContainsString('Scoring State Management', $html);
         $this->assertStringContainsString('href="/admin/scoring-state"', $html);
-        $this->assertStringContainsString('Admin-only scoring process controls', $html);
+        $this->assertStringContainsString('Admin-only controls for workflow and lock state.', $html);
     }
 
     private function renderScoringStateView(string $workflowStep): string

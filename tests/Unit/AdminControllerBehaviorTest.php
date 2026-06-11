@@ -69,10 +69,18 @@ class AdminControllerBehaviorTest extends TestCase
         $fakeStatement = $this->createMock(\PDOStatement::class);
         $fakeStatement->method('rowCount')->willReturn(1);
 
-        $db->expects($this->exactly(2))
+        $db->expects($this->atLeast(3))
             ->method('query')
             ->willReturnCallback(function (string $sql, array $params = []) use ($fakeStatement) {
                 if (str_contains($sql, 'DELETE FROM TW4_live.results')) {
+                    return $fakeStatement;
+                }
+
+                if (str_contains($sql, 'DELETE FROM TW4_history.best_five')) {
+                    return $fakeStatement;
+                }
+
+                if (str_contains($sql, 'DELETE FROM TW4_live.best_five')) {
                     return $fakeStatement;
                 }
 
@@ -144,7 +152,7 @@ class AdminControllerBehaviorTest extends TestCase
 
         $this->assertSame('admin', $controller->requiredRole);
         $this->assertSame('/admin/scoring-state', $controller->redirectedTo);
-        $this->assertSame('Reset is only allowed when workflow_step is results_presented.', $_SESSION['errors'][0]);
+        $this->assertSame('Reset is only allowed when workflow_step is not_started or results_presented.', $_SESSION['errors'][0]);
     }
 
     public function testUnlockScoringProcessLogsAndRedirects(): void

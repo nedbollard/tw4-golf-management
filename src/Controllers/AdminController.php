@@ -115,6 +115,7 @@ class AdminController extends BaseController
 
         try {
             $result = $workflow->adminResetResultsToCardEntry($username);
+            $fromStep = (string) ($result['from_step'] ?? 'unknown');
 
             $after = $this->app->getDatabase()->fetchOne(
                 'SELECT row_id, workflow_step, card_count, lock_release_reason, locked_by_staff_id
@@ -126,7 +127,7 @@ class AdminController extends BaseController
             $this->logger->log(
                 Logger::LEVEL_WARNING,
                 Logger::EVENT_SYSTEM,
-                'Admin reset scoring state from results_presented to card_entry_open (state applied)',
+                sprintf('Admin reset scoring state from %s to card_entry_open (state applied)', $fromStep),
                 [
                     'round_id' => (int) ($result['round_id'] ?? 0),
                     'admin_staff_id' => $adminStaffId,

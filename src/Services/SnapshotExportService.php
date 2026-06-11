@@ -291,6 +291,10 @@ class SnapshotExportService
             }
         }
 
+        $smallBeerMoney = $this->buildSmallBeerMoney($seasonYear, $roundNumber);
+        $smallBeerBaggers = $this->buildSmallBeerBaggers($seasonYear, $roundNumber);
+        $smallBeerAttendance = $this->buildSmallBeerAttendance($seasonYear, $roundNumber);
+
         // Calculate round stats
         $roundStats = $this->calculateRoundStats($scores, $pointsArray);
 
@@ -307,6 +311,9 @@ class SnapshotExportService
             'round_stats' => $roundStats,
             'handicap_snapshot' => $handicapSnapshot,
             'best_five_snapshot' => $bestFiveSnapshot,
+            'small_beer_money' => $smallBeerMoney,
+            'small_beer_baggers' => $smallBeerBaggers,
+            'small_beer_attendance' => $smallBeerAttendance,
         ];
     }
 
@@ -459,15 +466,134 @@ class SnapshotExportService
 
     private function renderSmallBeer(array $ctx): string
     {
-        $rows = '';
-        foreach ($ctx['twos'] as $row) {
-            $rows .= '<tr><td>' . $this->e((string) ($row['display_player'] ?? $row['player_identifier'] ?? '')) . '</td><td>' . (int) ($row['value_result'] ?? 0) . '</td></tr>';
-        }
-        if ($rows === '') {
-            $rows = '<tr><td colspan="2">No small beer entries for this round.</td></tr>';
+        $money = $this->renderSmallBeerSection(
+            'Money List',
+            'Earnings',
+            $ctx['small_beer_money'] ?? [],
+            static fn(int $value): string => '$' . number_format((float) $value, 2)
+        );
+
+        $baggers = $this->renderSmallBeerSection(
+            'Ball Baggers',
+            'Number of',
+            $ctx['small_beer_baggers'] ?? []
+        );
+
+        $attendance = $this->renderSmallBeerSection(
+            'Best Attendance',
+            'Rounds',
+            $ctx['small_beer_attendance'] ?? []
+        );
+
+        return $this->wrap(
+            $ctx,
+            'Small Beer',
+            '<h2>Small Beer</h2>'
+            . $money
+            . $baggers
+            . $attendance
+        );
+    }
+
+    private function renderSmallBeerSection(string $heading, string $valueLabel, array $rows, ?callable $valueFormatter = null): string
+    {
+        $html = '';
+        foreach ($rows as $row) {
+            $value = (int) ($row['value_total'] ?? 0);
+            $formattedValue = $valueFormatter !== null ? $valueFormatter($value) : (string) $value;
+            $html .= '<tr><td>' . $this->e((string) ($row['display_player'] ?? $row['player_identifier'] ?? '')) . '</td><td>' . $this->e($formattedValue) . '</td></tr>';
         }
 
-        return $this->wrap($ctx, 'Small Beer', '<h2>Small Beer</h2><table><tr><th>Player</th><th>Count</th></tr>' . $rows . '</table>');
+        if ($html === '') {
+            $html = '<tr><td colspan="2">No ' . $this->e(strtolower($heading)) . ' entries recorded.</td></tr>';
+        }
+
+        return '<h4>' . $this->e($heading) . ':</h4><table class="table table-striped table-bordered table-hover table-condensed"><tr><th>Player</th><th>' . $this->e($valueLabel) . '</th></tr>' . $html . '</table>';
+    }
+
+    private function buildSmallBeerMoney(string $seasonYear, int $roundNumber): array
+    {
+        $rows = $this->db->fetchAll(
+            'SELECT
+                hr.player_identifier,
+                COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, hr.player_identifier) AS display_player,
+                SUM(hr.value_result) AS value_total
+             FROM TW4_history.results hr
+             LEFT JOIN TW4_base.roster r ON r.player_identifier = hr.player_identifier
+             WHERE hr.season_year = ?
+               AND hr.number_round <= ?
+               AND hr.type_result = "Place"
+             GROUP BY hr.player_identifier, r.alias, r.player_identifier
+             ORDER BY value_total DESC, display_player ASC',
+            [$seasonYear, $roundNumber]
+        );
+
+        return $this->limitToTopDistinctValues($rows, 'value_total', 3);
+    }
+
+    private function buildSmallBeerBaggers(string $seasonYear, int $roundNumber): array
+    {
+        $rows = $this->db->fetchAll(
+            'SELECT
+                hr.player_identifier,
+                COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, hr.player_identifier) AS display_player,
+                SUM(hr.value_result) AS value_total
+             FROM TW4_history.results hr
+             LEFT JOIN TW4_base.roster r ON r.player_identifier = hr.player_identifier
+             WHERE hr.season_year = ?
+               AND hr.number_round <= ?
+               AND hr.type_result = "Twos"
+             GROUP BY hr.player_identifier, r.alias, r.player_identifier
+             ORDER BY value_total DESC, display_player ASC',
+            [$seasonYear, $roundNumber]
+        );
+
+        return $this->limitToTopDistinctValues($rows, 'value_total', 3);
+    }
+
+    private function buildSmallBeerAttendance(string $seasonYear, int $roundNumber): array
+    {
+        $rows = $this->db->fetchAll(
+            'SELECT
+                hc.row_id_player AS player_row_id,
+                COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", hc.row_id_player)) AS display_player,
+                COUNT(*) AS value_total
+             FROM TW4_history.card hc
+             LEFT JOIN TW4_base.roster r ON r.row_id = hc.row_id_player
+             WHERE hc.season_year = ?
+               AND hc.number_round <= ?
+             GROUP BY hc.row_id_player, r.alias, r.player_identifier
+             ORDER BY value_total DESC, display_player ASC',
+            [$seasonYear, $roundNumber]
+        );
+
+        return $this->limitToTopDistinctValues($rows, 'value_total', 3);
+    }
+
+    private function limitToTopDistinctValues(array $rows, string $valueKey, int $limit): array
+    {
+        $distinctValues = [];
+        foreach ($rows as $row) {
+            $value = (int) ($row[$valueKey] ?? 0);
+            if (!in_array($value, $distinctValues, true)) {
+                $distinctValues[] = $value;
+            }
+
+            if (count($distinctValues) >= $limit) {
+                break;
+            }
+        }
+
+        if ($distinctValues === []) {
+            return [];
+        }
+
+        $allowed = array_fill_keys($distinctValues, true);
+
+        return array_values(array_filter(
+            $rows,
+            static fn(array $row): bool => isset($allowed[(int) ($row[$valueKey] ?? 0)])
+        ));
     }
 
     private function renderHandicaps(array $ctx): string

@@ -281,6 +281,68 @@ class RoundWorkflowServiceTest extends TestCase
         $this->assertTrue($this->containsSqlAndParams($executedSql, 'DELETE FROM TW4_history.best_five', ['25_26', 42]));
     }
 
+    public function testAdminResetResultsToCardEntryAllowsNotStartedState(): void
+    {
+        /** @var Database|MockObject $db */
+        $db = $this->createMock(Database::class);
+
+        $db->expects($this->once())
+            ->method('beginTransaction');
+
+        $db->expects($this->once())
+            ->method('commit');
+
+        $db->expects($this->never())
+            ->method('rollback');
+
+        $db->expects($this->exactly(3))
+            ->method('fetchOne')
+            ->willReturnCallback(static function (string $sql, array $params = []): ?array {
+                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY row_id ASC')) {
+                    return [
+                        'round_id' => 7,
+                        'season_year' => '25_26',
+                        'round_number' => 42,
+                        'workflow_step' => 'not_started',
+                    ];
+                }
+
+                if (str_contains($sql, 'COUNT(*) AS total FROM TW4_live.results')) {
+                    return ['total' => 0];
+                }
+
+                if (str_contains($sql, 'FROM TW4_live.card')) {
+                    return ['total' => 0];
+                }
+
+                if (str_contains($sql, 'SELECT season_year, number_round')) {
+                    return [
+                        'season_year' => '25_26',
+                        'number_round' => 42,
+                    ];
+                }
+
+                return null;
+            });
+
+        $fakeStatement = $this->createMock(\PDOStatement::class);
+        $fakeStatement->method('rowCount')->willReturn(1);
+
+        $db->expects($this->atLeast(2))
+            ->method('query')
+            ->willReturnCallback(function (string $sql, array $params = []) use ($fakeStatement) {
+                return $fakeStatement;
+            });
+
+        $service = new RoundWorkflowService($db);
+        $result = $service->adminResetResultsToCardEntry('admin_user');
+
+        $this->assertSame('not_started', $result['from_step']);
+        $this->assertSame('card_entry_open', $result['to_step']);
+        $this->assertSame(0, $result['results_rows_cleared']);
+        $this->assertSame(0, $result['card_count']);
+    }
+
     public function testAdminResetResultsToCardEntryRejectsWrongCurrentState(): void
     {
         /** @var Database|MockObject $db */
@@ -306,7 +368,7 @@ class RoundWorkflowServiceTest extends TestCase
         $service = new RoundWorkflowService($db);
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Reset is only allowed when workflow_step is results_presented.');
+        $this->expectExceptionMessage('Reset is only allowed when workflow_step is not_started or results_presented.');
 
         $service->adminResetResultsToCardEntry('admin_user');
     }

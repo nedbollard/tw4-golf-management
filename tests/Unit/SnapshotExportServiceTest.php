@@ -105,6 +105,74 @@ class SnapshotExportServiceTest extends TestCase
         $this->assertStringContainsString('<td>n/a</td><td>n/a</td>', $html);
     }
 
+    public function testRenderSmallBeerShowsTopThreeDistinctSeasonTotals(): void
+    {
+        $ctx = [
+            'name_club' => 'OVGC',
+            'season_year' => '25_26',
+            'number_round' => 14,
+            'round_date' => '2026-01-21',
+            'small_beer_money' => [
+                ['display_player' => 'Winnie', 'value_total' => 34],
+                ['display_player' => 'PaulC', 'value_total' => 25],
+                ['display_player' => 'ApiW', 'value_total' => 25],
+                ['display_player' => 'MichealH', 'value_total' => 22],
+                ['display_player' => 'Ignored', 'value_total' => 18],
+            ],
+            'small_beer_baggers' => [
+                ['display_player' => 'ApiW', 'value_total' => 3],
+                ['display_player' => 'Big Muz', 'value_total' => 2],
+                ['display_player' => 'JonG', 'value_total' => 2],
+                ['display_player' => 'JimG', 'value_total' => 2],
+                ['display_player' => 'PremS', 'value_total' => 1],
+                ['display_player' => 'Ignored', 'value_total' => 0],
+            ],
+            'small_beer_attendance' => [
+                ['display_player' => 'MichealH', 'value_total' => 12],
+                ['display_player' => 'Big Muz', 'value_total' => 10],
+                ['display_player' => 'PatK', 'value_total' => 10],
+                ['display_player' => 'PaulC', 'value_total' => 10],
+                ['display_player' => 'ApiW', 'value_total' => 9],
+                ['display_player' => 'ColinB', 'value_total' => 9],
+                ['display_player' => 'MikeH', 'value_total' => 9],
+                ['display_player' => 'Ignored', 'value_total' => 8],
+            ],
+        ];
+
+        $html = $this->invokePrivateMethod('renderSmallBeer', [$ctx]);
+
+        $this->assertStringContainsString('Money List', $html);
+        $this->assertStringContainsString('Ball Baggers', $html);
+        $this->assertStringContainsString('Best Attendance', $html);
+        $this->assertStringContainsString('<td>Winnie</td><td>$34.00</td>', $html);
+        $this->assertStringContainsString('<td>PaulC</td><td>$25.00</td>', $html);
+        $this->assertStringContainsString('<td>ApiW</td><td>$25.00</td>', $html);
+        $this->assertStringContainsString('<td>Big Muz</td><td>2</td>', $html);
+        $this->assertStringContainsString('<td>JimG</td><td>2</td>', $html);
+        $this->assertStringContainsString('<td>MichealH</td><td>12</td>', $html);
+        $this->assertStringContainsString('<td>MikeH</td><td>9</td>', $html);
+    }
+
+    public function testLimitToTopDistinctValuesKeepsTiesAndDropsLowerValues(): void
+    {
+        $rows = [
+            ['display_player' => 'Winnie', 'value_total' => 34],
+            ['display_player' => 'PaulC', 'value_total' => 25],
+            ['display_player' => 'ApiW', 'value_total' => 25],
+            ['display_player' => 'MichealH', 'value_total' => 22],
+            ['display_player' => 'Ignored', 'value_total' => 18],
+        ];
+
+        $method = new \ReflectionMethod(SnapshotExportService::class, 'limitToTopDistinctValues');
+        $method->setAccessible(true);
+
+        /** @var array<int, array<string, mixed>> $filtered */
+        $filtered = $method->invoke($this->service, $rows, 'value_total', 3);
+
+        $this->assertCount(4, $filtered);
+        $this->assertSame([34, 25, 25, 22], array_map(static fn(array $row): int => (int) $row['value_total'], $filtered));
+    }
+
     private function invokePrivateMethod(string $methodName, array $args): string
     {
         $method = new \ReflectionMethod(SnapshotExportService::class, $methodName);
