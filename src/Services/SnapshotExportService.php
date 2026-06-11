@@ -422,6 +422,7 @@ class SnapshotExportService
 
     private function renderHandicaps(array $ctx): string
     {
+        $currentSeason = trim((string) ($ctx['season_year'] ?? ''));
         $rows = '';
         foreach (($ctx['handicap_snapshot'] ?? []) as $row) {
             $displayPlayer = trim((string) ($row['alias'] ?? ''));
@@ -438,7 +439,10 @@ class SnapshotExportService
             $auditRound = isset($row['audit_number_round']) ? (int) $row['audit_number_round'] : 0;
             $roundRef = 'n/a';
             if ($auditSeason !== '' && $auditRound > 0) {
-                $roundRef = $auditSeason . ' / ' . $auditRound;
+                $roundRef = (string) $auditRound;
+                if ($auditSeason !== $currentSeason) {
+                    $roundRef .= ' [' . $auditSeason . ']';
+                }
             }
 
             $source = trim((string) ($row['handicap_source'] ?? ''));

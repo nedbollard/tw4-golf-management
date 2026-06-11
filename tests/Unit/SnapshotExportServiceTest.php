@@ -62,6 +62,7 @@ class SnapshotExportServiceTest extends TestCase
         $html = $this->invokePrivateMethod('renderHandicaps', [$ctx]);
 
         $this->assertStringContainsString('<td>Alias_Alice</td>', $html);
+        $this->assertStringContainsString('<td>+2</td><td>8</td><td>card_scoring</td><td></td>', $html);
         $this->assertStringContainsString('<td>card_scoring</td><td></td>', $html);
         $this->assertStringNotContainsString('finish_round_card_scoring</td>', $html);
     }
@@ -81,8 +82,8 @@ class SnapshotExportServiceTest extends TestCase
                     'handicap_previous' => 4,
                     'handicap_source' => 'card_scoring',
                     'reason' => 'finish_round_card_scoring_backfill',
-                    'audit_season_year' => '25_26',
-                    'audit_number_round' => 8,
+                    'audit_season_year' => '24_25',
+                    'audit_number_round' => 7,
                 ],
                 [
                     'player_identifier' => 'P4',
@@ -100,6 +101,7 @@ class SnapshotExportServiceTest extends TestCase
         $html = $this->invokePrivateMethod('renderHandicaps', [$ctx]);
 
         $this->assertStringContainsString('finish_round_card_scoring_backfill', $html);
+        $this->assertStringContainsString('<td>7 [24_25]</td>', $html);
         $this->assertStringContainsString('<td>n/a</td><td>n/a</td>', $html);
     }
 
