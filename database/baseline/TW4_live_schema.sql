@@ -64,6 +64,34 @@ CREATE TABLE `results` (
   KEY `idx_results_player_identifier` (`player_identifier`)
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `best_five`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `best_five` (
+  `row_id` int NOT NULL AUTO_INCREMENT,
+  `season_year` char(5) COLLATE utf8mb4_general_ci NOT NULL,
+  `row_id_player` int NOT NULL,
+  `number_round_movement` int NOT NULL DEFAULT '0',
+  `points_total` int NOT NULL DEFAULT '0',
+  `points_best_1` int NOT NULL DEFAULT '0',
+  `points_best_2` int NOT NULL DEFAULT '0',
+  `points_best_3` int NOT NULL DEFAULT '0',
+  `points_best_4` int NOT NULL DEFAULT '0',
+  `points_best_5` int NOT NULL DEFAULT '0',
+  `round_best_1` int NOT NULL DEFAULT '0',
+  `round_best_2` int NOT NULL DEFAULT '0',
+  `round_best_3` int NOT NULL DEFAULT '0',
+  `round_best_4` int NOT NULL DEFAULT '0',
+  `round_best_5` int NOT NULL DEFAULT '0',
+  `points_movement` int NOT NULL DEFAULT '0',
+  `updated_by` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `updated_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`row_id`),
+  UNIQUE KEY `uk_best_five_season_player` (`season_year`,`row_id_player`),
+  KEY `idx_best_five_player` (`row_id_player`),
+  KEY `idx_best_five_season` (`season_year`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `round`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;

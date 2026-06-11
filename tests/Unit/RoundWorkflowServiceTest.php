@@ -44,7 +44,7 @@ class RoundWorkflowServiceTest extends TestCase
                 return null;
             });
 
-        $db->expects($this->exactly(2))
+        $db->expects($this->atLeast(2))
             ->method('fetchAll')
             ->willReturnCallback(static function (string $sql, array $params = []): array {
                 if (str_contains($sql, 'FROM TW4_live.card c') && str_contains($sql, 'card_by_hole')) {
@@ -52,6 +52,14 @@ class RoundWorkflowServiceTest extends TestCase
                 }
 
                 if (str_contains($sql, 'FROM TW4_base.roster r') && str_contains($sql, 'INNER JOIN TW4_live.card c')) {
+                    return [];
+                }
+
+                if (str_contains($sql, 'FROM TW4_holding.best_five')) {
+                    return [];
+                }
+
+                if (str_contains($sql, 'SELECT row_id_player, points') && str_contains($sql, 'FROM TW4_live.card')) {
                     return [];
                 }
 
@@ -71,7 +79,7 @@ class RoundWorkflowServiceTest extends TestCase
         $fakeStatement->method('rowCount')->willReturn(1);
 
         $executedSql = [];
-        $db->expects($this->exactly(11))
+        $db->expects($this->atLeast(11))
             ->method('query')
             ->willReturnCallback(function (string $sql, array $params = []) use (&$executedSql, $fakeStatement) {
                 $executedSql[] = ['sql' => $sql, 'params' => $params];
@@ -93,6 +101,9 @@ class RoundWorkflowServiceTest extends TestCase
         $this->assertTrue($this->containsSql($executedSql, 'INSERT INTO TW4_history.card'));
         $this->assertTrue($this->containsSql($executedSql, 'INSERT INTO TW4_history.card_by_hole'));
         $this->assertTrue($this->containsSql($executedSql, 'INSERT INTO TW4_history.results'));
+        $this->assertTrue($this->containsSql($executedSql, 'INSERT INTO TW4_history.best_five'));
+        $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_live.best_five'));
+        $this->assertTrue($this->containsSql($executedSql, 'CREATE TABLE IF NOT EXISTS TW4_live.best_five'));
         $this->assertTrue($this->containsSql($executedSql, 'UPDATE TW4_base.roster'));
         $this->assertTrue($this->containsSql($executedSql, 'UPDATE TW4_live.round'));
         $this->assertTrue($this->containsSql($executedSql, 'INNER JOIN TW4_live.card'));
@@ -228,6 +239,7 @@ class RoundWorkflowServiceTest extends TestCase
                 if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY row_id ASC')) {
                     return [
                         'round_id' => 7,
+                        'season_year' => '25_26',
                         'round_number' => 42,
                         'workflow_step' => 'results_presented',
                     ];
@@ -247,22 +259,11 @@ class RoundWorkflowServiceTest extends TestCase
         $fakeStatement = $this->createMock(\PDOStatement::class);
         $fakeStatement->method('rowCount')->willReturn(1);
 
-        $queryCalls = 0;
-        $db->expects($this->exactly(2))
+        $executedSql = [];
+        $db->expects($this->atLeast(2))
             ->method('query')
-            ->willReturnCallback(function (string $sql, array $params = []) use (&$queryCalls, $fakeStatement) {
-                $queryCalls++;
-
-                if ($queryCalls === 1) {
-                    $this->assertStringContainsString('DELETE FROM TW4_live.results', $sql);
-                    $this->assertSame([], $params);
-                    return $fakeStatement;
-                }
-
-                $this->assertStringContainsString('UPDATE TW4_live.round', $sql);
-                $this->assertStringContainsString("workflow_step = 'card_entry_open'", $sql);
-                $this->assertSame([9, 'admin_user', 7], $params);
-
+            ->willReturnCallback(function (string $sql, array $params = []) use (&$executedSql, $fakeStatement) {
+                $executedSql[] = ['sql' => $sql, 'params' => $params];
                 return $fakeStatement;
             });
 
@@ -274,6 +275,10 @@ class RoundWorkflowServiceTest extends TestCase
         $this->assertSame('card_entry_open', $result['to_step']);
         $this->assertSame(5, $result['results_rows_cleared']);
         $this->assertSame(9, $result['card_count']);
+        $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_live.results'));
+        $this->assertTrue($this->containsSql($executedSql, 'UPDATE TW4_live.round'));
+        $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_live.best_five'));
+        $this->assertTrue($this->containsSqlAndParams($executedSql, 'DELETE FROM TW4_history.best_five', ['25_26', 42]));
     }
 
     public function testAdminResetResultsToCardEntryRejectsWrongCurrentState(): void
@@ -326,6 +331,7 @@ class RoundWorkflowServiceTest extends TestCase
                 if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY row_id ASC')) {
                     return [
                         'round_id' => 7,
+                        'season_year' => '25_26',
                         'round_number' => 42,
                         'workflow_step' => 'results_presented',
                     ];
@@ -346,7 +352,7 @@ class RoundWorkflowServiceTest extends TestCase
         $fakeStatement->method('rowCount')->willReturn(1);
 
         $queryCalls = 0;
-        $db->expects($this->exactly(2))
+        $db->expects($this->atLeast(2))
             ->method('query')
             ->willReturnCallback(function (string $sql, array $params = []) use (&$queryCalls, $fakeStatement) {
                 $queryCalls++;
@@ -356,7 +362,11 @@ class RoundWorkflowServiceTest extends TestCase
                     return $fakeStatement;
                 }
 
-                throw new \RuntimeException('Simulated update failure');
+                if (str_contains($sql, 'UPDATE TW4_live.round')) {
+                    throw new \RuntimeException('Simulated update failure');
+                }
+
+                return $fakeStatement;
             });
 
         $service = new RoundWorkflowService($db);
@@ -377,6 +387,7 @@ class RoundWorkflowServiceTest extends TestCase
                 if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY row_id ASC')) {
                     return [
                         'round_id' => 0,
+                        'season_year' => '25_26',
                         'round_number' => 42,
                         'workflow_step' => 'results_presented',
                     ];

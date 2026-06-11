@@ -16,6 +16,7 @@ USE `TW4_history`;
 DROP TABLE IF EXISTS `card_by_hole`;
 DROP TABLE IF EXISTS `card`;
 DROP TABLE IF EXISTS `results`;
+DROP TABLE IF EXISTS `best_five`;
 DROP TABLE IF EXISTS `round`;
 
 CREATE TABLE `round` (
@@ -90,6 +91,34 @@ CREATE TABLE `results` (
   KEY `idx_history_results_round` (`season_year`,`number_round`),
   KEY `idx_history_results_type` (`type_result`),
   KEY `idx_history_results_player` (`player_identifier`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `best_five` (
+  `row_id` int NOT NULL AUTO_INCREMENT,
+  `season_year` char(5) NOT NULL,
+  `number_round_snapshot` int NOT NULL,
+  `row_id_player` int NOT NULL,
+  `number_round_movement` int NOT NULL DEFAULT 0,
+  `points_total` int NOT NULL DEFAULT 0,
+  `points_best_1` int NOT NULL DEFAULT 0,
+  `points_best_2` int NOT NULL DEFAULT 0,
+  `points_best_3` int NOT NULL DEFAULT 0,
+  `points_best_4` int NOT NULL DEFAULT 0,
+  `points_best_5` int NOT NULL DEFAULT 0,
+  `round_best_1` int NOT NULL DEFAULT 0,
+  `round_best_2` int NOT NULL DEFAULT 0,
+  `round_best_3` int NOT NULL DEFAULT 0,
+  `round_best_4` int NOT NULL DEFAULT 0,
+  `round_best_5` int NOT NULL DEFAULT 0,
+  `points_movement` int NOT NULL DEFAULT 0,
+  `updated_by` varchar(100) NOT NULL,
+  `updated_ts` timestamp NULL DEFAULT NULL,
+  `hist_updated_by` varchar(100) NOT NULL,
+  `hist_updated_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`row_id`),
+  UNIQUE KEY `uk_history_best_five_snapshot_player` (`season_year`,`number_round_snapshot`,`row_id_player`),
+  KEY `idx_history_best_five_snapshot` (`season_year`,`number_round_snapshot`),
+  KEY `idx_history_best_five_player` (`row_id_player`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

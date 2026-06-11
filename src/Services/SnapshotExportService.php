@@ -155,6 +155,37 @@ class SnapshotExportService
              ORDER BY COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier) ASC'
         );
 
+        $bestFiveSnapshot = [];
+        try {
+            $bestFiveSnapshot = $this->db->fetchAll(
+                'SELECT
+                    bf.row_id_player,
+                    bf.number_round_movement,
+                    bf.points_total,
+                    bf.points_best_1,
+                    bf.points_best_2,
+                    bf.points_best_3,
+                    bf.points_best_4,
+                    bf.points_best_5,
+                    bf.round_best_1,
+                    bf.round_best_2,
+                    bf.round_best_3,
+                    bf.round_best_4,
+                    bf.round_best_5,
+                    bf.points_movement,
+                    COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", bf.row_id_player)) AS display_player
+                 FROM TW4_history.best_five bf
+                 LEFT JOIN TW4_base.roster r ON r.row_id = bf.row_id_player
+                 WHERE bf.season_year = ?
+                   AND bf.number_round_snapshot = ?
+                 ORDER BY bf.points_total DESC,
+                          COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", bf.row_id_player)) ASC',
+                [$seasonYear, $roundNumber]
+            );
+        } catch (\Throwable $e) {
+            $bestFiveSnapshot = [];
+        }
+
         $aliasByIdentifier = [];
         foreach ($rosterRows as $rosterRow) {
             $identifier = trim((string) ($rosterRow['player_identifier'] ?? ''));
@@ -275,6 +306,7 @@ class SnapshotExportService
             'closest' => $closest,
             'round_stats' => $roundStats,
             'handicap_snapshot' => $handicapSnapshot,
+            'best_five_snapshot' => $bestFiveSnapshot,
         ];
     }
 
@@ -391,20 +423,38 @@ class SnapshotExportService
 
     private function renderBest5(array $ctx): string
     {
-        $rows = $ctx['leaderboard'];
-        usort($rows, static fn(array $a, array $b): int => ($a['score'] <=> $b['score']) ?: ($b['points'] <=> $a['points']));
-        $rows = array_slice($rows, 0, 5);
+        $rows = $ctx['best_five_snapshot'] ?? [];
 
         $bodyRows = '';
         foreach ($rows as $idx => $row) {
-            $bodyRows .= '<tr><td>' . ($idx + 1) . '</td><td>' . $this->e((string) ($row['display_player'] ?? $row['player_identifier'])) . '</td><td>' . (int) $row['score'] . '</td><td>' . (int) $row['points'] . '</td></tr>';
+            $bodyRows .= '<tr>'
+                . '<td>' . ($idx + 1) . '</td>'
+                . '<td>' . $this->e((string) ($row['display_player'] ?? ('player_' . (string) ($row['row_id_player'] ?? '')))) . '</td>'
+                . '<td>' . (int) ($row['points_total'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['points_best_1'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['points_best_2'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['points_best_3'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['points_best_4'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['points_best_5'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['points_movement'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['number_round_movement'] ?? 0) . '</td>'
+                . '</tr>';
         }
 
         if ($bodyRows === '') {
-            $bodyRows = '<tr><td colspan="4">No card data available.</td></tr>';
+            $bodyRows = '<tr><td colspan="10">No best five data available.</td></tr>';
         }
 
-        return $this->wrap($ctx, 'Best 5 Scores', '<h2>Best 5 Gross Scores</h2><table><tr><th>Rank</th><th>Player</th><th>Gross</th><th>Points</th></tr>' . $bodyRows . '</table>');
+        return $this->wrap(
+            $ctx,
+            'Best 5 Scores',
+            '<h2>Haggle: Best 5 scores</h2>'
+            . '<h3>Date: ' . $this->e((string) ($ctx['round_date'] ?? 'n/a')) . '</h3>'
+            . '<h3>Course: ' . $this->e((string) ($ctx['name_course'] ?? 'n/a')) . '</h3>'
+            . '<table><tr><th>Standing</th><th>Player</th><th>Total Points</th><th>Best 1</th><th>Best 2</th><th>Best 3</th><th>Best 4</th><th>Best 5</th><th>Last Change</th><th>Round</th></tr>'
+            . $bodyRows
+            . '</table>'
+        );
     }
 
     private function renderSmallBeer(array $ctx): string
