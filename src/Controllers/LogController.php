@@ -41,20 +41,35 @@ class LogController extends BaseController
         $page = max(1, (int)($_GET['page'] ?? 1));
         $limit = 50;
         $offset = ($page - 1) * $limit;
-        
-        // Get logs and count
-        $logs = $this->logger->getLogs($filters, $search, $order, $limit, $offset);
-        $totalCount = $this->logger->getLogsCount($filters, $search);
-        $filterOptions = $this->logger->getFilterOptions();
-        
+
+        $logs = [];
+        $totalCount = 0;
+        $filterOptions = [
+            'levels' => [],
+            'event_types' => [],
+            'usernames' => []
+        ];
+        $loadError = '';
+
+        try {
+            // Get logs and count
+            $logs = $this->logger->getLogs($filters, $search, $order, $limit, $offset);
+            $totalCount = $this->logger->getLogsCount($filters, $search);
+            $filterOptions = $this->logger->getFilterOptions();
+        } catch (\Throwable $e) {
+            error_log('Log viewer load failed: ' . $e->getMessage());
+            $loadError = 'Logs are temporarily unavailable. Please verify database schema and connectivity.';
+        }
+
         // Calculate pagination
-        $totalPages = ceil($totalCount / $limit);
+        $totalPages = (int) ceil($totalCount / $limit);
         
         $this->render('logs/index', [
             'logs' => $logs,
             'filters' => $filters,
             'search' => $search,
             'order' => $order,
+            'loadError' => $loadError,
             'filterOptions' => $filterOptions,
             'pagination' => [
                 'current' => $page,
@@ -85,8 +100,15 @@ class LogController extends BaseController
         $search = $_GET['search'] ?? '';
         $order = $_GET['order'] ?? 'DESC';
         
-        // Get all logs (no pagination for export)
-        $logs = $this->logger->getLogs($filters, $search, $order, 10000, 0);
+        try {
+            // Get all logs (no pagination for export)
+            $logs = $this->logger->getLogs($filters, $search, $order, 10000, 0);
+        } catch (\Throwable $e) {
+            error_log('Log export failed: ' . $e->getMessage());
+            $_SESSION['error'] = 'Log export is temporarily unavailable. Please try again after checking database health.';
+            $this->redirect('/logs');
+            return;
+        }
         
         // Set headers for CSV download
         header('Content-Type: text/csv');

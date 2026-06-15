@@ -163,7 +163,7 @@ class Logger
         
         // Apply search
         if (!empty($search)) {
-            $sql .= " AND (message LIKE ? OR username LIKE ? OR ip_address LIKE ? OR context LIKE ?)";
+            $sql .= " AND (message LIKE ? OR username LIKE ? OR ip_address LIKE ? OR CAST(context AS CHAR) LIKE ?)";
             $searchParam = '%' . $search . '%';
             $params[] = $searchParam;
             $params[] = $searchParam;
@@ -227,7 +227,7 @@ class Logger
         }
         
         if (!empty($search)) {
-            $sql .= " AND (message LIKE ? OR username LIKE ? OR ip_address LIKE ? OR context LIKE ?)";
+            $sql .= " AND (message LIKE ? OR username LIKE ? OR ip_address LIKE ? OR CAST(context AS CHAR) LIKE ?)";
             $searchParam = '%' . $search . '%';
             $params[] = $searchParam;
             $params[] = $searchParam;
@@ -256,6 +256,11 @@ class Logger
      */
     private function getUniqueValues(string $column): array
     {
+        $allowedColumns = ['level', 'event_type', 'username'];
+        if (!in_array($column, $allowedColumns, true)) {
+            throw new \InvalidArgumentException("Unsupported column requested: {$column}");
+        }
+
         $result = $this->db->fetchAll("SELECT DISTINCT $column FROM application_log WHERE $column IS NOT NULL ORDER BY $column");
         return array_column($result, $column);
     }
