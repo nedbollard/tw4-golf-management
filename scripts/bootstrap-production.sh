@@ -30,6 +30,31 @@ HISTORY_SCHEMA_FILE="database/baseline/TW4_history_schema.sql"
 HOLDING_SCHEMA_FILE="database/baseline/TW4_holding_schema.sql"
 BASE_SEED_FILE="database/baseline/TW4_base_seed.sql"
 
+ensure_application_log_table() {
+    print_status "Ensuring TW4_base.application_log exists..."
+    docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+        mysql -u root TW4_base <<'SQL'
+CREATE TABLE IF NOT EXISTS application_log (
+    row_id INT NOT NULL AUTO_INCREMENT,
+    timestamp DATETIME NOT NULL,
+    level ENUM('DEBUG','INFO','WARNING','ERROR','CRITICAL') NOT NULL,
+    event_type VARCHAR(50) NOT NULL,
+    message TEXT NOT NULL,
+    context JSON DEFAULT NULL,
+    username VARCHAR(100) DEFAULT NULL,
+    ip_address VARCHAR(45) DEFAULT NULL,
+    user_agent TEXT,
+    updated_by VARCHAR(100) DEFAULT NULL,
+    updated_ts TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (row_id),
+    KEY idx_timestamp (timestamp),
+    KEY idx_level (level),
+    KEY idx_event_type (event_type),
+    KEY idx_username (username)
+);
+SQL
+}
+
 for required_file in "$BASE_SCHEMA_FILE" "$LIVE_SCHEMA_FILE" "$HISTORY_SCHEMA_FILE" "$HOLDING_SCHEMA_FILE" "$BASE_SEED_FILE"; do
     if [ ! -f "$required_file" ]; then
         print_error "Required file not found: $required_file"
@@ -76,9 +101,11 @@ print_status "Applying controlled TW4_base seed data..."
 docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -u root TW4_base < "$BASE_SEED_FILE"
 
+ensure_application_log_table
+
 print_status "Verifying required databases and tables..."
 docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
-    mysql -N -s -u root -e "SHOW DATABASES LIKE 'TW4_base'; SHOW DATABASES LIKE 'TW4_live'; SHOW DATABASES LIKE 'TW4_history'; SHOW DATABASES LIKE 'TW4_holding'; SHOW TABLES IN TW4_base LIKE 'staff'; SHOW TABLES IN TW4_base LIKE 'config_application'; SHOW TABLES IN TW4_live LIKE 'round'; SHOW TABLES IN TW4_live LIKE 'card'; SHOW TABLES IN TW4_live LIKE 'card_by_hole'; SHOW TABLES IN TW4_live LIKE 'results'; SHOW TABLES IN TW4_live LIKE 'best_five'; SHOW TABLES IN TW4_history LIKE 'round'; SHOW TABLES IN TW4_history LIKE 'card'; SHOW TABLES IN TW4_history LIKE 'card_by_hole'; SHOW TABLES IN TW4_history LIKE 'results'; SHOW TABLES IN TW4_history LIKE 'best_five'; SHOW TABLES IN TW4_holding LIKE 'best_five';"
+    mysql -N -s -u root -e "SHOW DATABASES LIKE 'TW4_base'; SHOW DATABASES LIKE 'TW4_live'; SHOW DATABASES LIKE 'TW4_history'; SHOW DATABASES LIKE 'TW4_holding'; SHOW TABLES IN TW4_base LIKE 'staff'; SHOW TABLES IN TW4_base LIKE 'config_application'; SHOW TABLES IN TW4_base LIKE 'application_log'; SHOW TABLES IN TW4_live LIKE 'round'; SHOW TABLES IN TW4_live LIKE 'card'; SHOW TABLES IN TW4_live LIKE 'card_by_hole'; SHOW TABLES IN TW4_live LIKE 'results'; SHOW TABLES IN TW4_live LIKE 'best_five'; SHOW TABLES IN TW4_history LIKE 'round'; SHOW TABLES IN TW4_history LIKE 'card'; SHOW TABLES IN TW4_history LIKE 'card_by_hole'; SHOW TABLES IN TW4_history LIKE 'results'; SHOW TABLES IN TW4_history LIKE 'best_five'; SHOW TABLES IN TW4_holding LIKE 'best_five';"
 
 ADMIN_ROW="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SELECT username, role, is_active FROM TW4_base.staff WHERE username='admin' LIMIT 1;")"
@@ -88,6 +115,9 @@ STAFF_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$
 
 CONFIG_STATUS="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SELECT config_value_string FROM TW4_base.config_application WHERE config_name='config_status' LIMIT 1;")"
+
+APPLICATION_LOG_TABLE="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    mysql -N -s -u root -e "SHOW TABLES IN TW4_base LIKE 'application_log';")"
 
 if [ "$ADMIN_ROW" != $'admin\tadmin\t1' ]; then
     print_error "Admin seed verification failed. Expected admin\tadmin\t1, got: ${ADMIN_ROW:-<empty>}"
@@ -101,6 +131,11 @@ fi
 
 if [ "$CONFIG_STATUS" != "waiting" ]; then
     print_error "Config seed verification failed. Expected config_status=waiting, got: ${CONFIG_STATUS:-<empty>}"
+    exit 1
+fi
+
+if [ "$APPLICATION_LOG_TABLE" != "application_log" ]; then
+    print_error "Log table verification failed. Expected TW4_base.application_log to exist."
     exit 1
 fi
 

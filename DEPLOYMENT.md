@@ -108,7 +108,7 @@ The current Docker setup already models most of this, so the smallest deployment
 7. Bring up the production stack with `docker compose -f docker-compose.prod.yml up -d --build`.
 8. Let Caddy issue TLS certificates and serve the public domain.
 9. Keep MySQL private to the Docker network and do not expose it publicly.
-10. Do not publish phpMyAdmin unless you deliberately add it behind a private network or IP restriction.
+10. phpMyAdmin in production is bound to `127.0.0.1:8085` only. Reach it through an SSH tunnel such as `ssh -L 18085:127.0.0.1:8085 tw4-oracle`, then open `http://127.0.0.1:18085` locally.
 
 ## TW4 Bootstrap Checklist
 

@@ -31,6 +31,21 @@ services:
     networks:
       - tw4-network
 
+  phpmyadmin:
+    image: phpmyadmin:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8085:80"
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: ${DB_PASSWORD}
+      PMA_ARBITRARY: 0
+    depends_on:
+      - db
+    networks:
+      - tw4-network
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
