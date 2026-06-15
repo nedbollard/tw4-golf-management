@@ -4,6 +4,8 @@ composer.lock
 .DS_Store
 *.log
 logs/
+!src/Views/logs/
+!src/Views/logs/*.php
 private/logs/
 /nbproject/private/
 .phpunit.cache/

@@ -31,7 +31,7 @@ class Application
     {
         try {
             $this->router->dispatch();
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->handleError($e);
         }
     }
@@ -79,9 +79,10 @@ class Application
         }
     }
 
-    private function handleError(\Exception $e): void
+    private function handleError(\Throwable $e): void
     {
-        error_log("Application Error: " . $e->getMessage());
+        $requestUri = $_SERVER['REQUEST_URI'] ?? 'unknown';
+        error_log("Application Error on {$requestUri}: " . $e->getMessage() . " in " . $e->getFile() . ':' . $e->getLine());
         
         if ($this->config['debug'] ?? false) {
             throw $e;

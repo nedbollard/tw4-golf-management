@@ -236,6 +236,10 @@ class Logger
         }
         
         $result = $this->db->fetchOne($sql, $params);
+        if ($result === null || !isset($result['count'])) {
+            return 0;
+        }
+
         return (int) $result['count'];
     }
     
