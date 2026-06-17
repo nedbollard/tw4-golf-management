@@ -35,6 +35,17 @@ fi
 print_status "Staging all changes..."
 git add .
 
+# Preflight guard: ensure all controller render targets exist and are tracked
+if [ -x "./scripts/verify-rendered-views.sh" ]; then
+    print_status "Running rendered-view guard..."
+    if ! ./scripts/verify-rendered-views.sh; then
+        print_error "Rendered-view guard failed. Fix missing/untracked views before deploy."
+        exit 1
+    fi
+else
+    print_warning "scripts/verify-rendered-views.sh not executable or missing; skipping rendered-view guard."
+fi
+
 # Get commit message
 if [ -z "$1" ]; then
     echo -e "${YELLOW}Enter commit message:${NC}"
