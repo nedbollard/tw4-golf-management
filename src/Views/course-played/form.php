@@ -34,7 +34,7 @@
 
                         <?php
                         $existingNumberHoles = array_map(static function ($holeRow) {
-                            return (int) $holeRow['number_hole'];
+                            return (int) $holeRow['number_hole_course'];
                         }, $holes ?? []);
 
                         $baseData = $coursePlayed ?? [];

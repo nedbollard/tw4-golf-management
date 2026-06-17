@@ -76,11 +76,11 @@ class AdminControllerBehaviorTest extends TestCase
                     return $fakeStatement;
                 }
 
-                if (str_contains($sql, 'DELETE FROM TW4_history.best_five')) {
+                if (str_contains($sql, 'DELETE FROM TW4_history.best_five_scores')) {
                     return $fakeStatement;
                 }
 
-                if (str_contains($sql, 'DELETE FROM TW4_live.best_five')) {
+                if (str_contains($sql, 'DELETE FROM TW4_live.best_five_scores')) {
                     return $fakeStatement;
                 }
 

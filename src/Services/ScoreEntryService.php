@@ -66,17 +66,18 @@ class ScoreEntryService
         $genderCode = strtolower((string) ($player['gender'] ?? 'male')) === 'female' ? 'F' : 'M';
         $holes = $this->db->fetchAll(
             'SELECT cph.row_id,
-                    cph.number_hole,
+                  cph.number_hole_course,
+                  cph.number_hole_played,
                     cc.par,
                     cc.stroke
              FROM TW4_base.course_played_hole cph
              INNER JOIN TW4_base.course_played cp ON cp.row_id = cph.course_played_id
              INNER JOIN TW4_base.course_club cc
                      ON cc.name_club = cp.name_club
-                    AND cc.number_hole = cph.number_hole
+                  AND cc.number_hole = cph.number_hole_course
                     AND cc.gender = ?
              WHERE cph.course_played_id = ?
-             ORDER BY cph.number_hole ASC
+              ORDER BY cph.number_hole_played ASC
              LIMIT 9',
             [$genderCode, (int) $round['course_played_id']]
         );
@@ -104,12 +105,13 @@ class ScoreEntryService
 
         $entryHoles = [];
         foreach ($holes as $index => $hole) {
-            $holeNo = (int) $hole['number_hole'];
+            $holeNo = (int) $hole['number_hole_course'];
+            $playedHole = (int) ($hole['number_hole_played'] ?? ($index + 1));
             $entryHoles[] = [
-                'hole' => $index + 1,
+                'hole' => $playedHole,
                 'par' => (int) $hole['par'],
                 'stroke' => (int) $hole['stroke'],
-                'score' => $existingByHole[$index + 1] ?? null,
+                'score' => $existingByHole[$playedHole] ?? null,
                 'shots' => null,
                 'net' => null,
                 'points' => null,

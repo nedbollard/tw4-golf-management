@@ -16,7 +16,7 @@ USE `TW4_history`;
 DROP TABLE IF EXISTS `card_by_hole`;
 DROP TABLE IF EXISTS `card`;
 DROP TABLE IF EXISTS `results`;
-DROP TABLE IF EXISTS `best_five`;
+DROP TABLE IF EXISTS `best_five_scores`;
 DROP TABLE IF EXISTS `round`;
 
 CREATE TABLE `round` (
@@ -93,7 +93,7 @@ CREATE TABLE `results` (
   KEY `idx_history_results_player` (`player_identifier`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-CREATE TABLE `best_five` (
+CREATE TABLE `best_five_scores` (
   `row_id` int NOT NULL AUTO_INCREMENT,
   `season_year` char(5) NOT NULL,
   `number_round_snapshot` int NOT NULL,
@@ -116,9 +116,37 @@ CREATE TABLE `best_five` (
   `hist_updated_by` varchar(100) NOT NULL,
   `hist_updated_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`row_id`),
-  UNIQUE KEY `uk_history_best_five_snapshot_player` (`season_year`,`number_round_snapshot`,`row_id_player`),
-  KEY `idx_history_best_five_snapshot` (`season_year`,`number_round_snapshot`),
-  KEY `idx_history_best_five_player` (`row_id_player`)
+  UNIQUE KEY `uk_history_best_five_scores_snapshot_player` (`season_year`,`number_round_snapshot`,`row_id_player`),
+  KEY `idx_history_best_five_scores_snapshot` (`season_year`,`number_round_snapshot`),
+  KEY `idx_history_best_five_scores_player` (`row_id_player`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `eclectic_scores` (
+  `row_id` int NOT NULL AUTO_INCREMENT,
+  `season_year` char(5) NOT NULL,
+  `number_round_snapshot` int NOT NULL,
+  `ident_eclectic` varchar(16) NOT NULL,
+  `row_id_player` int NOT NULL,
+  `number_round_movement` int NOT NULL DEFAULT 0,
+  `score_total` int NOT NULL DEFAULT 0,
+  `score_hole_1` int NOT NULL DEFAULT 0,
+  `score_hole_2` int NOT NULL DEFAULT 0,
+  `score_hole_3` int NOT NULL DEFAULT 0,
+  `score_hole_4` int NOT NULL DEFAULT 0,
+  `score_hole_5` int NOT NULL DEFAULT 0,
+  `score_hole_6` int NOT NULL DEFAULT 0,
+  `score_hole_7` int NOT NULL DEFAULT 0,
+  `score_hole_8` int NOT NULL DEFAULT 0,
+  `score_hole_9` int NOT NULL DEFAULT 0,
+  `updated_by` varchar(100) NOT NULL,
+  `updated_ts` timestamp NULL DEFAULT NULL,
+  `hist_updated_by` varchar(100) NOT NULL,
+  `hist_updated_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`row_id`),
+  UNIQUE KEY `uk_history_eclectic_scores_snapshot_ident_player` (`season_year`,`number_round_snapshot`,`ident_eclectic`,`row_id_player`),
+  KEY `idx_history_eclectic_scores_snapshot` (`season_year`,`number_round_snapshot`),
+  KEY `idx_history_eclectic_scores_player` (`row_id_player`),
+  KEY `idx_history_eclectic_scores_ident` (`ident_eclectic`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

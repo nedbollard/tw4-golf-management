@@ -37,7 +37,10 @@ class CoursePlayedService
     public function getCoursePlayedHoles(int $coursePlayedId): array
     {
         return $this->db->fetchAll(
-            "SELECT number_hole FROM course_played_hole WHERE course_played_id = ? ORDER BY number_hole",
+            "SELECT number_hole_course, number_hole_played
+             FROM course_played_hole
+             WHERE course_played_id = ?
+             ORDER BY number_hole_played",
             [$coursePlayedId]
         );
     }
@@ -74,10 +77,11 @@ class CoursePlayedService
                 'updated_by' => $username,
             ]);
 
-            foreach ($numberHoles as $numberHole) {
+            foreach ($numberHoles as $playedHole => $numberHoleCourse) {
                 $this->db->insert('course_played_hole', [
                     'course_played_id' => $coursePlayedId,
-                    'number_hole' => $numberHole,
+                    'number_hole_course' => $numberHoleCourse,
+                    'number_hole_played' => $playedHole,
                     'updated_by' => $username,
                 ]);
             }
@@ -112,10 +116,11 @@ class CoursePlayedService
 
             $this->db->delete('course_played_hole', ['course_played_id' => $id]);
 
-            foreach ($numberHoles as $numberHole) {
+            foreach ($numberHoles as $playedHole => $numberHoleCourse) {
                 $this->db->insert('course_played_hole', [
                     'course_played_id' => $id,
-                    'number_hole' => $numberHole,
+                    'number_hole_course' => $numberHoleCourse,
+                    'number_hole_played' => $playedHole,
                     'updated_by' => $username,
                 ]);
             }

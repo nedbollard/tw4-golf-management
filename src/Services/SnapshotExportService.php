@@ -174,7 +174,7 @@ class SnapshotExportService
                     bf.round_best_5,
                     bf.points_movement,
                     COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", bf.row_id_player)) AS display_player
-                 FROM TW4_history.best_five bf
+                 FROM TW4_history.best_five_scores bf
                  LEFT JOIN TW4_base.roster r ON r.row_id = bf.row_id_player
                  WHERE bf.season_year = ?
                    AND bf.number_round_snapshot = ?
@@ -310,7 +310,7 @@ class SnapshotExportService
             'closest' => $closest,
             'round_stats' => $roundStats,
             'handicap_snapshot' => $handicapSnapshot,
-            'best_five_snapshot' => $bestFiveSnapshot,
+            'best_five_scores_snapshot' => $bestFiveSnapshot,
             'small_beer_money' => $smallBeerMoney,
             'small_beer_baggers' => $smallBeerBaggers,
             'small_beer_attendance' => $smallBeerAttendance,
@@ -430,7 +430,7 @@ class SnapshotExportService
 
     private function renderBest5(array $ctx): string
     {
-        $rows = $ctx['best_five_snapshot'] ?? [];
+        $rows = $ctx['best_five_scores_snapshot'] ?? [];
 
         $bodyRows = '';
         foreach ($rows as $idx => $row) {

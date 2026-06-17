@@ -55,7 +55,7 @@ class RoundWorkflowServiceTest extends TestCase
                     return [];
                 }
 
-                if (str_contains($sql, 'FROM TW4_holding.best_five')) {
+                if (str_contains($sql, 'FROM TW4_holding.best_five_scores')) {
                     return [];
                 }
 
@@ -101,9 +101,9 @@ class RoundWorkflowServiceTest extends TestCase
         $this->assertTrue($this->containsSql($executedSql, 'INSERT INTO TW4_history.card'));
         $this->assertTrue($this->containsSql($executedSql, 'INSERT INTO TW4_history.card_by_hole'));
         $this->assertTrue($this->containsSql($executedSql, 'INSERT INTO TW4_history.results'));
-        $this->assertTrue($this->containsSql($executedSql, 'INSERT INTO TW4_history.best_five'));
-        $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_live.best_five'));
-        $this->assertTrue($this->containsSql($executedSql, 'CREATE TABLE IF NOT EXISTS TW4_live.best_five'));
+        $this->assertTrue($this->containsSql($executedSql, 'INSERT INTO TW4_history.best_five_scores'));
+        $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_live.best_five_scores'));
+        $this->assertTrue($this->containsSql($executedSql, 'CREATE TABLE IF NOT EXISTS TW4_live.best_five_scores'));
         $this->assertTrue($this->containsSql($executedSql, 'UPDATE TW4_base.roster'));
         $this->assertTrue($this->containsSql($executedSql, 'UPDATE TW4_live.round'));
         $this->assertTrue($this->containsSql($executedSql, 'INNER JOIN TW4_live.card'));
@@ -277,8 +277,8 @@ class RoundWorkflowServiceTest extends TestCase
         $this->assertSame(9, $result['card_count']);
         $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_live.results'));
         $this->assertTrue($this->containsSql($executedSql, 'UPDATE TW4_live.round'));
-        $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_live.best_five'));
-        $this->assertTrue($this->containsSqlAndParams($executedSql, 'DELETE FROM TW4_history.best_five', ['25_26', 42]));
+        $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_live.best_five_scores'));
+        $this->assertTrue($this->containsSqlAndParams($executedSql, 'DELETE FROM TW4_history.best_five_scores', ['25_26', 42]));
     }
 
     public function testAdminResetResultsToCardEntryAllowsNotStartedState(): void

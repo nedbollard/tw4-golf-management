@@ -237,12 +237,12 @@ class RoundWorkflowService
             $roundNumber = (int) ($round['round_number'] ?? 0);
             if ($seasonYear !== '' && $roundNumber > 0) {
                 $this->db->query(
-                    'DELETE FROM TW4_history.best_five
+                    'DELETE FROM TW4_history.best_five_scores
                      WHERE season_year = ? AND number_round_snapshot = ?',
                     [$seasonYear, $roundNumber]
                 );
             }
-            $this->db->query('DELETE FROM TW4_live.best_five');
+            $this->db->query('DELETE FROM TW4_live.best_five_scores');
 
             $this->db->commit();
         } catch (\Throwable $e) {
@@ -520,7 +520,7 @@ class RoundWorkflowService
         );
 
         $this->db->query(
-            'DELETE FROM TW4_history.best_five
+            'DELETE FROM TW4_history.best_five_scores
              WHERE season_year = ? AND number_round_snapshot = ?',
             [$seasonYear, $numberRound]
         );
@@ -578,7 +578,7 @@ class RoundWorkflowService
         );
 
         $this->db->query(
-            'INSERT INTO TW4_history.best_five
+            'INSERT INTO TW4_history.best_five_scores
                 (season_year, number_round_snapshot, row_id_player, number_round_movement,
                  points_total, points_best_1, points_best_2, points_best_3, points_best_4, points_best_5,
                  round_best_1, round_best_2, round_best_3, round_best_4, round_best_5,
@@ -587,7 +587,7 @@ class RoundWorkflowService
                     points_total, points_best_1, points_best_2, points_best_3, points_best_4, points_best_5,
                     round_best_1, round_best_2, round_best_3, round_best_4, round_best_5,
                     points_movement, updated_by, updated_ts, ?, NOW()
-             FROM TW4_live.best_five
+             FROM TW4_live.best_five_scores
              WHERE season_year = ?',
             [$numberRound, $updatedBy, $seasonYear]
         );
@@ -595,9 +595,9 @@ class RoundWorkflowService
 
     private function stageBestFiveForRoundStart(string $seasonYear, string $updatedBy): void
     {
-        $this->db->query('DELETE FROM TW4_holding.best_five');
+        $this->db->query('DELETE FROM TW4_holding.best_five_scores');
         $this->db->query(
-            'INSERT INTO TW4_holding.best_five
+            'INSERT INTO TW4_holding.best_five_scores
                 (season_year, row_id_player, number_round_movement,
                  points_total, points_best_1, points_best_2, points_best_3, points_best_4, points_best_5,
                  round_best_1, round_best_2, round_best_3, round_best_4, round_best_5,
@@ -606,11 +606,11 @@ class RoundWorkflowService
                     points_total, points_best_1, points_best_2, points_best_3, points_best_4, points_best_5,
                     round_best_1, round_best_2, round_best_3, round_best_4, round_best_5,
                     points_movement, ?
-             FROM TW4_live.best_five
+             FROM TW4_live.best_five_scores
              WHERE season_year = ?',
             [$updatedBy, $seasonYear]
         );
-        $this->db->query('DELETE FROM TW4_live.best_five');
+        $this->db->query('DELETE FROM TW4_live.best_five_scores');
     }
 
     private function refreshBestFiveForFinish(string $seasonYear, int $numberRound, string $updatedBy): void
@@ -620,7 +620,7 @@ class RoundWorkflowService
                     points_total, points_best_1, points_best_2, points_best_3, points_best_4, points_best_5,
                     round_best_1, round_best_2, round_best_3, round_best_4, round_best_5,
                     points_movement
-             FROM TW4_holding.best_five
+             FROM TW4_holding.best_five_scores
              WHERE season_year = ?',
             [$seasonYear]
         );
@@ -649,7 +649,7 @@ class RoundWorkflowService
         $playerIds = array_values(array_unique(array_merge(array_keys($holdingByPlayer), array_keys($cardPointsByPlayer))));
         sort($playerIds);
 
-        $this->db->query('DELETE FROM TW4_live.best_five');
+        $this->db->query('DELETE FROM TW4_live.best_five_scores');
 
         foreach ($playerIds as $playerId) {
             $holding = $holdingByPlayer[$playerId] ?? null;
@@ -707,7 +707,7 @@ class RoundWorkflowService
                 $movementPoints = $pointsMovement;
             }
 
-            $this->db->insert('TW4_live.best_five', [
+            $this->db->insert('TW4_live.best_five_scores', [
                 'season_year' => $seasonYear,
                 'row_id_player' => $playerId,
                 'number_round_movement' => $movementRound,
@@ -775,7 +775,7 @@ class RoundWorkflowService
         );
 
         $tableDdl = "
-            CREATE TABLE IF NOT EXISTS %s.best_five (
+            CREATE TABLE IF NOT EXISTS %s.best_five_scores (
                 row_id INT NOT NULL AUTO_INCREMENT,
                 season_year CHAR(5) NOT NULL,
                 row_id_player INT NOT NULL,
@@ -795,9 +795,9 @@ class RoundWorkflowService
                 updated_by VARCHAR(100) NOT NULL,
                 updated_ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (row_id),
-                UNIQUE KEY uk_best_five_season_player (season_year, row_id_player),
-                KEY idx_best_five_player (row_id_player),
-                KEY idx_best_five_season (season_year)
+                UNIQUE KEY uk_best_five_scores_season_player (season_year, row_id_player),
+                KEY idx_best_five_scores_player (row_id_player),
+                KEY idx_best_five_scores_season (season_year)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
         ";
 
@@ -805,7 +805,7 @@ class RoundWorkflowService
         $this->db->query(sprintf($tableDdl, 'TW4_holding'));
 
         $this->db->query(
-            "CREATE TABLE IF NOT EXISTS TW4_history.best_five (
+            "CREATE TABLE IF NOT EXISTS TW4_history.best_five_scores (
                 row_id INT NOT NULL AUTO_INCREMENT,
                 season_year CHAR(5) NOT NULL,
                 number_round_snapshot INT NOT NULL,
@@ -828,9 +828,9 @@ class RoundWorkflowService
                 hist_updated_by VARCHAR(100) NOT NULL,
                 hist_updated_ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (row_id),
-                UNIQUE KEY uk_history_best_five_snapshot_player (season_year, number_round_snapshot, row_id_player),
-                KEY idx_history_best_five_snapshot (season_year, number_round_snapshot),
-                KEY idx_history_best_five_player (row_id_player)
+                UNIQUE KEY uk_history_best_five_scores_snapshot_player (season_year, number_round_snapshot, row_id_player),
+                KEY idx_history_best_five_scores_snapshot (season_year, number_round_snapshot),
+                KEY idx_history_best_five_scores_player (row_id_player)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
         );
     }

@@ -112,11 +112,13 @@ DROP TABLE IF EXISTS `course_played_hole`;
 CREATE TABLE `course_played_hole` (
   `row_id` int NOT NULL AUTO_INCREMENT,
   `course_played_id` int NOT NULL,
-  `number_hole` int NOT NULL,
+  `number_hole_course` int NOT NULL,
+  `number_hole_played` int NOT NULL,
   `updated_by` varchar(32) COLLATE utf8mb4_general_ci NOT NULL,
   `updated_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`row_id`),
-  UNIQUE KEY `unique_course_played_number_hole` (`course_played_id`,`number_hole`),
+  UNIQUE KEY `unique_course_played_number_hole_course` (`course_played_id`,`number_hole_course`),
+  UNIQUE KEY `unique_course_played_number_hole_played` (`course_played_id`,`number_hole_played`),
   CONSTRAINT `fk_course_played_hole_course_played` FOREIGN KEY (`course_played_id`) REFERENCES `course_played` (`row_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT=' ';
 /*!40101 SET character_set_client = @saved_cs_client */;
