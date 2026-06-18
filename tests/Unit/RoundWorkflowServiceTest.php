@@ -142,7 +142,7 @@ class RoundWorkflowServiceTest extends TestCase
         $db->expects($this->exactly(3))
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
-                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY row_id ASC')) {
+                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
                     return [
                         'round_id' => 7,
                         'season_year' => '24_25',
@@ -185,7 +185,7 @@ class RoundWorkflowServiceTest extends TestCase
         $db->expects($this->exactly(3))
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
-                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY row_id ASC')) {
+                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
                     return [
                         'round_id' => 7,
                         'season_year' => '25_26',
@@ -233,10 +233,10 @@ class RoundWorkflowServiceTest extends TestCase
         $db->expects($this->never())
             ->method('rollback');
 
-        $db->expects($this->exactly(3))
+        $db->expects($this->exactly(4))
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
-                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY row_id ASC')) {
+                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
                     return [
                         'round_id' => 7,
                         'season_year' => '25_26',
@@ -251,6 +251,10 @@ class RoundWorkflowServiceTest extends TestCase
 
                 if (str_contains($sql, 'FROM TW4_live.card')) {
                     return ['total' => 9];
+                }
+
+                if (str_contains($sql, 'FROM TW4_history.round') && str_contains($sql, 'round_date')) {
+                    return ['round_date' => '2026-01-01', 'course_played_id' => 3];
                 }
 
                 return null;
@@ -295,10 +299,10 @@ class RoundWorkflowServiceTest extends TestCase
         $db->expects($this->never())
             ->method('rollback');
 
-        $db->expects($this->exactly(3))
+        $db->expects($this->exactly(4))
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
-                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY row_id ASC')) {
+                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
                     return [
                         'round_id' => 7,
                         'season_year' => '25_26',
@@ -315,11 +319,8 @@ class RoundWorkflowServiceTest extends TestCase
                     return ['total' => 0];
                 }
 
-                if (str_contains($sql, 'SELECT season_year, number_round')) {
-                    return [
-                        'season_year' => '25_26',
-                        'number_round' => 42,
-                    ];
+                if (str_contains($sql, 'FROM TW4_history.round') && str_contains($sql, 'round_date')) {
+                    return ['round_date' => '2026-01-01', 'course_played_id' => 3];
                 }
 
                 return null;
@@ -351,7 +352,7 @@ class RoundWorkflowServiceTest extends TestCase
         $db->expects($this->once())
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
-                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY row_id ASC')) {
+                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
                     return [
                         'round_id' => 7,
                         'round_number' => 42,
@@ -387,10 +388,10 @@ class RoundWorkflowServiceTest extends TestCase
         $db->expects($this->once())
             ->method('rollback');
 
-        $db->expects($this->exactly(3))
+        $db->expects($this->exactly(4))
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
-                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY row_id ASC')) {
+                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
                     return [
                         'round_id' => 7,
                         'season_year' => '25_26',
@@ -405,6 +406,10 @@ class RoundWorkflowServiceTest extends TestCase
 
                 if (str_contains($sql, 'FROM TW4_live.card')) {
                     return ['total' => 9];
+                }
+
+                if (str_contains($sql, 'FROM TW4_history.round') && str_contains($sql, 'round_date')) {
+                    return ['round_date' => '2026-01-01', 'course_played_id' => 3];
                 }
 
                 return null;
@@ -446,7 +451,7 @@ class RoundWorkflowServiceTest extends TestCase
         $db->expects($this->once())
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
-                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY row_id ASC')) {
+                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
                     return [
                         'round_id' => 0,
                         'season_year' => '25_26',

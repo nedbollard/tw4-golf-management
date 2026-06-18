@@ -23,20 +23,23 @@ class RoundWorkflowService
     public function getPermanentRound(): ?array
     {
         $round = $this->db->fetchOne(
-            "SELECT row_id AS round_id,
-                    season_year,
-                    number_round AS round_number,
-                    round_date,
-                    course_played_id,
-                    workflow_step,
-                    card_count,
-                    locked_by_staff_id,
-                    lock_acquired_at,
-                    lock_expires_at,
-                    results_presented_at,
-                    finished_at
-             FROM TW4_live.round
-             ORDER BY row_id ASC
+            "SELECT r.row_id AS round_id,
+                    r.season_year,
+                    r.number_round AS round_number,
+                    r.round_date,
+                    r.course_played_id,
+                    r.workflow_step,
+                    r.card_count,
+                    r.locked_by_staff_id,
+                    r.lock_acquired_at,
+                    r.lock_expires_at,
+                    r.results_presented_at,
+                    r.finished_at,
+                    COALESCE(cp.name_course, '') AS course_name,
+                    COALESCE(cp.name_club, '') AS club_name
+             FROM TW4_live.round r
+             LEFT JOIN TW4_base.course_played cp ON cp.row_id = r.course_played_id
+             ORDER BY r.row_id ASC
              LIMIT 1"
         );
 
@@ -52,20 +55,23 @@ class RoundWorkflowService
         ]);
 
         return $this->db->fetchOne(
-            "SELECT row_id AS round_id,
-                    season_year,
-                    number_round AS round_number,
-                    round_date,
-                    course_played_id,
-                    workflow_step,
-                    card_count,
-                    locked_by_staff_id,
-                    lock_acquired_at,
-                    lock_expires_at,
-                    results_presented_at,
-                    finished_at
-             FROM TW4_live.round
-             WHERE row_id = ?",
+            "SELECT r.row_id AS round_id,
+                    r.season_year,
+                    r.number_round AS round_number,
+                    r.round_date,
+                    r.course_played_id,
+                    r.workflow_step,
+                    r.card_count,
+                    r.locked_by_staff_id,
+                    r.lock_acquired_at,
+                    r.lock_expires_at,
+                    r.results_presented_at,
+                    r.finished_at,
+                    COALESCE(cp.name_course, '') AS course_name,
+                    COALESCE(cp.name_club, '') AS club_name
+             FROM TW4_live.round r
+             LEFT JOIN TW4_base.course_played cp ON cp.row_id = r.course_played_id
+             WHERE r.row_id = ?",
             [$roundId]
         );
     }
@@ -214,6 +220,21 @@ class RoundWorkflowService
         );
         $cardCount = (int) ($cardCountRow['total'] ?? 0);
 
+        $seasonYear = trim((string) ($round['season_year'] ?? ''));
+        $roundNumber = (int) ($round['round_number'] ?? 0);
+
+        // Recover round_date and course_played_id from history if they were cleared by finishRound
+        $historyRoundMeta = null;
+        if ($seasonYear !== '' && $roundNumber > 0) {
+            $historyRoundMeta = $this->db->fetchOne(
+                'SELECT round_date, course_played_id
+                 FROM TW4_history.round
+                 WHERE season_year = ? AND number_round = ?
+                 LIMIT 1',
+                [$seasonYear, $roundNumber]
+            );
+        }
+
         $this->db->beginTransaction();
         try {
             $this->db->query('DELETE FROM TW4_live.results');
@@ -221,6 +242,8 @@ class RoundWorkflowService
                 "UPDATE TW4_live.round
                  SET workflow_step = 'card_entry_open',
                      card_count = ?,
+                     round_date = COALESCE(round_date, ?),
+                     course_played_id = COALESCE(course_played_id, ?),
                      results_presented_at = NULL,
                      finished_at = NULL,
                      locked_by_staff_id = NULL,
@@ -230,15 +253,19 @@ class RoundWorkflowService
                      lock_release_reason = 'admin_forced',
                      updated_by = ?
                  WHERE row_id = ?",
-                [$cardCount, $updatedBy, $roundId]
+                [
+                    $cardCount,
+                    $historyRoundMeta['round_date'] ?? null,
+                    $historyRoundMeta['course_played_id'] ?? null,
+                    $updatedBy,
+                    $roundId,
+                ]
             );
 
-            $seasonYear = trim((string) ($round['season_year'] ?? ''));
-            $roundNumber = (int) ($round['round_number'] ?? 0);
             if ($seasonYear !== '' && $roundNumber > 0) {
                 $this->db->query(
                     'DELETE FROM TW4_history.best_five_scores
-                     WHERE season_year = ? AND number_round_snapshot = ?',
+                     WHERE season_year = ? AND number_round_movement = ?',
                     [$seasonYear, $roundNumber]
                 );
             }
@@ -521,7 +548,7 @@ class RoundWorkflowService
 
         $this->db->query(
             'DELETE FROM TW4_history.best_five_scores
-             WHERE season_year = ? AND number_round_snapshot = ?',
+             WHERE season_year = ? AND number_round_movement = ?',
             [$seasonYear, $numberRound]
         );
 
@@ -579,17 +606,19 @@ class RoundWorkflowService
 
         $this->db->query(
             'INSERT INTO TW4_history.best_five_scores
-                (season_year, number_round_snapshot, row_id_player, number_round_movement,
+                (season_year, row_id_player, number_round_movement,
                  points_total, points_best_1, points_best_2, points_best_3, points_best_4, points_best_5,
                  round_best_1, round_best_2, round_best_3, round_best_4, round_best_5,
                  points_movement, updated_by, updated_ts, hist_updated_by, hist_updated_ts)
-             SELECT season_year, ?, row_id_player, number_round_movement,
+             SELECT season_year, row_id_player, number_round_movement,
                     points_total, points_best_1, points_best_2, points_best_3, points_best_4, points_best_5,
                     round_best_1, round_best_2, round_best_3, round_best_4, round_best_5,
                     points_movement, updated_by, updated_ts, ?, NOW()
              FROM TW4_live.best_five_scores
-             WHERE season_year = ?',
-            [$numberRound, $updatedBy, $seasonYear]
+             WHERE season_year = ?
+               AND points_movement > 0
+               AND number_round_movement = ?',
+            [$updatedBy, $seasonYear, $numberRound]
         );
     }
 
@@ -808,7 +837,6 @@ class RoundWorkflowService
             "CREATE TABLE IF NOT EXISTS TW4_history.best_five_scores (
                 row_id INT NOT NULL AUTO_INCREMENT,
                 season_year CHAR(5) NOT NULL,
-                number_round_snapshot INT NOT NULL,
                 row_id_player INT NOT NULL,
                 number_round_movement INT NOT NULL DEFAULT 0,
                 points_total INT NOT NULL DEFAULT 0,
@@ -828,8 +856,8 @@ class RoundWorkflowService
                 hist_updated_by VARCHAR(100) NOT NULL,
                 hist_updated_ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (row_id),
-                UNIQUE KEY uk_history_best_five_scores_snapshot_player (season_year, number_round_snapshot, row_id_player),
-                KEY idx_history_best_five_scores_snapshot (season_year, number_round_snapshot),
+                UNIQUE KEY uk_history_best_five_scores_movement_player (season_year, number_round_movement, row_id_player),
+                KEY idx_history_best_five_scores_movement (season_year, number_round_movement),
                 KEY idx_history_best_five_scores_player (row_id_player)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
         );

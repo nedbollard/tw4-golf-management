@@ -21,7 +21,7 @@
             <h2 class="select-player-card-title"><?php echo htmlspecialchars($app_title); ?> - Select Player</h2>
             <div class="select-player-card-body">
                 <div class="section-title-wrap text-center">
-                    <h2>Round <?php echo (int) ($round['round_number'] ?? 0); ?></h2>
+                    <h2>Round <?php echo (int) ($round['round_number'] ?? 0); ?><?php $courseName = trim((string) ($round['course_name'] ?? '')); if ($courseName) echo ' · Course ' . htmlspecialchars($courseName); ?></h2>
                     <div class="section-title-accent"></div>
                 </div>
 

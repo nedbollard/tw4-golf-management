@@ -79,7 +79,7 @@ $sfpTotalClass = static function ($points): string {
             <h2 class="enter-card-card-title"><?php echo htmlspecialchars($app_title); ?> - Enter Card</h2>
             <div class="enter-card-card-body">
                 <div class="enter-card-player-banner">
-                    <strong>Round <?php echo $roundNumber; ?></strong>
+                    <strong>Round <?php echo $roundNumber; ?><?php $courseName = trim((string) ($round['course_name'] ?? '')); if ($courseName) echo ' · Course ' . htmlspecialchars($courseName); ?></strong>
                     &nbsp;·&nbsp;
                     Player : <?php echo htmlspecialchars($playerDisplay); ?> :
                     <?php echo htmlspecialchars($playerIdentifier); ?> :

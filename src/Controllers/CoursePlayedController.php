@@ -225,7 +225,7 @@ class CoursePlayedController extends BaseController
                 continue;
             }
 
-            $numberHoles[] = $numberHole;
+            $numberHoles[$position] = $numberHole;
         }
 
         if (count(array_unique($numberHoles)) !== count($numberHoles)) {

@@ -54,7 +54,7 @@ class SnapshotExportService
 
         $files = [
             '10_Results.html' => $this->renderResults($context),
-            '20_Movements.html' => $this->renderPlaceholder($context, 'Movements', 'Movement tracking export is not available yet in TW4.'),
+            '20_Movements.html' => $this->renderMovements($context),
             '31_Best_5_Scores.html' => $this->renderBest5($context),
             '33_Eclectic.html' => $this->renderPlaceholder($context, 'Eclectic', 'Eclectic export is queued for a later increment.'),
             '35_Teams_Haggle.html' => $this->renderPlaceholder($context, 'Teams Haggle', 'Teams Haggle export is queued for a later increment.'),
@@ -174,13 +174,22 @@ class SnapshotExportService
                     bf.round_best_5,
                     bf.points_movement,
                     COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", bf.row_id_player)) AS display_player
-                 FROM TW4_history.best_five_scores bf
+                                 FROM TW4_history.best_five_scores bf
+                                 INNER JOIN (
+                                        SELECT season_year, row_id_player, MAX(number_round_movement) AS latest_movement_round
+                                        FROM TW4_history.best_five_scores
+                                        WHERE season_year = ?
+                                            AND number_round_movement <= ?
+                                        GROUP BY season_year, row_id_player
+                                 ) latest
+                                     ON latest.season_year = bf.season_year
+                                    AND latest.row_id_player = bf.row_id_player
+                                    AND latest.latest_movement_round = bf.number_round_movement
                  LEFT JOIN TW4_base.roster r ON r.row_id = bf.row_id_player
-                 WHERE bf.season_year = ?
-                   AND bf.number_round_snapshot = ?
+                                 WHERE bf.season_year = ?
                  ORDER BY bf.points_total DESC,
                           COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", bf.row_id_player)) ASC',
-                [$seasonYear, $roundNumber]
+                                [$seasonYear, $roundNumber, $seasonYear]
             );
         } catch (\Throwable $e) {
             $bestFiveSnapshot = [];
@@ -294,6 +303,8 @@ class SnapshotExportService
         $smallBeerMoney = $this->buildSmallBeerMoney($seasonYear, $roundNumber);
         $smallBeerBaggers = $this->buildSmallBeerBaggers($seasonYear, $roundNumber);
         $smallBeerAttendance = $this->buildSmallBeerAttendance($seasonYear, $roundNumber);
+        $movementHandicaps = $this->buildRoundHandicapMovements($seasonYear, $roundNumber);
+        $movementBestFive = $this->buildRoundBestFiveMovements($seasonYear, $roundNumber);
 
         // Calculate round stats
         $roundStats = $this->calculateRoundStats($scores, $pointsArray);
@@ -314,7 +325,66 @@ class SnapshotExportService
             'small_beer_money' => $smallBeerMoney,
             'small_beer_baggers' => $smallBeerBaggers,
             'small_beer_attendance' => $smallBeerAttendance,
+            'movement_handicaps' => $movementHandicaps,
+            'movement_best_five' => $movementBestFive,
         ];
+    }
+
+    private function buildRoundHandicapMovements(string $seasonYear, int $roundNumber): array
+    {
+        return $this->db->fetchAll(
+            'SELECT
+                ha.row_id_player,
+                COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", ha.row_id_player)) AS display_player,
+                ha.handicap_previous,
+                ha.handicap_new,
+                ha.handicap_source,
+                ha.reason,
+                ha.changed_at,
+                COALESCE(SUM(cbh.points), 0) AS pts_scored,
+                COALESCE(SUM(CASE WHEN cbh.points = 0 THEN 1 ELSE cbh.points END), 0) AS pts_adjusted
+             FROM TW4_base.handicap_audit ha
+             LEFT JOIN TW4_base.roster r ON r.row_id = ha.row_id_player
+             LEFT JOIN TW4_history.card hc
+                ON hc.season_year COLLATE utf8mb4_general_ci = ha.season_year
+               AND hc.number_round = ha.number_round
+               AND hc.row_id_player = ha.row_id_player
+             LEFT JOIN TW4_history.card_by_hole cbh ON cbh.row_id_card = hc.row_id
+             WHERE ha.season_year = ?
+               AND ha.number_round = ?
+             GROUP BY ha.row_id, ha.row_id_player, r.alias, r.player_identifier,
+                      ha.handicap_previous, ha.handicap_new, ha.handicap_source,
+                      ha.reason, ha.changed_at
+             ORDER BY COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", ha.row_id_player)) ASC, ha.changed_at ASC, ha.row_id ASC',
+            [$seasonYear, $roundNumber]
+        );
+    }
+
+    private function buildRoundBestFiveMovements(string $seasonYear, int $roundNumber): array
+    {
+        return $this->db->fetchAll(
+            'SELECT
+                bf.row_id_player,
+                COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", bf.row_id_player)) AS display_player,
+                bf.points_total,
+                bf.points_best_1,
+                bf.points_best_2,
+                bf.points_best_3,
+                bf.points_best_4,
+                bf.points_best_5,
+                bf.points_movement,
+                bf.number_round_movement,
+                bf.updated_ts
+             FROM TW4_history.best_five_scores bf
+             LEFT JOIN TW4_base.roster r ON r.row_id = bf.row_id_player
+             WHERE bf.season_year = ?
+               AND bf.number_round_movement = ?
+               AND bf.points_movement > 0
+             ORDER BY bf.points_movement DESC,
+                      bf.points_total DESC,
+                      COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", bf.row_id_player)) ASC',
+            [$seasonYear, $roundNumber]
+        );
     }
 
     private function calculateRoundStats(array $scores, array $points): array
@@ -460,6 +530,65 @@ class SnapshotExportService
             . '<h3>Course: ' . $this->e((string) ($ctx['name_course'] ?? 'n/a')) . '</h3>'
             . '<table><tr><th>Standing</th><th>Player</th><th>Total Points</th><th>Best 1</th><th>Best 2</th><th>Best 3</th><th>Best 4</th><th>Best 5</th><th>Last Change</th><th>Round</th></tr>'
             . $bodyRows
+            . '</table>'
+        );
+    }
+
+    private function renderMovements(array $ctx): string
+    {
+        $handicapRows = '';
+        foreach (($ctx['movement_handicaps'] ?? []) as $row) {
+            $previous = isset($row['handicap_previous']) ? (int) $row['handicap_previous'] : null;
+            $new = isset($row['handicap_new']) ? (int) $row['handicap_new'] : null;
+            $delta = ($previous !== null && $new !== null) ? ($new - $previous) : null;
+            $deltaText = $delta === null ? 'n/a' : (($delta > 0 ? '+' : '') . (string) $delta);
+            $source = trim((string) ($row['handicap_source'] ?? ''));
+            $reason = trim((string) ($row['reason'] ?? ''));
+
+            $handicapRows .= '<tr>'
+                . '<td>' . $this->e((string) ($row['display_player'] ?? '')) . '</td>'
+                . '<td>' . $this->e($deltaText) . '</td>'
+                . '<td>' . ($new === null ? 'n/a' : (string) $new) . '</td>'
+                . '<td>' . (int) ($row['pts_scored'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['pts_adjusted'] ?? 0) . '</td>'
+                . '<td>' . $this->e($source !== '' ? $source : 'n/a') . '</td>'
+                . '<td>' . $this->e($reason !== '' ? $reason : 'n/a') . '</td>'
+                . '</tr>';
+        }
+        if ($handicapRows === '') {
+            $handicapRows = '<tr><td colspan="7">No handicap changes this round.</td></tr>';
+        }
+
+        $bestFiveRows = '';
+        foreach (($ctx['movement_best_five'] ?? []) as $row) {
+            $bestFiveRows .= '<tr>'
+                . '<td>' . $this->e((string) ($row['display_player'] ?? '')) . '</td>'
+                . '<td>' . (int) ($row['points_total'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['points_movement'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['points_best_1'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['points_best_2'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['points_best_3'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['points_best_4'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['points_best_5'] ?? 0) . '</td>'
+                . '</tr>';
+        }
+        if ($bestFiveRows === '') {
+            $bestFiveRows = '<tr><td colspan="8">No best five movements this round.</td></tr>';
+        }
+
+        return $this->wrap(
+            $ctx,
+            'Movements',
+            '<h2>Movements</h2>'
+            . '<h3>Date: ' . $this->e((string) ($ctx['round_date'] ?? 'n/a')) . '</h3>'
+            . '<h3>Course: ' . $this->e((string) ($ctx['name_course'] ?? 'n/a')) . '</h3>'
+            . '<h4>Handicap Changes</h4>'
+            . '<table><tr><th>Player</th><th>Change</th><th>New</th><th>Points</th><th>(Points)</th><th>Source</th><th>Reason</th></tr>'
+            . $handicapRows
+            . '</table>'
+            . '<h4>Best Five Movements</h4>'
+            . '<table><tr><th>Player</th><th>Total Points</th><th>Movement</th><th>Best 1</th><th>Best 2</th><th>Best 3</th><th>Best 4</th><th>Best 5</th></tr>'
+            . $bestFiveRows
             . '</table>'
         );
     }

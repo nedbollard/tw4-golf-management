@@ -30,13 +30,14 @@ class AdminControllerBehaviorTest extends TestCase
             'username' => 'admin_user',
         ]));
 
-        $db->expects($this->exactly(4))
+        $db->expects($this->exactly(5))
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
-                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY row_id ASC')) {
+                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
                     return [
                         'round_id' => 7,
                         'round_number' => 42,
+                        'season_year' => '25_26',
                         'workflow_step' => 'results_presented',
                     ];
                 }
@@ -47,6 +48,10 @@ class AdminControllerBehaviorTest extends TestCase
 
                 if (str_contains($sql, 'FROM TW4_live.card')) {
                     return ['total' => 9];
+                }
+
+                if (str_contains($sql, 'FROM TW4_history.round') && str_contains($sql, 'round_date')) {
+                    return ['round_date' => '2026-01-01', 'course_played_id' => 3];
                 }
 
                 if (str_contains($sql, 'workflow_step, card_count, lock_release_reason, locked_by_staff_id')) {
@@ -85,7 +90,7 @@ class AdminControllerBehaviorTest extends TestCase
                 }
 
                 $this->assertStringContainsString('UPDATE TW4_live.round', $sql);
-                $this->assertSame([9, 'admin_user', 7], $params);
+                $this->assertSame([9, '2026-01-01', 3, 'admin_user', 7], $params);
                 return $fakeStatement;
             });
 
@@ -132,7 +137,7 @@ class AdminControllerBehaviorTest extends TestCase
         $db->expects($this->once())
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
-                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY row_id ASC')) {
+                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
                     return [
                         'round_id' => 7,
                         'round_number' => 42,
@@ -177,7 +182,7 @@ class AdminControllerBehaviorTest extends TestCase
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []) use (&$fetchCount): ?array {
                 $fetchCount++;
-                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY row_id ASC')) {
+                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
                     return [
                         'round_id' => 9,
                         'round_number' => 43,
@@ -259,7 +264,7 @@ class AdminControllerBehaviorTest extends TestCase
         $db->expects($this->exactly(3))
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
-                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY row_id ASC')) {
+                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
                     return [
                         'round_id' => 7,
                         'round_number' => 42,

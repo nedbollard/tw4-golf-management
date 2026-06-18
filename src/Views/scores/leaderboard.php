@@ -33,7 +33,7 @@ $fromScorerMenu = strpos($_SERVER['HTTP_REFERER'] ?? '', '/scorer/menu') !== fal
                 </div>
 
                 <div class="leaderboard-status">
-                    <span class="status-chip">Live Round <?php echo $roundNumber > 0 ? $roundNumber : '—'; ?> | <?php echo htmlspecialchars($workflowStep); ?></span>
+                    <span class="status-chip">Live Round <?php echo $roundNumber > 0 ? $roundNumber : '—'; ?><?php $courseName = trim((string) ($round['course_name'] ?? '')); if ($courseName) echo ' · Course ' . htmlspecialchars($courseName); ?> | <?php echo htmlspecialchars($workflowStep); ?></span>
                 </div>
 
                 <?php if (!empty($notice)): ?>
