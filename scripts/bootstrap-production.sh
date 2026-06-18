@@ -29,6 +29,11 @@ LIVE_SCHEMA_FILE="database/baseline/TW4_live_schema.sql"
 HISTORY_SCHEMA_FILE="database/baseline/TW4_history_schema.sql"
 HOLDING_SCHEMA_FILE="database/baseline/TW4_holding_schema.sql"
 BASE_SEED_FILE="database/baseline/TW4_base_seed.sql"
+POST_BOOTSTRAP_MIGRATIONS=(
+    "src/migrations/029_fix_hole_numbering.sql"
+    "src/migrations/030_best_five_history_movement_only.sql"
+    "src/migrations/031_drop_course_played_hole_temp_column.sql"
+)
 
 ensure_application_log_table() {
     print_status "Ensuring TW4_base.application_log exists..."
@@ -58,6 +63,13 @@ SQL
 for required_file in "$BASE_SCHEMA_FILE" "$LIVE_SCHEMA_FILE" "$HISTORY_SCHEMA_FILE" "$HOLDING_SCHEMA_FILE" "$BASE_SEED_FILE"; do
     if [ ! -f "$required_file" ]; then
         print_error "Required file not found: $required_file"
+        exit 1
+    fi
+done
+
+for migration_file in "${POST_BOOTSTRAP_MIGRATIONS[@]}"; do
+    if [ ! -f "$migration_file" ]; then
+        print_error "Post-bootstrap migration not found: $migration_file"
         exit 1
     fi
 done
@@ -101,6 +113,13 @@ print_status "Applying controlled TW4_base seed data..."
 docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -u root TW4_base < "$BASE_SEED_FILE"
 
+print_status "Applying post-bootstrap compatibility migrations..."
+for migration_file in "${POST_BOOTSTRAP_MIGRATIONS[@]}"; do
+    print_status "Applying ${migration_file}..."
+    docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+        mysql -u root TW4_base < "$migration_file"
+done
+
 ensure_application_log_table
 
 print_status "Verifying required databases and tables..."
@@ -119,6 +138,15 @@ CONFIG_STATUS="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD=
 APPLICATION_LOG_TABLE="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SHOW TABLES IN TW4_base LIKE 'application_log';")"
 
+TEMP_HOLE_COLUMN_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    mysql -N -s -u root -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='TW4_base' AND table_name='course_played_hole' AND column_name='number_hole_played_temp';")"
+
+BEST_FIVE_MOVEMENT_INDEX_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    mysql -N -s -u root -e "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema='TW4_history' AND table_name='best_five_scores' AND index_name='uk_history_best_five_scores_movement_player';")"
+
+BEST_FIVE_SNAPSHOT_COLUMN_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    mysql -N -s -u root -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='TW4_history' AND table_name='best_five_scores' AND column_name='number_round_snapshot';")"
+
 if [ "$ADMIN_ROW" != $'admin\tadmin\t1' ]; then
     print_error "Admin seed verification failed. Expected admin\tadmin\t1, got: ${ADMIN_ROW:-<empty>}"
     exit 1
@@ -136,6 +164,21 @@ fi
 
 if [ "$APPLICATION_LOG_TABLE" != "application_log" ]; then
     print_error "Log table verification failed. Expected TW4_base.application_log to exist."
+    exit 1
+fi
+
+if [ "$TEMP_HOLE_COLUMN_COUNT" != "0" ]; then
+    print_error "course_played_hole cleanup verification failed. number_hole_played_temp still exists."
+    exit 1
+fi
+
+if [ "$BEST_FIVE_MOVEMENT_INDEX_COUNT" = "0" ]; then
+    print_error "best_five_scores verification failed. Movement unique index is missing in TW4_history."
+    exit 1
+fi
+
+if [ "$BEST_FIVE_SNAPSHOT_COLUMN_COUNT" != "0" ]; then
+    print_error "best_five_scores verification failed. number_round_snapshot still exists in TW4_history.best_five_scores."
     exit 1
 fi
 
