@@ -79,15 +79,13 @@ BEGIN
         reason VARCHAR(255) NULL COMMENT 'Why was this changed (for admin adjustments)',
 
         -- Audit trail
-        changed_by VARCHAR(100) NOT NULL,
-        changed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_by VARCHAR(100) NOT NULL,
         updated_ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
         FOREIGN KEY (row_id_player) REFERENCES roster (row_id) ON DELETE CASCADE,
         INDEX idx_player (row_id_player),
         INDEX idx_source (handicap_source),
-        INDEX idx_changed_at (changed_at)
+        INDEX idx_updated_ts (updated_ts)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 END $$

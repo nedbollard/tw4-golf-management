@@ -370,8 +370,9 @@ class RosterService
             'handicap_source' => $source,
             'season_year' => null,
             'number_round' => null,
+            'points_scored' => null,
+            'points_effective' => null,
             'reason' => $reason,
-            'changed_by' => $actor,
             'updated_by' => $actor,
         ]);
     }

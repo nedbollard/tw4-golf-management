@@ -141,14 +141,14 @@ class SnapshotExportService
                 ha.reason,
                 ha.season_year AS audit_season_year,
                 ha.number_round AS audit_number_round,
-                ha.changed_at
+                     ha.updated_ts
              FROM TW4_base.roster r
              LEFT JOIN TW4_base.handicap_audit ha
                ON ha.row_id = (
                    SELECT ha2.row_id
                    FROM TW4_base.handicap_audit ha2
                    WHERE ha2.row_id_player = r.row_id
-                   ORDER BY ha2.changed_at DESC, ha2.row_id DESC
+                         ORDER BY ha2.updated_ts DESC, ha2.row_id DESC
                    LIMIT 1
                )
              WHERE r.status IN ("active", "scored")
@@ -340,22 +340,14 @@ class SnapshotExportService
                 ha.handicap_new,
                 ha.handicap_source,
                 ha.reason,
-                ha.changed_at,
-                COALESCE(SUM(cbh.points), 0) AS pts_scored,
-                COALESCE(SUM(CASE WHEN cbh.points = 0 THEN 1 ELSE cbh.points END), 0) AS pts_adjusted
+                                ha.updated_ts,
+                                COALESCE(ha.points_scored, 0) AS pts_scored,
+                                COALESCE(ha.points_effective, 0) AS pts_adjusted
              FROM TW4_base.handicap_audit ha
              LEFT JOIN TW4_base.roster r ON r.row_id = ha.row_id_player
-             LEFT JOIN TW4_history.card hc
-                ON hc.season_year COLLATE utf8mb4_general_ci = ha.season_year
-               AND hc.number_round = ha.number_round
-               AND hc.row_id_player = ha.row_id_player
-             LEFT JOIN TW4_history.card_by_hole cbh ON cbh.row_id_card = hc.row_id
              WHERE ha.season_year = ?
                AND ha.number_round = ?
-             GROUP BY ha.row_id, ha.row_id_player, r.alias, r.player_identifier,
-                      ha.handicap_previous, ha.handicap_new, ha.handicap_source,
-                      ha.reason, ha.changed_at
-             ORDER BY COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", ha.row_id_player)) ASC, ha.changed_at ASC, ha.row_id ASC',
+                         ORDER BY COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", ha.row_id_player)) ASC, ha.updated_ts ASC, ha.row_id ASC',
             [$seasonYear, $roundNumber]
         );
     }

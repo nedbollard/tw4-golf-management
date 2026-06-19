@@ -133,15 +133,15 @@ CREATE TABLE `handicap_audit` (
   `handicap_source` enum('card_scoring','admin_adjustment','system_import') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'admin_adjustment',
   `season_year` char(5) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Season the card was played, e.g. 25_26',
   `number_round` int DEFAULT NULL COMMENT 'Round number within that season',
+  `points_scored` int DEFAULT NULL COMMENT 'Raw Stableford points scored on the card',
+  `points_effective` int DEFAULT NULL COMMENT 'Points used for handicap change calculation',
   `reason` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Why was this changed (for admin adjustments)',
-  `changed_by` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
-  `changed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_by` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
   `updated_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`row_id`),
   KEY `idx_player` (`row_id_player`),
   KEY `idx_source` (`handicap_source`),
-  KEY `idx_changed_at` (`changed_at`),
+  KEY `idx_updated_ts` (`updated_ts`),
   CONSTRAINT `handicap_audit_ibfk_1` FOREIGN KEY (`row_id_player`) REFERENCES `roster` (`row_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

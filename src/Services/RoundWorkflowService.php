@@ -486,11 +486,15 @@ class RoundWorkflowService
         $changedRows = $this->db->fetchAll(
             'SELECT r.row_id AS row_id_player,
                     r.handicap AS handicap_previous,
-                    c.handicap_updated AS handicap_new
+                                        c.handicap_updated AS handicap_new,
+                                        COALESCE(SUM(cbh.points), 0) AS points_scored,
+                                        COALESCE(SUM(CASE WHEN cbh.points = 0 THEN 1 ELSE cbh.points END), 0) AS points_effective
              FROM TW4_base.roster r
              INNER JOIN TW4_live.card c ON c.row_id_player = r.row_id
+                         LEFT JOIN TW4_live.card_by_hole cbh ON cbh.row_id_card = c.row_id
              WHERE c.handicap_updated IS NOT NULL
-               AND (r.handicap IS NULL OR r.handicap <> c.handicap_updated)'
+                             AND (r.handicap IS NULL OR r.handicap <> c.handicap_updated)
+                         GROUP BY r.row_id, r.handicap, c.handicap_updated'
         );
 
         $this->db->query(
@@ -511,8 +515,9 @@ class RoundWorkflowService
                 'handicap_source' => 'card_scoring',
                 'season_year' => $seasonYear,
                 'number_round' => $numberRound,
+                'points_scored' => (int) ($row['points_scored'] ?? 0),
+                'points_effective' => (int) ($row['points_effective'] ?? 0),
                 'reason' => 'finish_round_card_scoring',
-                'changed_by' => $updatedBy,
                 'updated_by' => $updatedBy,
             ]);
         }

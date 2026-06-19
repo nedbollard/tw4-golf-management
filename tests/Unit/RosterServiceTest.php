@@ -313,6 +313,8 @@ class RosterServiceTest extends TestCase
                 $this->assertSame('TW4_base.handicap_audit', $table);
                 $this->assertSame(1, $data['row_id_player']);
                 $this->assertSame(12, $data['handicap_new']);
+                $this->assertNull($data['points_scored']);
+                $this->assertNull($data['points_effective']);
                 $this->assertSame('system', $data['updated_by']);
                 return 1;
             });

@@ -33,6 +33,9 @@ POST_BOOTSTRAP_MIGRATIONS=(
     "src/migrations/029_fix_hole_numbering.sql"
     "src/migrations/030_best_five_history_movement_only.sql"
     "src/migrations/031_drop_course_played_hole_temp_column.sql"
+    "src/migrations/032_handicap_audit_store_points_at_source.sql"
+    "src/migrations/033_handicap_audit_use_updated_columns.sql"
+    "src/migrations/034_handicap_audit_promote_row_id_player.sql"
 )
 
 ensure_application_log_table() {
@@ -147,6 +150,27 @@ BEST_FIVE_MOVEMENT_INDEX_COUNT="$(docker compose -f docker-compose.prod.yml exec
 BEST_FIVE_SNAPSHOT_COLUMN_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='TW4_history' AND table_name='best_five_scores' AND column_name='number_round_snapshot';")"
 
+HANDICAP_POINTS_SCORED_COLUMN_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    mysql -N -s -u root -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='TW4_base' AND table_name='handicap_audit' AND column_name='points_scored';")"
+
+HANDICAP_POINTS_EFFECTIVE_COLUMN_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    mysql -N -s -u root -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='TW4_base' AND table_name='handicap_audit' AND column_name='points_effective';")"
+
+HANDICAP_CHANGED_BY_COLUMN_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    mysql -N -s -u root -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='TW4_base' AND table_name='handicap_audit' AND column_name='changed_by';")"
+
+HANDICAP_CHANGED_AT_COLUMN_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    mysql -N -s -u root -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='TW4_base' AND table_name='handicap_audit' AND column_name='changed_at';")"
+
+HANDICAP_UPDATED_TS_INDEX_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    mysql -N -s -u root -e "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema='TW4_base' AND table_name='handicap_audit' AND index_name='idx_updated_ts';")"
+
+HANDICAP_PLAYER_BEFORE_POINTS="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    mysql -N -s -u root -e "SELECT CASE WHEN \
+        (SELECT ordinal_position FROM information_schema.columns WHERE table_schema='TW4_base' AND table_name='handicap_audit' AND column_name='row_id_player') \
+        < (SELECT ordinal_position FROM information_schema.columns WHERE table_schema='TW4_base' AND table_name='handicap_audit' AND column_name='points_scored') \
+        THEN 1 ELSE 0 END;")"
+
 if [ "$ADMIN_ROW" != $'admin\tadmin\t1' ]; then
     print_error "Admin seed verification failed. Expected admin\tadmin\t1, got: ${ADMIN_ROW:-<empty>}"
     exit 1
@@ -181,5 +205,32 @@ if [ "$BEST_FIVE_SNAPSHOT_COLUMN_COUNT" != "0" ]; then
     print_error "best_five_scores verification failed. number_round_snapshot still exists in TW4_history.best_five_scores."
     exit 1
 fi
+
+if [ "$HANDICAP_POINTS_SCORED_COLUMN_COUNT" != "1" ]; then
+    print_error "handicap_audit verification failed. points_scored column is missing in TW4_base.handicap_audit."
+    exit 1
+fi
+
+if [ "$HANDICAP_POINTS_EFFECTIVE_COLUMN_COUNT" != "1" ]; then
+    print_error "handicap_audit verification failed. points_effective column is missing in TW4_base.handicap_audit."
+    exit 1
+fi
+
+if [ "$HANDICAP_CHANGED_BY_COLUMN_COUNT" != "0" ] || [ "$HANDICAP_CHANGED_AT_COLUMN_COUNT" != "0" ]; then
+    print_error "handicap_audit verification failed. Legacy changed_* columns are still present."
+    exit 1
+fi
+
+if [ "$HANDICAP_UPDATED_TS_INDEX_COUNT" = "0" ]; then
+    print_error "handicap_audit verification failed. idx_updated_ts index is missing in TW4_base.handicap_audit."
+    exit 1
+fi
+
+if [ "$HANDICAP_PLAYER_BEFORE_POINTS" != "1" ]; then
+    print_error "handicap_audit verification failed. row_id_player is not positioned before points_scored."
+    exit 1
+fi
+
+print_status "handicap_audit verification passed: points columns present, changed_* removed, idx_updated_ts present, row_id_player promoted."
 
 print_status "Production bootstrap completed successfully."
