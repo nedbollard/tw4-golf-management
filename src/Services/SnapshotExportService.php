@@ -347,7 +347,10 @@ class SnapshotExportService
              LEFT JOIN TW4_base.roster r ON r.row_id = ha.row_id_player
              WHERE ha.season_year = ?
                AND ha.number_round = ?
-                         ORDER BY COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", ha.row_id_player)) ASC, ha.updated_ts ASC, ha.row_id ASC',
+                         ORDER BY (ha.handicap_new - ha.handicap_previous) ASC,
+                                            ha.updated_ts ASC,
+                                            COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", ha.row_id_player)) ASC,
+                                            ha.row_id ASC',
             [$seasonYear, $roundNumber]
         );
     }
@@ -555,8 +558,8 @@ class SnapshotExportService
         foreach (($ctx['movement_best_five'] ?? []) as $row) {
             $bestFiveRows .= '<tr>'
                 . '<td>' . $this->e((string) ($row['display_player'] ?? '')) . '</td>'
-                . '<td>' . (int) ($row['points_total'] ?? 0) . '</td>'
                 . '<td>' . (int) ($row['points_movement'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['points_total'] ?? 0) . '</td>'
                 . '<td>' . (int) ($row['points_best_1'] ?? 0) . '</td>'
                 . '<td>' . (int) ($row['points_best_2'] ?? 0) . '</td>'
                 . '<td>' . (int) ($row['points_best_3'] ?? 0) . '</td>'
@@ -579,7 +582,7 @@ class SnapshotExportService
             . $handicapRows
             . '</table>'
             . '<h4>Best Five Movements</h4>'
-            . '<table><tr><th>Player</th><th>Total Points</th><th>Movement</th><th>Best 1</th><th>Best 2</th><th>Best 3</th><th>Best 4</th><th>Best 5</th></tr>'
+            . '<table><tr><th>Player</th><th>Movement</th><th>Total Points</th><th>Best 1</th><th>Best 2</th><th>Best 3</th><th>Best 4</th><th>Best 5</th></tr>'
             . $bestFiveRows
             . '</table>'
         );

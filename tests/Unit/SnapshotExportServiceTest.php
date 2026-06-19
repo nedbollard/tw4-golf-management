@@ -173,6 +173,56 @@ class SnapshotExportServiceTest extends TestCase
         $this->assertSame([34, 25, 25, 22], array_map(static fn(array $row): int => (int) $row['value_total'], $filtered));
     }
 
+    public function testRenderMovementsShowsBestFiveMovementBeforeTotalPoints(): void
+    {
+        $ctx = [
+            'name_club' => 'OVGC',
+            'season_year' => '25_26',
+            'number_round' => 8,
+            'round_date' => '2026-06-10',
+            'name_course' => 'Whites',
+            'movement_handicaps' => [],
+            'movement_best_five' => [
+                [
+                    'display_player' => 'Alias_Alice',
+                    'points_movement' => 3,
+                    'points_total' => 41,
+                    'points_best_1' => 12,
+                    'points_best_2' => 10,
+                    'points_best_3' => 8,
+                    'points_best_4' => 6,
+                    'points_best_5' => 5,
+                ],
+            ],
+        ];
+
+        $html = $this->invokePrivateMethod('renderMovements', [$ctx]);
+
+        $this->assertStringContainsString('<th>Player</th><th>Movement</th><th>Total Points</th>', $html);
+        $this->assertStringContainsString('<td>Alias_Alice</td><td>3</td><td>41</td>', $html);
+    }
+
+    public function testBuildRoundHandicapMovementsOrdersLargestDropsFirst(): void
+    {
+        /** @var Database|MockObject $db */
+        $db = $this->createMock(Database::class);
+        $db->expects($this->once())
+            ->method('fetchAll')
+            ->with(
+                $this->stringContains('ORDER BY (ha.handicap_new - ha.handicap_previous) ASC'),
+                ['25_26', 8]
+            )
+            ->willReturn([]);
+
+        $service = new SnapshotExportService($db);
+
+        $method = new \ReflectionMethod(SnapshotExportService::class, 'buildRoundHandicapMovements');
+        $method->setAccessible(true);
+        $result = $method->invoke($service, '25_26', 8);
+
+        $this->assertSame([], $result);
+    }
+
     private function invokePrivateMethod(string $methodName, array $args): string
     {
         $method = new \ReflectionMethod(SnapshotExportService::class, $methodName);

@@ -127,14 +127,14 @@ DROP TABLE IF EXISTS `handicap_audit`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `handicap_audit` (
   `row_id` int NOT NULL AUTO_INCREMENT,
+  `season_year` char(5) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Season the card was played, e.g. 25_26',
+  `number_round` int DEFAULT NULL COMMENT 'Round number within that season',
   `row_id_player` int NOT NULL,
+  `points_scored` int DEFAULT NULL COMMENT 'Raw Stableford points scored on the card',
+  `points_effective` int DEFAULT NULL COMMENT 'Points used for handicap change calculation',
   `handicap_previous` int NOT NULL COMMENT 'Handicap before this change',
   `handicap_new` int NOT NULL COMMENT 'Handicap after this change',
   `handicap_source` enum('card_scoring','admin_adjustment','system_import') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'admin_adjustment',
-  `season_year` char(5) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Season the card was played, e.g. 25_26',
-  `number_round` int DEFAULT NULL COMMENT 'Round number within that season',
-  `points_scored` int DEFAULT NULL COMMENT 'Raw Stableford points scored on the card',
-  `points_effective` int DEFAULT NULL COMMENT 'Points used for handicap change calculation',
   `reason` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Why was this changed (for admin adjustments)',
   `updated_by` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
   `updated_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

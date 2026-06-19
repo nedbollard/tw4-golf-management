@@ -29,7 +29,7 @@ What to use there:
 
 1. One Ubuntu VM instance.
 2. Docker Engine and Docker Compose plugin.
-3. The production stack in [docker-compose.prod.yml](docker-compose.prod.yml).
+3. The system-test stack in [docker-compose.prod.yml](docker-compose.prod.yml).
 4. [Caddyfile](Caddyfile) for HTTPS termination.
 
 Oracle Cloud is the best free option here because TW4 is stateful and container-friendly, but not a good fit for shared free PHP hosting.
@@ -44,8 +44,8 @@ Use this path if you want the free option with the least friction:
 4. Clone the TW4 repository onto the VM.
 5. Copy `.env.example` to `.env`.
 6. Set `DB_PASSWORD`, `CADDY_DOMAIN`, and `CADDY_EMAIL` in `.env`.
-7. Run `./scripts/bootstrap-production.sh`.
-8. Start the production stack with `docker compose -f docker-compose.prod.yml up -d --build`.
+7. Run `./scripts/bootstrap-systest.sh`.
+8. Start the system-test stack with `docker compose -f docker-compose.prod.yml up -d --build`.
 9. Visit the HTTPS domain and verify the scorer menu loads.
 10. Run a smoke test as scorer and admin before sharing the URL.
 
@@ -63,7 +63,7 @@ Use this while you are actually creating the Oracle instance:
 8. Install Docker, Docker Compose, Git, and any basic admin tools you prefer.
 9. Clone this TW4 repository onto the VM.
 10. Copy `.env.example` to `.env` and set `DB_PASSWORD`, `CADDY_DOMAIN`, and `CADDY_EMAIL`.
-11. Run `./scripts/bootstrap-production.sh`.
+11. Run `./scripts/bootstrap-systest.sh`.
 12. Start the stack with `docker compose -f docker-compose.prod.yml up -d --build`.
 13. Wait for Caddy to obtain TLS certificates.
 14. Open the HTTPS URL in a browser and confirm the scorer menu loads.
@@ -95,7 +95,7 @@ TW4 currently expects:
 4. Persistent PHP sessions
 5. A writable filesystem for logs and any future uploads
 
-The current Docker setup already models most of this, so the smallest deployment risk is to keep the same architecture in production.
+The current Docker setup already models most of this, so the smallest environment risk is to keep the same architecture in system testing.
 
 ## Recommended Deployment Steps
 
@@ -103,16 +103,16 @@ The current Docker setup already models most of this, so the smallest deployment
 2. Point a domain or subdomain such as `tw4.yourdomain.com` at the server.
 3. Install Docker and Compose.
 4. Copy the repository to the server.
-5. Create a production `.env` with real values for `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, and `DEBUG=false`.
+5. Create a system-test `.env` with real values for `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, and `DEBUG=false`.
 6. Set `CADDY_DOMAIN` and `CADDY_EMAIL` in `.env`.
-7. Bring up the production stack with `docker compose -f docker-compose.prod.yml up -d --build`.
+7. Bring up the system-test stack with `docker compose -f docker-compose.prod.yml up -d --build`.
 8. Let Caddy issue TLS certificates and serve the public domain.
 9. Keep MySQL private to the Docker network and do not expose it publicly.
-10. phpMyAdmin in production is bound to `127.0.0.1:8085` only. Reach it through an SSH tunnel such as `ssh -L 18085:127.0.0.1:8085 tw4-oracle`, then open `http://127.0.0.1:18085` locally.
+10. phpMyAdmin in system testing is bound to `127.0.0.1:8085` only. Reach it through an SSH tunnel such as `ssh -L 18085:127.0.0.1:8085 tw4-oracle`, then open `http://127.0.0.1:18085` locally.
 
 ## TW4 Bootstrap Checklist
 
-Fresh production setup needs a deliberate database bootstrap. TW4 is not fully “migrations only” end-to-end yet.
+Fresh system-test setup needs a deliberate database bootstrap. TW4 is not fully “migrations only” end-to-end yet.
 
 1. Create the base database/schema.
 2. Create the live database/schema used by round scoring.
@@ -120,7 +120,7 @@ Fresh production setup needs a deliberate database bootstrap. TW4 is not fully �
 4. Confirm the scorer menu can see a not_started round state.
 5. Verify the finish-round flow resets workflow to not_started and roster status back to active.
 
-Important note: the live scoring path relies on a permanent live round record. That means the production database must be prepared carefully before handing the app to a tester.
+Important note: the live scoring path relies on a permanent live round record. That means the system-test database must be prepared carefully before handing the app to a tester.
 
 ## Tester Launch Checklist
 
@@ -134,14 +134,14 @@ Before you share the public URL:
 6. Confirm the scorer menu shows the expected flash messages and status changes.
 7. Confirm the next round can be started without clearing live cards manually.
 
-## Production Commands
+## System Test Commands
 
 Typical launch sequence:
 
 ```bash
 cp .env.example .env
 # edit .env with real DB_PASSWORD, CADDY_DOMAIN, and CADDY_EMAIL
-./scripts/bootstrap-production.sh
+./scripts/bootstrap-systest.sh
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
@@ -163,7 +163,7 @@ If you are setting this up on a fresh VPS, follow this sequence:
 2. Copy the TW4 repository onto the server.
 3. Create `.env` from `.env.example`.
 4. Set `DB_PASSWORD`, `CADDY_DOMAIN`, and `CADDY_EMAIL` in `.env`.
-5. Run `./scripts/bootstrap-production.sh`.
+5. Run `./scripts/bootstrap-systest.sh`.
 6. Start the stack with `docker compose -f docker-compose.prod.yml up -d --build`.
 7. Open the site in a browser and confirm the scorer menu loads.
 8. Log in as scorer and admin and run a short smoke test.
@@ -175,11 +175,11 @@ If anything fails during step 5 or 6, check the logs with:
 docker compose -f docker-compose.prod.yml logs -f
 ```
 
-## Post-Deploy Smoke Checklist
+## Post-Bootstrap Smoke Checklist
 
-After a production deploy or rebuild, run these checks in order:
+After a system-test deploy or rebuild, run these checks in order:
 
-1. Confirm the production containers are the ones serving traffic:
+1. Confirm the system-test containers are the ones serving traffic:
 
 ```bash
 docker compose -f docker-compose.prod.yml ps
@@ -206,7 +206,7 @@ docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db
 
 1. `CADDY_EMAIL` must be a real email address you control. Placeholder addresses such as `you@example.com` will cause ACME registration to fail and HTTPS will not come up.
 2. If `docker compose -f docker-compose.prod.yml up` reports port 80 or 443 already in use, check for a host-level `caddy` service before assuming Docker is at fault.
-3. If the production compose run warns about orphan containers, inspect them before removing them. A leftover phpMyAdmin container may be harmless, but an old frontend container on 80 or 443 will block the intended stack.
+3. If the compose run warns about orphan containers, inspect them before removing them. A leftover phpMyAdmin container may be harmless, but an old frontend container on 80 or 443 will block the intended stack.
 
 ## What Not To Use
 
