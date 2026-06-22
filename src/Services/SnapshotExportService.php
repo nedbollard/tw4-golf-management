@@ -19,10 +19,11 @@ class SnapshotExportService
             ['filename' => '10_Results.html', 'label' => 'Results'],
             ['filename' => '20_Movements.html', 'label' => 'Movements'],
             ['filename' => '31_Best_5_Scores.html', 'label' => 'Best 5 Scores'],
-            ['filename' => '33_Eclectic.html', 'label' => 'Eclectic'],
-            ['filename' => '35_Teams_Haggle.html', 'label' => 'Teams Haggle'],
-            ['filename' => '37_Small_Beer.html', 'label' => 'Small Beer'],
-            ['filename' => '39_Handicaps.html', 'label' => 'Handicaps'],
+            ['filename' => '41_Eclectic_%COURSE_A%.html', 'label' => 'Eclectic Course 1'],
+            ['filename' => '42_Eclectic_%COURSE_B%.html', 'label' => 'Eclectic Course 2'],
+            ['filename' => '49_Eclectic_%COURSE_C%.html', 'label' => 'Eclectic Combined'],
+            ['filename' => '51_Small_Beer.html', 'label' => 'Small Beer'],
+            ['filename' => '61_Handicaps.html', 'label' => 'Handicaps'],
         ];
     }
 
@@ -52,14 +53,19 @@ class SnapshotExportService
             throw new \RuntimeException('Unable to create reports directory: ' . $targetDir);
         }
 
+        $courseAFileSlug = $this->slugifyCourseName((string) ($context['eclectic_played_name'] ?? ($context['name_course'] ?? 'Course')));
+        $courseBFileSlug = $this->slugifyCourseName((string) ($context['eclectic_other_name'] ?? ($context['eclectic_played_name'] ?? ($context['name_course'] ?? 'Course'))));
+        $combinedFileSlug = $this->slugifyCourseName((string) ($context['eclectic_combined_name'] ?? 'Combined'));
+
         $files = [
             '10_Results.html' => $this->renderResults($context),
             '20_Movements.html' => $this->renderMovements($context),
             '31_Best_5_Scores.html' => $this->renderBest5($context),
-            '33_Eclectic.html' => $this->renderPlaceholder($context, 'Eclectic', 'Eclectic export is queued for a later increment.'),
-            '35_Teams_Haggle.html' => $this->renderPlaceholder($context, 'Teams Haggle', 'Teams Haggle export is queued for a later increment.'),
-            '37_Small_Beer.html' => $this->renderSmallBeer($context),
-            '39_Handicaps.html' => $this->renderHandicaps($context),
+            '41_Eclectic_' . $courseAFileSlug . '.html' => $this->renderEclectic($context, 'played'),
+            '42_Eclectic_' . $courseBFileSlug . '.html' => $this->renderEclectic($context, 'other'),
+            '49_Eclectic_' . $combinedFileSlug . '.html' => $this->renderEclectic($context, 'combined'),
+            '51_Small_Beer.html' => $this->renderSmallBeer($context),
+            '61_Handicaps.html' => $this->renderHandicaps($context),
         ];
 
         $written = [];
@@ -86,7 +92,8 @@ class SnapshotExportService
     private function loadContext(string $seasonYear, int $roundNumber): array
     {
         $round = $this->db->fetchOne(
-            'SELECT hr.season_year, hr.number_round, hr.round_date, cp.name_course, cp.name_club
+            'SELECT hr.season_year, hr.number_round, hr.round_date, hr.course_played_id,
+                    cp.name_course, cp.name_club, cp.ident_eclectic
              FROM TW4_history.round hr
              LEFT JOIN TW4_base.course_played cp ON cp.row_id = hr.course_played_id
              WHERE hr.season_year = ? AND hr.number_round = ? LIMIT 1',
@@ -156,6 +163,14 @@ class SnapshotExportService
         );
 
         $bestFiveSnapshot = [];
+        $eclecticPlayedSnapshot = [];
+        $eclecticOtherSnapshot = [];
+        $eclecticCombinedSnapshot = [];
+        $eclecticPlayedMovement = [];
+        $eclecticCombinedMovement = [];
+        $eclecticPlayedName = '';
+        $eclecticOtherName = '';
+        $eclecticCombinedName = '';
         try {
             $bestFiveSnapshot = $this->db->fetchAll(
                 'SELECT
@@ -193,6 +208,41 @@ class SnapshotExportService
             );
         } catch (\Throwable $e) {
             $bestFiveSnapshot = [];
+        }
+
+        try {
+            $courseName = trim((string) ($round['name_course'] ?? ''));
+            $combinedIdent = trim((string) ($round['ident_eclectic'] ?? ''));
+            if ($combinedIdent === '') {
+                // Fallback keeps a combined track available in single-course setups.
+                $combinedIdent = $courseName;
+            }
+            $eclecticPlayedName = $courseName;
+            $eclecticOtherName = $this->resolveAlternateEclecticCourseName(
+                (int) ($round['course_played_id'] ?? 0),
+                $combinedIdent,
+                $courseName
+            );
+            if ($eclecticOtherName === '') {
+                $eclecticOtherName = $eclecticPlayedName;
+            }
+            $eclecticCombinedName = $combinedIdent;
+
+            $eclecticPlayedSnapshot = $this->buildEclecticSnapshot($seasonYear, $roundNumber, $courseName);
+            $eclecticOtherSnapshot = $this->buildEclecticSnapshot($seasonYear, $roundNumber, $eclecticOtherName);
+            $eclecticCombinedSnapshot = $this->buildEclecticSnapshot($seasonYear, $roundNumber, $combinedIdent);
+
+            $eclecticPlayedMovement = $this->buildEclecticMovement($seasonYear, $roundNumber, $courseName);
+            $eclecticCombinedMovement = $this->buildEclecticMovement($seasonYear, $roundNumber, $combinedIdent);
+        } catch (\Throwable $e) {
+            $eclecticPlayedSnapshot = [];
+            $eclecticOtherSnapshot = [];
+            $eclecticCombinedSnapshot = [];
+            $eclecticPlayedMovement = [];
+            $eclecticCombinedMovement = [];
+            $eclecticPlayedName = '';
+            $eclecticOtherName = '';
+            $eclecticCombinedName = '';
         }
 
         $aliasByIdentifier = [];
@@ -315,6 +365,8 @@ class SnapshotExportService
             'round_date' => isset($round['round_date']) ? (string) $round['round_date'] : null,
             'name_course' => (string) ($round['name_course'] ?? ''),
             'name_club' => (string) ($round['name_club'] ?? ''),
+            'eclectic_played_name' => $eclecticPlayedName,
+            'eclectic_other_name' => $eclecticOtherName,
             'leaderboard' => $leaderboard,
             'prizes' => $prizes,
             'twos' => $twos,
@@ -322,6 +374,12 @@ class SnapshotExportService
             'round_stats' => $roundStats,
             'handicap_snapshot' => $handicapSnapshot,
             'best_five_scores_snapshot' => $bestFiveSnapshot,
+            'eclectic_played_snapshot' => $eclecticPlayedSnapshot,
+            'eclectic_other_snapshot' => $eclecticOtherSnapshot,
+            'eclectic_combined_snapshot' => $eclecticCombinedSnapshot,
+            'eclectic_played_movement' => $eclecticPlayedMovement,
+            'eclectic_combined_movement' => $eclecticCombinedMovement,
+            'eclectic_combined_name' => $eclecticCombinedName,
             'small_beer_money' => $smallBeerMoney,
             'small_beer_baggers' => $smallBeerBaggers,
             'small_beer_attendance' => $smallBeerAttendance,
@@ -531,6 +589,16 @@ class SnapshotExportService
 
     private function renderMovements(array $ctx): string
     {
+        $playedName = trim((string) ($ctx['eclectic_played_name'] ?? ($ctx['name_course'] ?? '')));
+        if ($playedName === '') {
+            $playedName = 'Played Course';
+        }
+
+        $combinedName = trim((string) ($ctx['eclectic_combined_name'] ?? ''));
+        if ($combinedName === '') {
+            $combinedName = 'Eclectic';
+        }
+
         $handicapRows = '';
         foreach (($ctx['movement_handicaps'] ?? []) as $row) {
             $previous = isset($row['handicap_previous']) ? (int) $row['handicap_previous'] : null;
@@ -571,6 +639,30 @@ class SnapshotExportService
             $bestFiveRows = '<tr><td colspan="8">No best five movements this round.</td></tr>';
         }
 
+        $eclecticPlayedRows = '';
+        foreach (($ctx['eclectic_played_movement'] ?? []) as $row) {
+            $eclecticPlayedRows .= '<tr>'
+                . '<td>' . $this->e((string) ($row['display_player'] ?? '')) . '</td>'
+                . '<td>' . (int) ($row['score_movement'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['score_total'] ?? 0) . '</td>'
+                . '</tr>';
+        }
+        if ($eclecticPlayedRows === '') {
+            $eclecticPlayedRows = '<tr><td colspan="3">No eclectic movements for this played course.</td></tr>';
+        }
+
+        $eclecticCombinedRows = '';
+        foreach (($ctx['eclectic_combined_movement'] ?? []) as $row) {
+            $eclecticCombinedRows .= '<tr>'
+                . '<td>' . $this->e((string) ($row['display_player'] ?? '')) . '</td>'
+                . '<td>' . (int) ($row['score_movement'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['score_total'] ?? 0) . '</td>'
+                . '</tr>';
+        }
+        if ($eclecticCombinedRows === '') {
+            $eclecticCombinedRows = '<tr><td colspan="3">No eclectic movements for combined standings.</td></tr>';
+        }
+
         return $this->wrap(
             $ctx,
             'Movements',
@@ -585,7 +677,176 @@ class SnapshotExportService
             . '<table><tr><th>Player</th><th>Movement</th><th>Total Points</th><th>Best 1</th><th>Best 2</th><th>Best 3</th><th>Best 4</th><th>Best 5</th></tr>'
             . $bestFiveRows
             . '</table>'
+            . '<h4>Eclectic Movements (' . $this->e($playedName) . ')</h4>'
+            . '<table><tr><th>Player</th><th>Movement</th><th>Total</th></tr>'
+            . $eclecticPlayedRows
+            . '</table>'
+            . '<h4>Eclectic Movements (' . $this->e($combinedName) . ')</h4>'
+            . '<table><tr><th>Player</th><th>Movement</th><th>Total</th></tr>'
+            . $eclecticCombinedRows
+            . '</table>'
         );
+    }
+
+    private function renderEclectic(array $ctx, string $scope): string
+    {
+        $isCombined = $scope === 'combined';
+        $isOther = $scope === 'other';
+        $rows = $isCombined
+            ? ($ctx['eclectic_combined_snapshot'] ?? [])
+            : ($isOther ? ($ctx['eclectic_other_snapshot'] ?? []) : ($ctx['eclectic_played_snapshot'] ?? []));
+
+        $playedName = trim((string) ($ctx['eclectic_played_name'] ?? ($ctx['name_course'] ?? '')));
+        if ($playedName === '') {
+            $playedName = 'Played Course';
+        }
+
+        $otherName = trim((string) ($ctx['eclectic_other_name'] ?? ''));
+        if ($otherName === '') {
+            $otherName = $playedName;
+        }
+
+        $combinedName = trim((string) ($ctx['eclectic_combined_name'] ?? ''));
+        if ($combinedName === '') {
+            $combinedName = 'Eclectic';
+        }
+
+        $heading = $isCombined
+            ? ('Eclectic: ' . $combinedName)
+            : ('Eclectic: ' . ($isOther ? $otherName : $playedName));
+
+        $bodyRows = '';
+        foreach ($rows as $idx => $row) {
+            $bodyRows .= '<tr>'
+                . '<td>' . ($idx + 1) . '</td>'
+                . '<td>' . $this->e((string) ($row['display_player'] ?? '')) . '</td>'
+                . '<td>' . (int) ($row['score_total'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['score_hole_1'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['score_hole_2'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['score_hole_3'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['score_hole_4'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['score_hole_5'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['score_hole_6'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['score_hole_7'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['score_hole_8'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['score_hole_9'] ?? 0) . '</td>'
+                . '</tr>';
+        }
+
+        if ($bodyRows === '') {
+            $bodyRows = '<tr><td colspan="12">No eclectic standings available.</td></tr>';
+        }
+
+        return $this->wrap(
+            $ctx,
+            'Eclectic',
+            '<h2>' . $this->e($heading) . '</h2>'
+            . '<h3>Date: ' . $this->e((string) ($ctx['round_date'] ?? 'n/a')) . '</h3>'
+            . '<h3>Course: ' . $this->e((string) ($ctx['name_course'] ?? 'n/a')) . '</h3>'
+            . '<table><tr><th>Standing</th><th>Player</th><th>Total</th><th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th><th>H7</th><th>H8</th><th>H9</th></tr>'
+            . $bodyRows
+            . '</table>'
+        );
+    }
+
+    private function buildEclecticSnapshot(string $seasonYear, int $roundNumber, string $ident): array
+    {
+        $ident = trim($ident);
+        if ($ident === '') {
+            return [];
+        }
+
+        return $this->db->fetchAll(
+            'SELECT
+                es.row_id_player,
+                COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", es.row_id_player)) AS display_player,
+                es.score_total,
+                es.score_hole_1,
+                es.score_hole_2,
+                es.score_hole_3,
+                es.score_hole_4,
+                es.score_hole_5,
+                es.score_hole_6,
+                es.score_hole_7,
+                es.score_hole_8,
+                es.score_hole_9,
+                es.number_round_movement
+             FROM TW4_live.eclectic_scores es
+             LEFT JOIN TW4_base.roster r ON r.row_id = es.row_id_player
+             WHERE es.season_year = ?
+               AND es.ident_eclectic = ?
+             ORDER BY es.score_total ASC,
+                      COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", es.row_id_player)) ASC',
+            [$seasonYear, $ident]
+        );
+    }
+
+    private function buildEclecticMovement(string $seasonYear, int $roundNumber, string $ident): array
+    {
+        $ident = trim($ident);
+        if ($ident === '') {
+            return [];
+        }
+
+        return $this->db->fetchAll(
+            'SELECT
+                es.row_id_player,
+                COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", es.row_id_player)) AS display_player,
+                es.score_total,
+                COALESCE(prev.score_total, 0) - es.score_total AS score_movement,
+                es.number_round_movement
+             FROM TW4_live.eclectic_scores es
+             LEFT JOIN TW4_base.roster r ON r.row_id = es.row_id_player
+             LEFT JOIN TW4_holding.eclectic_scores prev
+               ON prev.ident_eclectic = es.ident_eclectic
+              AND prev.season_year = es.season_year
+              AND prev.row_id_player = es.row_id_player
+             WHERE es.season_year = ?
+               AND es.ident_eclectic = ?
+               AND es.number_round_movement = ?
+             ORDER BY score_movement DESC,
+                      es.score_total ASC,
+                      COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", es.row_id_player)) ASC',
+            [$seasonYear, $ident, $roundNumber]
+        );
+    }
+
+    private function slugifyCourseName(string $name): string
+    {
+        $value = trim($name);
+        if ($value === '') {
+            return 'Course';
+        }
+
+        $value = preg_replace('/[^A-Za-z0-9]+/', '_', $value) ?? $value;
+        $value = trim($value, '_');
+        if ($value === '') {
+            return 'Course';
+        }
+
+        return $value;
+    }
+
+    private function resolveAlternateEclecticCourseName(int $coursePlayedId, string $combinedIdent, string $playedCourseName): string
+    {
+        if ($combinedIdent !== '') {
+            $row = $this->db->fetchOne(
+                'SELECT cp.name_course
+                 FROM TW4_base.course_played cp
+                 WHERE cp.ident_eclectic = ?
+                   AND cp.row_id <> ?
+                 ORDER BY cp.name_course ASC
+                 LIMIT 1',
+                [$combinedIdent, $coursePlayedId]
+            );
+
+            $other = trim((string) ($row['name_course'] ?? ''));
+            if ($other !== '') {
+                return $other;
+            }
+        }
+
+        return $playedCourseName;
     }
 
     private function renderSmallBeer(array $ctx): string
@@ -785,10 +1046,12 @@ class SnapshotExportService
         }
 
         $roundSlug = self::buildRoundSlug((int) $ctx['number_round'], $ctx['round_date'] ?? null);
+        $backToReportsHref = '/results?season=' . rawurlencode((string) ($ctx['season_year'] ?? ''))
+            . '&round=' . rawurlencode((string) $roundSlug);
 
         return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' . $this->e($club . ' - ' . $title) . '</title><style>'
                 . 'body{margin:0;padding:16px;background:#eef1f4;font-family:Verdana,Arial,sans-serif;color:#102a43;}.wrap{max-width:980px;margin:0 auto;background:#fff;border:1px solid #d9e2ec;border-radius:12px;padding:16px;}h1{margin:0 0 8px 0;color:#1f7a1f;font-size:1.7rem;}h2{margin:8px 0;color:#1f7a1f;font-size:1.3rem;}h3{margin:8px 0;font-size:1.05rem;}h4{margin:14px 0 8px 0;font-size:1rem;}.meta{margin:8px 0 14px 0;color:#486581;font-weight:600;}table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:0.95rem;}th,td{border:1px solid #bcccdc;padding:8px;text-align:left;}th{background:#f0f4f8;}.note{background:#f8fafc;border:1px solid #d9e2ec;border-radius:8px;padding:10px;}.footer{margin-top:20px;color:#627d98;font-size:0.82rem;}.report-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}.report-nav{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-bottom:8px;}.report-nav a{display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:8px 14px;border-radius:999px;font-weight:700;font-size:0.85rem;border:1px solid #15803d;}.report-nav a.secondary{background:#0f766e;border-color:#0f766e;}.report-nav a:hover,.report-nav a:focus{background:#15803d;}.report-nav a.secondary:hover,.report-nav a.secondary:focus{background:#115e59;}@media (max-width:700px){.report-top{flex-direction:column;}.report-nav{width:100%;justify-content:flex-start;}}'
-                . '</style></head><body><div class="wrap"><div class="report-top"><div><h1>' . $this->e($club) . '</h1><div class="meta">Season: ' . $this->e($ctx['season_year']) . ' | Round: ' . $this->e($roundSlug) . '</div></div><div class="report-nav"><a href="/results">Back to Reports</a><a href="/" class="secondary">Back to Main Menu</a></div></div>' . $content . '<div class="footer">Generated by TW4 snapshot exporter</div></div></body></html>';
+                . '</style></head><body><div class="wrap"><div class="report-top"><div><h1>' . $this->e($club) . '</h1><div class="meta">Season: ' . $this->e($ctx['season_year']) . ' | Round: ' . $this->e($roundSlug) . '</div></div><div class="report-nav"><a href="' . $this->e($backToReportsHref) . '">Back to Reports</a><a href="/" class="secondary">Back to Main Menu</a></div></div>' . $content . '<div class="footer">Generated by TW4 snapshot exporter</div></div></body></html>';
     }
 
     private function e(string $value): string

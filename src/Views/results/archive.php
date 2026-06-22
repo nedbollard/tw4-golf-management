@@ -14,6 +14,8 @@
 <?php
 $sessionUsername = (string) ($_SESSION['username'] ?? 'scorer');
 $sessionRole = (string) ($_SESSION['role'] ?? 'scorer');
+$selectedSeason = trim((string) ($selectedSeason ?? ''));
+$selectedRound = trim((string) ($selectedRound ?? ''));
 ?>
 <div class="results-archive-layout">
     <header class="results-archive-header">
@@ -58,15 +60,34 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'scorer');
                 <?php else: ?>
                     <div class="results-archive-tree" role="tree">
                         <?php foreach ($archiveTree as $season): ?>
-                            <details class="results-season" open>
+                            <?php
+                            $seasonCode = (string) ($season['season_year'] ?? 'unknown');
+                            $seasonOpen = ($selectedSeason === '' || $selectedSeason === $seasonCode);
+                            ?>
+                            <details class="results-season" <?php echo $seasonOpen ? 'open' : ''; ?>>
                                 <summary>
-                                    Season: <?php echo htmlspecialchars((string) ($season['season_year'] ?? 'unknown')); ?>
+                                    Season: <?php echo htmlspecialchars($seasonCode); ?>
                                 </summary>
 
                                 <?php foreach (($season['rounds'] ?? []) as $round): ?>
-                                    <details class="results-round">
+                                    <?php
+                                    $roundSlug = (string) ($round['round_slug'] ?? '000');
+                                    $roundOpen = ($selectedRound !== ''
+                                        && $selectedRound === $roundSlug
+                                        && ($selectedSeason === '' || $selectedSeason === $seasonCode));
+
+                                    $snapshots = (array) ($round['snapshots'] ?? []);
+                                    usort(
+                                        $snapshots,
+                                        static fn(array $a, array $b): int => strcmp(
+                                            (string) ($a['filename'] ?? ''),
+                                            (string) ($b['filename'] ?? '')
+                                        )
+                                    );
+                                    ?>
+                                    <details class="results-round" <?php echo $roundOpen ? 'open' : ''; ?>>
                                         <summary>
-                                            Round: <?php echo htmlspecialchars((string) ($round['round_slug'] ?? '000')); ?>
+                                            Round: <?php echo htmlspecialchars($roundSlug); ?>
                                             <span class="round-meta">
                                                 <?php if (!empty($round['name_course'])): ?>
                                                     <?php echo htmlspecialchars((string) $round['name_course']); ?>
@@ -78,12 +99,11 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'scorer');
                                         </summary>
 
                                         <ul class="snapshot-list">
-                                            <?php foreach (($round['snapshots'] ?? []) as $snapshot): ?>
+                                            <?php foreach ($snapshots as $snapshot): ?>
                                                 <li>
                                                     <?php if (!empty($snapshot['exists'])): ?>
                                                         <a href="<?php echo htmlspecialchars((string) $snapshot['href']); ?>" class="snapshot-link">
-                                                            <?php echo htmlspecialchars((string) ($snapshot['label'] ?? $snapshot['filename'])); ?>
-                                                            <span class="snapshot-file">(<?php echo htmlspecialchars((string) $snapshot['filename']); ?>)</span>
+                                                            <?php echo htmlspecialchars((string) $snapshot['filename']); ?>
                                                         </a>
                                                     <?php else: ?>
                                                         <span class="snapshot-missing">

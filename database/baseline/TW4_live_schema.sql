@@ -97,8 +97,8 @@ DROP TABLE IF EXISTS `eclectic_scores`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `eclectic_scores` (
   `row_id` int NOT NULL AUTO_INCREMENT,
-  `season_year` char(5) COLLATE utf8mb4_general_ci NOT NULL,
   `ident_eclectic` varchar(16) COLLATE utf8mb4_general_ci NOT NULL,
+  `season_year` char(5) COLLATE utf8mb4_general_ci NOT NULL,
   `row_id_player` int NOT NULL,
   `number_round_movement` int NOT NULL DEFAULT '0',
   `score_total` int NOT NULL DEFAULT '0',

@@ -32,6 +32,9 @@ LIVE_SCHEMA_FILE="database/baseline/TW4_live_schema.sql"
 HISTORY_SCHEMA_FILE="database/baseline/TW4_history_schema.sql"
 HOLDING_SCHEMA_FILE="database/baseline/TW4_holding_schema.sql"
 BASE_SEED_FILE="database/baseline/TW4_base_seed.sql"
+POST_BOOTSTRAP_MIGRATIONS=(
+    "src/migrations/036_eclectic_movement_only_and_ident_order.sql"
+)
 
 ensure_application_log_table() {
     print_status "Ensuring TW4_base.application_log exists..."
@@ -61,6 +64,13 @@ SQL
 for required_file in "$BASE_SCHEMA_FILE" "$LIVE_SCHEMA_FILE" "$HISTORY_SCHEMA_FILE" "$HOLDING_SCHEMA_FILE" "$BASE_SEED_FILE"; do
     if [ ! -f "$required_file" ]; then
         print_error "Required file not found: $required_file"
+        exit 1
+    fi
+done
+
+for migration_file in "${POST_BOOTSTRAP_MIGRATIONS[@]}"; do
+    if [ ! -f "$migration_file" ]; then
+        print_error "Post-bootstrap migration not found: $migration_file"
         exit 1
     fi
 done
@@ -103,6 +113,13 @@ docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db
 print_status "Applying controlled TW4_base seed data..."
 docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -u root TW4_base < "$BASE_SEED_FILE"
+
+print_status "Applying post-bootstrap compatibility migrations..."
+for migration_file in "${POST_BOOTSTRAP_MIGRATIONS[@]}"; do
+    print_status "Applying ${migration_file}..."
+    docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+        mysql -u root TW4_base < "$migration_file"
+done
 
 ensure_application_log_table
 

@@ -134,11 +134,13 @@ class RoundWorkflowService
         }
 
         $this->ensureBestFiveTables();
+        $this->ensureEclecticTables();
 
         $this->db->beginTransaction();
 
         try {
             $this->stageBestFiveForRoundStart($seasonYear, $_SESSION['username'] ?? 'system');
+            $this->stageEclecticForRoundStart($seasonYear, $_SESSION['username'] ?? 'system');
             $this->db->query('DELETE FROM TW4_live.card_by_hole');
             $this->db->query('DELETE FROM TW4_live.card');
             $this->db->query('DELETE FROM TW4_live.results');
@@ -268,8 +270,14 @@ class RoundWorkflowService
                      WHERE season_year = ? AND number_round_movement = ?',
                     [$seasonYear, $roundNumber]
                 );
+                $this->db->query(
+                    'DELETE FROM TW4_history.eclectic_scores
+                     WHERE season_year = ? AND number_round_movement = ?',
+                    [$seasonYear, $roundNumber]
+                );
             }
             $this->db->query('DELETE FROM TW4_live.best_five_scores');
+            $this->db->query('DELETE FROM TW4_live.eclectic_scores');
 
             $this->db->commit();
         } catch (\Throwable $e) {
@@ -335,12 +343,14 @@ class RoundWorkflowService
         $updatedBy = (string) ($_SESSION['username'] ?? 'system');
 
         $this->ensureBestFiveTables();
+        $this->ensureEclecticTables();
 
         $this->db->beginTransaction();
 
         try {
             $this->applyHandicapUpdatesBeforeHistory($updatedBy, $seasonYear, $numberRound);
             $this->refreshBestFiveForFinish($seasonYear, $numberRound, $updatedBy);
+            $this->refreshEclecticForFinish($roundId, $seasonYear, $numberRound, $updatedBy);
             $this->replaceHistorySnapshot($roundId, $seasonYear, $numberRound, $updatedBy);
 
             $this->db->query(
@@ -558,6 +568,12 @@ class RoundWorkflowService
         );
 
         $this->db->query(
+            'DELETE FROM TW4_history.eclectic_scores
+             WHERE season_year = ? AND number_round_movement = ?',
+            [$seasonYear, $numberRound]
+        );
+
+        $this->db->query(
             'INSERT INTO TW4_history.round
                 (season_year, number_round, round_date, course_played_id, card_count,
                  results_presented_at, finished_at, updated_by, updated_ts,
@@ -625,6 +641,22 @@ class RoundWorkflowService
                AND number_round_movement = ?',
             [$updatedBy, $seasonYear, $numberRound]
         );
+
+        $this->db->query(
+            'INSERT INTO TW4_history.eclectic_scores
+                (ident_eclectic, season_year, row_id_player, number_round_movement,
+                 score_total, score_hole_1, score_hole_2, score_hole_3, score_hole_4,
+                 score_hole_5, score_hole_6, score_hole_7, score_hole_8, score_hole_9,
+                 updated_by, updated_ts, hist_updated_by, hist_updated_ts)
+             SELECT ident_eclectic, season_year, row_id_player, number_round_movement,
+                    score_total, score_hole_1, score_hole_2, score_hole_3, score_hole_4,
+                    score_hole_5, score_hole_6, score_hole_7, score_hole_8, score_hole_9,
+                    updated_by, updated_ts, ?, NOW()
+             FROM TW4_live.eclectic_scores
+             WHERE season_year = ?
+               AND number_round_movement = ?',
+            [$updatedBy, $seasonYear, $numberRound]
+        );
     }
 
     private function stageBestFiveForRoundStart(string $seasonYear, string $updatedBy): void
@@ -645,6 +677,26 @@ class RoundWorkflowService
             [$updatedBy, $seasonYear]
         );
         $this->db->query('DELETE FROM TW4_live.best_five_scores');
+    }
+
+    private function stageEclecticForRoundStart(string $seasonYear, string $updatedBy): void
+    {
+        $this->db->query('DELETE FROM TW4_holding.eclectic_scores');
+        $this->db->query(
+            'INSERT INTO TW4_holding.eclectic_scores
+                (ident_eclectic, season_year, row_id_player, number_round_movement,
+                 score_total, score_hole_1, score_hole_2, score_hole_3, score_hole_4,
+                 score_hole_5, score_hole_6, score_hole_7, score_hole_8, score_hole_9,
+                 updated_by)
+             SELECT ident_eclectic, season_year, row_id_player, number_round_movement,
+                    score_total, score_hole_1, score_hole_2, score_hole_3, score_hole_4,
+                    score_hole_5, score_hole_6, score_hole_7, score_hole_8, score_hole_9,
+                    ?
+             FROM TW4_live.eclectic_scores
+             WHERE season_year = ?',
+            [$updatedBy, $seasonYear]
+        );
+        $this->db->query('DELETE FROM TW4_live.eclectic_scores');
     }
 
     private function refreshBestFiveForFinish(string $seasonYear, int $numberRound, string $updatedBy): void
@@ -762,6 +814,170 @@ class RoundWorkflowService
         }
     }
 
+    private function refreshEclecticForFinish(int $roundId, string $seasonYear, int $numberRound, string $updatedBy): void
+    {
+        $idents = $this->getEclecticIdentsForRound($roundId);
+
+        $holdingRows = $this->db->fetchAll(
+            'SELECT ident_eclectic, season_year, row_id_player, number_round_movement,
+                    score_total, score_hole_1, score_hole_2, score_hole_3, score_hole_4,
+                    score_hole_5, score_hole_6, score_hole_7, score_hole_8, score_hole_9,
+                    updated_by
+             FROM TW4_holding.eclectic_scores
+             WHERE season_year = ?',
+            [$seasonYear]
+        );
+
+        $cardRows = $this->db->fetchAll(
+            'SELECT c.row_id_player, cbh.hole, cbh.score
+             FROM TW4_live.card c
+             INNER JOIN TW4_live.card_by_hole cbh ON cbh.row_id_card = c.row_id
+             ORDER BY c.row_id_player, cbh.hole'
+        );
+
+        $holdingByKey = [];
+        foreach ($holdingRows as $row) {
+            $ident = trim((string) ($row['ident_eclectic'] ?? ''));
+            $playerId = (int) ($row['row_id_player'] ?? 0);
+            if ($ident === '' || $playerId < 1) {
+                continue;
+            }
+            $holdingByKey[$ident . '|' . $playerId] = $row;
+        }
+
+        $scoresByPlayer = [];
+        foreach ($cardRows as $row) {
+            $playerId = (int) ($row['row_id_player'] ?? 0);
+            $hole = (int) ($row['hole'] ?? 0);
+            $score = (int) ($row['score'] ?? 0);
+            if ($playerId > 0 && $hole >= 1 && $hole <= 9 && $score > 0) {
+                $scoresByPlayer[$playerId][$hole] = $score;
+            }
+        }
+
+        $computed = [];
+        foreach ($holdingByKey as $key => $row) {
+            $computed[$key] = [
+                'ident_eclectic' => (string) $row['ident_eclectic'],
+                'season_year' => $seasonYear,
+                'row_id_player' => (int) $row['row_id_player'],
+                'number_round_movement' => (int) ($row['number_round_movement'] ?? 0),
+                'score_total' => (int) ($row['score_total'] ?? 0),
+                'score_hole_1' => (int) ($row['score_hole_1'] ?? 0),
+                'score_hole_2' => (int) ($row['score_hole_2'] ?? 0),
+                'score_hole_3' => (int) ($row['score_hole_3'] ?? 0),
+                'score_hole_4' => (int) ($row['score_hole_4'] ?? 0),
+                'score_hole_5' => (int) ($row['score_hole_5'] ?? 0),
+                'score_hole_6' => (int) ($row['score_hole_6'] ?? 0),
+                'score_hole_7' => (int) ($row['score_hole_7'] ?? 0),
+                'score_hole_8' => (int) ($row['score_hole_8'] ?? 0),
+                'score_hole_9' => (int) ($row['score_hole_9'] ?? 0),
+                'updated_by' => $updatedBy,
+            ];
+        }
+
+        foreach ($idents as $ident) {
+            foreach ($scoresByPlayer as $playerId => $scores) {
+                if (count($scores) < 9) {
+                    continue;
+                }
+
+                $key = $ident . '|' . $playerId;
+                $existing = $holdingByKey[$key] ?? null;
+
+                $mergedHoles = [];
+                $moved = $existing === null;
+
+                for ($i = 1; $i <= 9; $i++) {
+                    $newScore = (int) ($scores[$i] ?? 0);
+                    if ($newScore < 1) {
+                        $newScore = 0;
+                    }
+
+                    $oldScore = $existing === null
+                        ? 0
+                        : (int) ($existing['score_hole_' . $i] ?? 0);
+
+                    if ($oldScore <= 0) {
+                        $merged = $newScore;
+                    } elseif ($newScore > 0 && $newScore < $oldScore) {
+                        $merged = $newScore;
+                        $moved = true;
+                    } else {
+                        $merged = $oldScore;
+                    }
+
+                    if ($existing !== null && !$moved && $merged !== $oldScore) {
+                        $moved = true;
+                    }
+
+                    $mergedHoles[$i] = $merged;
+                }
+
+                $newTotal = array_sum($mergedHoles);
+                $oldTotal = $existing === null ? 0 : (int) ($existing['score_total'] ?? 0);
+                if ($existing !== null && $newTotal < $oldTotal) {
+                    $moved = true;
+                }
+
+                $movementRound = $existing === null
+                    ? $numberRound
+                    : (int) ($existing['number_round_movement'] ?? 0);
+                if ($moved) {
+                    $movementRound = $numberRound;
+                }
+
+                $computed[$key] = [
+                    'ident_eclectic' => $ident,
+                    'season_year' => $seasonYear,
+                    'row_id_player' => (int) $playerId,
+                    'number_round_movement' => $movementRound,
+                    'score_total' => $newTotal,
+                    'score_hole_1' => $mergedHoles[1],
+                    'score_hole_2' => $mergedHoles[2],
+                    'score_hole_3' => $mergedHoles[3],
+                    'score_hole_4' => $mergedHoles[4],
+                    'score_hole_5' => $mergedHoles[5],
+                    'score_hole_6' => $mergedHoles[6],
+                    'score_hole_7' => $mergedHoles[7],
+                    'score_hole_8' => $mergedHoles[8],
+                    'score_hole_9' => $mergedHoles[9],
+                    'updated_by' => $updatedBy,
+                ];
+            }
+        }
+
+        $this->db->query('DELETE FROM TW4_live.eclectic_scores');
+
+        ksort($computed);
+        foreach ($computed as $row) {
+            $this->db->insert('TW4_live.eclectic_scores', $row);
+        }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function getEclecticIdentsForRound(int $roundId): array
+    {
+        $row = $this->db->fetchOne(
+            'SELECT cp.name_course, cp.ident_eclectic
+             FROM TW4_live.round r
+             LEFT JOIN TW4_base.course_played cp ON cp.row_id = r.course_played_id
+             WHERE r.row_id = ?
+             LIMIT 1',
+            [$roundId]
+        );
+
+        $idents = [
+            trim((string) ($row['name_course'] ?? '')),
+            trim((string) ($row['ident_eclectic'] ?? '')),
+        ];
+
+        $idents = array_values(array_filter(array_unique($idents), static fn(string $v): bool => $v !== ''));
+        return $idents;
+    }
+
     /**
      * @return array{0: array<int,int>, 1: array<int,int>}
      */
@@ -864,6 +1080,73 @@ class RoundWorkflowService
                 UNIQUE KEY uk_history_best_five_scores_movement_player (season_year, number_round_movement, row_id_player),
                 KEY idx_history_best_five_scores_movement (season_year, number_round_movement),
                 KEY idx_history_best_five_scores_player (row_id_player)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+        );
+    }
+
+    private function ensureEclecticTables(): void
+    {
+        $this->db->query(
+            "CREATE DATABASE IF NOT EXISTS TW4_holding
+             CHARACTER SET utf8mb4
+             COLLATE utf8mb4_general_ci"
+        );
+
+        $tableDdl = "
+            CREATE TABLE IF NOT EXISTS %s.eclectic_scores (
+                row_id INT NOT NULL AUTO_INCREMENT,
+                ident_eclectic VARCHAR(16) NOT NULL,
+                season_year CHAR(5) NOT NULL,
+                row_id_player INT NOT NULL,
+                number_round_movement INT NOT NULL DEFAULT 0,
+                score_total INT NOT NULL DEFAULT 0,
+                score_hole_1 INT NOT NULL DEFAULT 0,
+                score_hole_2 INT NOT NULL DEFAULT 0,
+                score_hole_3 INT NOT NULL DEFAULT 0,
+                score_hole_4 INT NOT NULL DEFAULT 0,
+                score_hole_5 INT NOT NULL DEFAULT 0,
+                score_hole_6 INT NOT NULL DEFAULT 0,
+                score_hole_7 INT NOT NULL DEFAULT 0,
+                score_hole_8 INT NOT NULL DEFAULT 0,
+                score_hole_9 INT NOT NULL DEFAULT 0,
+                updated_by VARCHAR(100) NOT NULL,
+                updated_ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (row_id),
+                UNIQUE KEY uk_eclectic_scores_season_ident_player (season_year, ident_eclectic, row_id_player),
+                KEY idx_eclectic_scores_player (row_id_player),
+                KEY idx_eclectic_scores_season (season_year),
+                KEY idx_eclectic_scores_ident (ident_eclectic)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+        ";
+
+        $this->db->query(sprintf($tableDdl, 'TW4_live'));
+        $this->db->query(sprintf($tableDdl, 'TW4_holding'));
+
+        $this->db->query(
+            "CREATE TABLE IF NOT EXISTS TW4_history.eclectic_scores (
+                row_id INT NOT NULL AUTO_INCREMENT,
+                ident_eclectic VARCHAR(16) NOT NULL,
+                season_year CHAR(5) NOT NULL,
+                row_id_player INT NOT NULL,
+                number_round_movement INT NOT NULL DEFAULT 0,
+                score_total INT NOT NULL DEFAULT 0,
+                score_hole_1 INT NOT NULL DEFAULT 0,
+                score_hole_2 INT NOT NULL DEFAULT 0,
+                score_hole_3 INT NOT NULL DEFAULT 0,
+                score_hole_4 INT NOT NULL DEFAULT 0,
+                score_hole_5 INT NOT NULL DEFAULT 0,
+                score_hole_6 INT NOT NULL DEFAULT 0,
+                score_hole_7 INT NOT NULL DEFAULT 0,
+                score_hole_8 INT NOT NULL DEFAULT 0,
+                score_hole_9 INT NOT NULL DEFAULT 0,
+                updated_by VARCHAR(100) NOT NULL,
+                updated_ts TIMESTAMP NULL DEFAULT NULL,
+                hist_updated_by VARCHAR(100) NOT NULL,
+                hist_updated_ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (row_id),
+                UNIQUE KEY uk_history_eclectic_scores_movement_ident_player (ident_eclectic, season_year, number_round_movement, row_id_player),
+                KEY idx_history_eclectic_scores_movement_ident (ident_eclectic, season_year, number_round_movement),
+                KEY idx_history_eclectic_scores_player (row_id_player)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
         );
     }

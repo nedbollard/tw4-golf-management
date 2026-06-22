@@ -19,9 +19,11 @@ class ResultsArchiveService
             'SELECT hr.season_year,
                     hr.number_round,
                     hr.round_date,
+                    hr.course_played_id,
                     hr.card_count,
                     cp.name_course,
-                    cp.name_club
+                    cp.name_club,
+                    cp.ident_eclectic
              FROM TW4_history.round hr
              LEFT JOIN TW4_base.course_played cp ON cp.row_id = hr.course_played_id
              ORDER BY hr.season_year DESC, hr.number_round DESC'
@@ -48,23 +50,25 @@ class ResultsArchiveService
                 'card_count' => (int) ($row['card_count'] ?? 0),
                 'name_course' => (string) ($row['name_course'] ?? ''),
                 'name_club' => (string) ($row['name_club'] ?? ''),
-                'snapshots' => $this->buildSnapshotLinks($season, $roundSlug),
+                'ident_eclectic' => (string) ($row['ident_eclectic'] ?? ''),
+                'snapshots' => $this->buildSnapshotLinks($season, $roundSlug, $row),
             ];
         }
 
         return array_values($tree);
     }
 
-    private function buildSnapshotLinks(string $seasonYear, string $roundSlug): array
+    private function buildSnapshotLinks(string $seasonYear, string $roundSlug, array $round): array
     {
         $result = [];
         $publicRoot = $this->getPublicRoot();
         foreach (SnapshotExportService::snapshotDefinitions() as $snapshot) {
-            $relativePath = 'reports/' . $seasonYear . '/' . $roundSlug . '/' . $snapshot['filename'];
+            $filename = $this->resolveSnapshotFilename((string) ($snapshot['filename'] ?? ''), $round);
+            $relativePath = 'reports/' . $seasonYear . '/' . $roundSlug . '/' . $filename;
             $absolutePath = $publicRoot . '/' . $relativePath;
 
             $result[] = [
-                'filename' => $snapshot['filename'],
+                'filename' => $filename,
                 'label' => $snapshot['label'],
                 'href' => '/' . $relativePath,
                 'exists' => file_exists($absolutePath),
@@ -77,5 +81,62 @@ class ResultsArchiveService
     private function getPublicRoot(): string
     {
         return dirname(__DIR__, 2) . '/public';
+    }
+
+    private function resolveSnapshotFilename(string $template, array $round): string
+    {
+        $playedCourse = $this->slugifyCourseName((string) ($round['name_course'] ?? 'Course'));
+        $combinedName = trim((string) ($round['ident_eclectic'] ?? ''));
+        if ($combinedName === '') {
+            $combinedName = 'Eclectic';
+        }
+
+        $combinedCourse = $this->slugifyCourseName($combinedName);
+        $otherCourse = $this->slugifyCourseName($this->resolveAlternateEclecticCourseName($round));
+
+        return str_replace(
+            ['%COURSE_A%', '%COURSE_B%', '%COURSE_C%'],
+            [$playedCourse, $otherCourse, $combinedCourse],
+            $template
+        );
+    }
+
+    private function resolveAlternateEclecticCourseName(array $round): string
+    {
+        $played = trim((string) ($round['name_course'] ?? ''));
+        $ident = trim((string) ($round['ident_eclectic'] ?? ''));
+        $coursePlayedId = (int) ($round['course_played_id'] ?? 0);
+
+        if ($ident !== '') {
+            $row = $this->db->fetchOne(
+                'SELECT cp.name_course
+                 FROM TW4_base.course_played cp
+                 WHERE cp.ident_eclectic = ?
+                   AND cp.row_id <> ?
+                 ORDER BY cp.name_course ASC
+                 LIMIT 1',
+                [$ident, $coursePlayedId]
+            );
+
+            $other = trim((string) ($row['name_course'] ?? ''));
+            if ($other !== '') {
+                return $other;
+            }
+        }
+
+        return $played !== '' ? $played : 'Course';
+    }
+
+    private function slugifyCourseName(string $name): string
+    {
+        $value = trim($name);
+        if ($value === '') {
+            return 'Course';
+        }
+
+        $value = preg_replace('/[^A-Za-z0-9]+/', '_', $value) ?? $value;
+        $value = trim($value, '_');
+
+        return $value === '' ? 'Course' : $value;
     }
 }

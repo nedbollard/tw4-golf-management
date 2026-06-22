@@ -33,7 +33,7 @@ class SnapshotExportServiceTest extends TestCase
         $html = $this->invokePrivateMethod('renderHandicaps', [$ctx]);
 
         $this->assertStringContainsString('Back to Reports', $html);
-        $this->assertStringContainsString('href="/results"', $html);
+        $this->assertStringContainsString('href="/results?season=25_26&amp;round=008_Jun_10"', $html);
         $this->assertStringContainsString('Back to Main Menu', $html);
         $this->assertStringContainsString('href="/"', $html);
     }
@@ -221,6 +221,47 @@ class SnapshotExportServiceTest extends TestCase
         $result = $method->invoke($service, '25_26', 8);
 
         $this->assertSame([], $result);
+    }
+
+    public function testSnapshotDefinitionsIncludeRenumberedEclecticAndShiftedReports(): void
+    {
+        $definitions = SnapshotExportService::snapshotDefinitions();
+        $filenames = array_map(static fn(array $row): string => (string) ($row['filename'] ?? ''), $definitions);
+
+        $this->assertNotContains('35_Eclectic_Haggle.html', $filenames);
+        $this->assertContains('41_Eclectic_%COURSE_A%.html', $filenames);
+        $this->assertContains('42_Eclectic_%COURSE_B%.html', $filenames);
+        $this->assertContains('49_Eclectic_%COURSE_C%.html', $filenames);
+        $this->assertContains('51_Small_Beer.html', $filenames);
+        $this->assertContains('61_Handicaps.html', $filenames);
+    }
+
+    public function testRenderMovementsIncludesEclecticMovementSections(): void
+    {
+        $ctx = [
+            'name_club' => 'OVGC',
+            'season_year' => '25_26',
+            'number_round' => 8,
+            'round_date' => '2026-06-10',
+            'name_course' => 'Whites',
+            'eclectic_played_name' => 'Whites',
+            'eclectic_combined_name' => 'Eclectic',
+            'movement_handicaps' => [],
+            'movement_best_five' => [],
+            'eclectic_played_movement' => [
+                ['display_player' => 'P1', 'score_movement' => 2, 'score_total' => 41],
+            ],
+            'eclectic_combined_movement' => [
+                ['display_player' => 'P2', 'score_movement' => 1, 'score_total' => 39],
+            ],
+        ];
+
+        $html = $this->invokePrivateMethod('renderMovements', [$ctx]);
+
+        $this->assertStringContainsString('Eclectic Movements (Whites)', $html);
+        $this->assertStringContainsString('Eclectic Movements (Eclectic)', $html);
+        $this->assertStringContainsString('<td>P1</td><td>2</td><td>41</td>', $html);
+        $this->assertStringContainsString('<td>P2</td><td>1</td><td>39</td>', $html);
     }
 
     private function invokePrivateMethod(string $methodName, array $args): string

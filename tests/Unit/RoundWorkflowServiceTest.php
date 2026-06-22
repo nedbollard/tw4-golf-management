@@ -18,7 +18,7 @@ class RoundWorkflowServiceTest extends TestCase
         /** @var Database|MockObject $db */
         $db = $this->createMock(Database::class);
 
-        $db->expects($this->exactly(4))
+        $db->expects($this->atLeast(4))
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
                 if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'locked_by_staff_id = ?')) {
@@ -41,6 +41,13 @@ class RoundWorkflowServiceTest extends TestCase
                     return ['method' => 'modern'];
                 }
 
+                if (str_contains($sql, 'FROM TW4_live.round r') && str_contains($sql, 'LEFT JOIN TW4_base.course_played cp')) {
+                    return [
+                        'name_course' => 'Whites',
+                        'ident_eclectic' => 'Combined_Whites_Blues',
+                    ];
+                }
+
                 return null;
             });
 
@@ -60,6 +67,14 @@ class RoundWorkflowServiceTest extends TestCase
                 }
 
                 if (str_contains($sql, 'SELECT row_id_player, points') && str_contains($sql, 'FROM TW4_live.card')) {
+                    return [];
+                }
+
+                if (str_contains($sql, 'FROM TW4_holding.eclectic_scores')) {
+                    return [];
+                }
+
+                if (str_contains($sql, 'FROM TW4_live.card c') && str_contains($sql, 'cbh.hole') && str_contains($sql, 'cbh.score')) {
                     return [];
                 }
 
@@ -102,8 +117,11 @@ class RoundWorkflowServiceTest extends TestCase
         $this->assertTrue($this->containsSql($executedSql, 'INSERT INTO TW4_history.card_by_hole'));
         $this->assertTrue($this->containsSql($executedSql, 'INSERT INTO TW4_history.results'));
         $this->assertTrue($this->containsSql($executedSql, 'INSERT INTO TW4_history.best_five_scores'));
+        $this->assertTrue($this->containsSql($executedSql, 'INSERT INTO TW4_history.eclectic_scores'));
         $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_live.best_five_scores'));
+        $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_live.eclectic_scores'));
         $this->assertTrue($this->containsSql($executedSql, 'CREATE TABLE IF NOT EXISTS TW4_live.best_five_scores'));
+        $this->assertTrue($this->containsSql($executedSql, 'CREATE TABLE IF NOT EXISTS TW4_live.eclectic_scores'));
         $this->assertTrue($this->containsSql($executedSql, 'UPDATE TW4_base.roster'));
         $this->assertTrue($this->containsSql($executedSql, 'UPDATE TW4_live.round'));
         $this->assertTrue($this->containsSql($executedSql, 'INNER JOIN TW4_live.card'));
