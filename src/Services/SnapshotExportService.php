@@ -53,6 +53,8 @@ class SnapshotExportService
             throw new \RuntimeException('Unable to create reports directory: ' . $targetDir);
         }
 
+        $this->normalizeFilesystemPermissions($targetDir, true);
+
         $courseAFileSlug = $this->slugifyCourseName((string) ($context['eclectic_played_name'] ?? ($context['name_course'] ?? 'Course')));
         $courseBFileSlug = $this->slugifyCourseName((string) ($context['eclectic_other_name'] ?? ($context['eclectic_played_name'] ?? ($context['name_course'] ?? 'Course'))));
         $combinedFileSlug = $this->slugifyCourseName((string) ($context['eclectic_combined_name'] ?? 'Combined'));
@@ -102,6 +104,8 @@ class SnapshotExportService
             if (@file_put_contents($path, $html) === false) {
                 throw new \RuntimeException('Failed writing snapshot: ' . $path);
             }
+
+            $this->normalizeFilesystemPermissions($path, false);
             $written[] = $filename;
         }
 
@@ -112,6 +116,20 @@ class SnapshotExportService
             'directory' => $targetDir,
             'written' => $written,
         ];
+    }
+
+    private function normalizeFilesystemPermissions(string $path, bool $isDirectory): void
+    {
+        // Keep report artifacts writable by the web process across mixed execution paths
+        // (web request, CLI inside container, and occasional root-triggered maintenance commands).
+        if ($isDirectory) {
+            @chmod($path, 0775);
+        } else {
+            @chmod($path, 0664);
+        }
+
+        @chgrp($path, 'www-data');
+        @chown($path, 'www-data');
     }
 
     private function loadContext(string $seasonYear, int $roundNumber): array
