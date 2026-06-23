@@ -91,7 +91,15 @@ class SnapshotExportService
             if (!$overwrite && file_exists($path)) {
                 continue;
             }
-            if (file_put_contents($path, $html) === false) {
+            if (file_exists($path) && !is_writable($path)) {
+                // Existing files may be owned by another user (for example, root from manual ops).
+                // Remove them first so the web user can recreate the file in a writable directory.
+                if (!@unlink($path)) {
+                    throw new \RuntimeException('Failed removing non-writable snapshot: ' . $path);
+                }
+            }
+
+            if (@file_put_contents($path, $html) === false) {
                 throw new \RuntimeException('Failed writing snapshot: ' . $path);
             }
             $written[] = $filename;
