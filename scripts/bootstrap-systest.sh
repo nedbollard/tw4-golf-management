@@ -123,14 +123,6 @@ done
 
 ensure_application_log_table
 
-print_status "Creating starter round (Round 1, Whites course)..."
-docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
-    mysql -u root TW4_live <<'SQL'
-INSERT INTO round (season_year, number_round, round_date, course_played_id, workflow_step, updated_by, updated_ts)
-VALUES ('25_26', 1, CURDATE(), 1, 'not_started', 'system', NOW())
-ON DUPLICATE KEY UPDATE course_played_id = 1, workflow_step = 'not_started';
-SQL
-
 print_status "Verifying required databases and tables..."
 docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SHOW DATABASES LIKE 'TW4_base'; SHOW DATABASES LIKE 'TW4_live'; SHOW DATABASES LIKE 'TW4_history'; SHOW DATABASES LIKE 'TW4_holding'; SHOW TABLES IN TW4_base LIKE 'staff'; SHOW TABLES IN TW4_base LIKE 'config_application'; SHOW TABLES IN TW4_base LIKE 'application_log'; SHOW TABLES IN TW4_base LIKE 'handicap_audit'; SHOW TABLES IN TW4_live LIKE 'round'; SHOW TABLES IN TW4_live LIKE 'card'; SHOW TABLES IN TW4_live LIKE 'card_by_hole'; SHOW TABLES IN TW4_live LIKE 'results'; SHOW TABLES IN TW4_live LIKE 'best_five_scores'; SHOW TABLES IN TW4_history LIKE 'round'; SHOW TABLES IN TW4_history LIKE 'card'; SHOW TABLES IN TW4_history LIKE 'card_by_hole'; SHOW TABLES IN TW4_history LIKE 'results'; SHOW TABLES IN TW4_history LIKE 'best_five_scores'; SHOW TABLES IN TW4_holding LIKE 'best_five_scores';"
@@ -225,6 +217,6 @@ print_status ""
 print_status "Next steps:"
 print_status "  1. Access the application at: http://localhost:8084 (dev) or https://tw4syst.duckdns.org (systest)"
 print_status "  2. Log in as: admin / admin"
-print_status "  3. You are now at Round 1 of Season 25/26"
-print_status "  4. Create a new round or proceed with card entry"
+print_status "  3. Start Round will default to Round 1 for season 25/26"
+print_status "  4. Create a new round and proceed with card entry"
 

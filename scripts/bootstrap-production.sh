@@ -10,8 +10,7 @@ set -euo pipefail
 # - Applies seed data (admin user, config)
 # - Applies post-bootstrap migrations
 # - Clears all report files and old logs
-# - Clears session data
-# - Resets to Round 1 of Season 25/26
+# - Leaves round state at day-one defaults (Start Round presents Round 1)
 
 echo "[INFO] bootstrap-production.sh delegates to scripts/bootstrap-systest.sh"
 exec bash "$(dirname "$0")/bootstrap-systest.sh" "$@"
