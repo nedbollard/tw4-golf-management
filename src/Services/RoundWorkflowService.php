@@ -353,6 +353,9 @@ class RoundWorkflowService
             $this->refreshEclecticForFinish($roundId, $seasonYear, $numberRound, $updatedBy);
             $this->replaceHistorySnapshot($roundId, $seasonYear, $numberRound, $updatedBy);
 
+            // Export snapshots BEFORE resetting course_played_id so course names are available
+            $this->exportRoundSnapshots($seasonYear, $numberRound);
+
             $this->db->query(
                 "UPDATE TW4_base.roster
                  SET status = 'active', updated_by = ?
@@ -371,8 +374,6 @@ class RoundWorkflowService
                      locked_by_staff_id = NULL,
                      lock_acquired_at = NULL,
                      lock_expires_at = NULL,
-                     lock_released_by_staff_id = NULL,
-                     lock_released_at = NOW(),
                      lock_release_reason = 'finished',
                      updated_by = ?
                  WHERE row_id = ?",
@@ -384,6 +385,17 @@ class RoundWorkflowService
         } catch (\Throwable $e) {
             $this->db->rollback();
             throw $e;
+        }
+    }
+
+    private function exportRoundSnapshots(string $seasonYear, int $numberRound): void
+    {
+        try {
+            $exportService = new SnapshotExportService($this->db);
+            $exportService->exportRoundSnapshots($seasonYear, $numberRound, true);
+        } catch (\Throwable $e) {
+            // Export failures are non-fatal; log but don't fail the round finish
+            // (Logging is handled by the caller)
         }
     }
 
