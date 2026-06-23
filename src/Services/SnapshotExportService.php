@@ -61,12 +61,29 @@ class SnapshotExportService
             '10_Results.html' => $this->renderResults($context),
             '20_Movements.html' => $this->renderMovements($context),
             '31_Best_5_Scores.html' => $this->renderBest5($context),
-            '41_Eclectic_' . $courseAFileSlug . '.html' => $this->renderEclectic($context, 'played'),
-            '42_Eclectic_' . $courseBFileSlug . '.html' => $this->renderEclectic($context, 'other'),
-            '49_Eclectic_' . $combinedFileSlug . '.html' => $this->renderEclectic($context, 'combined'),
-            '51_Small_Beer.html' => $this->renderSmallBeer($context),
-            '61_Handicaps.html' => $this->renderHandicaps($context),
         ];
+
+        // Render eclectic reports with graceful failure for missing data (early-round scenarios)
+        try {
+            $files['41_Eclectic_' . $courseAFileSlug . '.html'] = $this->renderEclectic($context, 'played');
+        } catch (\Throwable $e) {
+            $files['41_Eclectic_' . $courseAFileSlug . '.html'] = $this->renderEclecticNotYetAvailable($context, 'played', $e);
+        }
+
+        try {
+            $files['42_Eclectic_' . $courseBFileSlug . '.html'] = $this->renderEclectic($context, 'other');
+        } catch (\Throwable $e) {
+            $files['42_Eclectic_' . $courseBFileSlug . '.html'] = $this->renderEclecticNotYetAvailable($context, 'other', $e);
+        }
+
+        try {
+            $files['49_Eclectic_' . $combinedFileSlug . '.html'] = $this->renderEclectic($context, 'combined');
+        } catch (\Throwable $e) {
+            $files['49_Eclectic_' . $combinedFileSlug . '.html'] = $this->renderEclecticNotYetAvailable($context, 'combined', $e);
+        }
+
+        $files['51_Small_Beer.html'] = $this->renderSmallBeer($context);
+        $files['61_Handicaps.html'] = $this->renderHandicaps($context);
 
         $written = [];
         foreach ($files as $filename => $html) {
@@ -746,6 +763,42 @@ class SnapshotExportService
             . '<table><tr><th>Standing</th><th>Player</th><th>Total</th><th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th><th>H7</th><th>H8</th><th>H9</th></tr>'
             . $bodyRows
             . '</table>'
+        );
+    }
+
+    private function renderEclecticNotYetAvailable(array $ctx, string $scope, \Throwable $error): string
+    {
+        $isCombined = $scope === 'combined';
+        $isOther = $scope === 'other';
+
+        $playedName = trim((string) ($ctx['eclectic_played_name'] ?? ($ctx['name_course'] ?? '')));
+        if ($playedName === '') {
+            $playedName = 'Played Course';
+        }
+
+        $otherName = trim((string) ($ctx['eclectic_other_name'] ?? ''));
+        if ($otherName === '') {
+            $otherName = $playedName;
+        }
+
+        $combinedName = trim((string) ($ctx['eclectic_combined_name'] ?? ''));
+        if ($combinedName === '') {
+            $combinedName = 'Eclectic';
+        }
+
+        $heading = $isCombined
+            ? ('Eclectic: ' . $combinedName)
+            : ('Eclectic: ' . ($isOther ? $otherName : $playedName));
+
+        $message = '<div class="note"><strong>No data yet.</strong> Eclectic standings will be available after all courses are played.</div>';
+
+        return $this->wrap(
+            $ctx,
+            'Eclectic',
+            '<h2>' . $this->e($heading) . '</h2>'
+            . '<h3>Date: ' . $this->e((string) ($ctx['round_date'] ?? 'n/a')) . '</h3>'
+            . '<h3>Course: ' . $this->e((string) ($ctx['name_course'] ?? 'n/a')) . '</h3>'
+            . $message
         );
     }
 
