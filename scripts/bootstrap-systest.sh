@@ -206,4 +206,24 @@ if [ "$HANDICAP_PLAYER_BEFORE_POINTS" != "1" ]; then
 fi
 
 print_status "handicap_audit verification passed: points columns present, changed_* removed, idx_updated_ts present, row_id_player promoted."
+
+# Clean up report files and sessions to start fresh
+print_status "Cleaning up report files and session data..."
+docker compose -f docker-compose.prod.yml exec -T app bash -c 'rm -rf /var/www/html/public/reports/* && echo "Reports directory cleared"' || true
+docker compose -f docker-compose.prod.yml exec -T app bash -c 'rm -rf /var/www/html/logs/*.log && echo "Old logs cleared"' || true
+
+# Clear session volume if running with named volume (optional)
+print_status "Clearing session data via database..."
+docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    mysql -u root TW4_live <<'SQL'
+DELETE FROM session_log;
+SQL
+
 print_status "System test bootstrap completed successfully (virgin baseline state)."
+print_status ""
+print_status "Next steps:"
+print_status "  1. Access the application at: http://localhost:8084 (dev) or https://tw4syst.duckdns.org (systest)"
+print_status "  2. Log in as: admin / admin"
+print_status "  3. You are now at Round 1 of Season 25/26"
+print_status "  4. Create a new round or proceed with card entry"
+
