@@ -220,13 +220,6 @@ print_status "Cleaning up report files and session data..."
 docker compose -f docker-compose.prod.yml exec -T app bash -c 'rm -rf /var/www/html/public/reports/* && echo "Reports directory cleared"' || true
 docker compose -f docker-compose.prod.yml exec -T app bash -c 'rm -rf /var/www/html/logs/*.log && echo "Old logs cleared"' || true
 
-# Clear session volume if running with named volume (optional)
-print_status "Clearing session data via database..."
-docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
-    mysql -u root TW4_live <<'SQL'
-DELETE FROM session_log;
-SQL
-
 print_status "System test bootstrap completed successfully (virgin baseline state)."
 print_status ""
 print_status "Next steps:"
