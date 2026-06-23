@@ -257,9 +257,6 @@ class SnapshotExportService
             $eclecticCombinedSnapshot = [];
             $eclecticPlayedMovement = [];
             $eclecticCombinedMovement = [];
-            $eclecticPlayedName = '';
-            $eclecticOtherName = '';
-            $eclecticCombinedName = '';
         }
 
         $aliasByIdentifier = [];
