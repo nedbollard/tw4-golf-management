@@ -253,34 +253,37 @@ class SnapshotExportService
             $bestFiveSnapshot = [];
         }
 
-        try {
-            $courseName = trim((string) ($round['name_course'] ?? ''));
-            $combinedIdent = trim((string) ($round['ident_eclectic'] ?? ''));
-            if ($combinedIdent === '') {
-                // Fallback keeps a combined track available in single-course setups.
-                $combinedIdent = $courseName;
-            }
-            $eclecticPlayedName = $courseName;
-            $eclecticOtherName = $this->resolveAlternateEclecticCourseName(
-                (int) ($round['course_played_id'] ?? 0),
-                $combinedIdent,
-                $courseName
-            );
-            if ($eclecticOtherName === '') {
-                $eclecticOtherName = $eclecticPlayedName;
-            }
-            $eclecticCombinedName = $combinedIdent;
+        $courseName = trim((string) ($round['name_course'] ?? ''));
+        $combinedIdent = trim((string) ($round['ident_eclectic'] ?? ''));
+        if ($combinedIdent === '') {
+            // Fallback keeps a combined track available in single-course setups.
+            $combinedIdent = $courseName;
+        }
+        $eclecticPlayedName = $courseName;
+        $eclecticOtherName = $this->resolveAlternateEclecticCourseName(
+            (int) ($round['course_played_id'] ?? 0),
+            $combinedIdent,
+            $courseName
+        );
+        if ($eclecticOtherName === '') {
+            $eclecticOtherName = $eclecticPlayedName;
+        }
+        $eclecticCombinedName = $combinedIdent;
 
+        try {
             $eclecticPlayedSnapshot = $this->buildEclecticSnapshot($seasonYear, $roundNumber, $courseName);
             $eclecticOtherSnapshot = $this->buildEclecticSnapshot($seasonYear, $roundNumber, $eclecticOtherName);
             $eclecticCombinedSnapshot = $this->buildEclecticSnapshot($seasonYear, $roundNumber, $combinedIdent);
-
-            $eclecticPlayedMovement = $this->buildEclecticMovement($seasonYear, $roundNumber, $courseName);
-            $eclecticCombinedMovement = $this->buildEclecticMovement($seasonYear, $roundNumber, $combinedIdent);
         } catch (\Throwable $e) {
             $eclecticPlayedSnapshot = [];
             $eclecticOtherSnapshot = [];
             $eclecticCombinedSnapshot = [];
+        }
+
+        try {
+            $eclecticPlayedMovement = $this->buildEclecticMovement($seasonYear, $roundNumber, $courseName);
+            $eclecticCombinedMovement = $this->buildEclecticMovement($seasonYear, $roundNumber, $combinedIdent);
+        } catch (\Throwable $e) {
             $eclecticPlayedMovement = [];
             $eclecticCombinedMovement = [];
         }
@@ -874,16 +877,16 @@ class SnapshotExportService
              FROM TW4_live.eclectic_scores es
              LEFT JOIN TW4_base.roster r ON r.row_id = es.row_id_player
              LEFT JOIN TW4_holding.eclectic_scores prev
-               ON prev.ident_eclectic = es.ident_eclectic
-              AND prev.season_year = es.season_year
-              AND prev.row_id_player = es.row_id_player
+                             ON prev.row_id_player = es.row_id_player
+                            AND prev.season_year = ?
+                            AND prev.ident_eclectic = ?
              WHERE es.season_year = ?
                AND es.ident_eclectic = ?
                AND es.number_round_movement = ?
              ORDER BY score_movement DESC,
                       es.score_total ASC,
                       COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", es.row_id_player)) ASC',
-            [$seasonYear, $ident, $roundNumber]
+                        [$seasonYear, $ident, $seasonYear, $ident, $roundNumber]
         );
     }
 
