@@ -26,8 +26,13 @@ class AdminController extends BaseController
     public function menu(): void
     {
         $this->requireRole('admin');
-        
-        $this->render('admin/menu');
+
+        $this->render('admin/menu', [
+            'errors' => $_SESSION['errors'] ?? [],
+            'success' => $_SESSION['success'] ?? null,
+        ]);
+
+        unset($_SESSION['errors'], $_SESSION['success']);
     }
 
     public function scoringState(): void

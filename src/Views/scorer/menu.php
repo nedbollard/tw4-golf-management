@@ -37,7 +37,9 @@ $steps       = $roundState['steps']       ?? [];
 $lock        = $roundState['lock']        ?? null;
 $cardCount   = $roundState['card_count']  ?? 0;
 $activeRound = $roundState['active_round'] ?? null;
-$displayRound = $activeRound && (($activeRound['workflow_step'] ?? 'not_started') !== 'not_started')
+$activeStep = (string) ($activeRound['workflow_step'] ?? 'between_rounds');
+$isBetweenRounds = in_array($activeStep, ['between_rounds', 'not_started'], true);
+$displayRound = $activeRound && (((int) ($activeRound['round_number'] ?? 0)) > 0 || !$isBetweenRounds)
     ? $activeRound
     : null;
 $errors      = $_SESSION['errors'] ?? [];

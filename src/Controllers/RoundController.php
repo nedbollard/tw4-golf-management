@@ -36,8 +36,8 @@ class RoundController extends BaseController
         $workflow = new RoundWorkflowService($this->app->getDatabase());
         $round = $workflow->getPermanentRound();
 
-        if (($round['workflow_step'] ?? 'not_started') !== 'not_started') {
-            $_SESSION['errors'] = ['round' => 'Round can only be started when workflow_step is not_started.'];
+        if (!in_array((string) ($round['workflow_step'] ?? 'between_rounds'), ['between_rounds', 'not_started'], true)) {
+            $_SESSION['errors'] = ['round' => 'Round can only be started when workflow_step is between_rounds.'];
             $this->redirect('/scorer/menu');
         }
 
@@ -61,8 +61,8 @@ class RoundController extends BaseController
         $workflow = new RoundWorkflowService($this->app->getDatabase());
         $round = $workflow->getPermanentRound();
 
-        if (($round['workflow_step'] ?? 'not_started') !== 'not_started') {
-            $_SESSION['errors'] = ['round' => 'Round can only be started when workflow_step is not_started.'];
+        if (!in_array((string) ($round['workflow_step'] ?? 'between_rounds'), ['between_rounds', 'not_started'], true)) {
+            $_SESSION['errors'] = ['round' => 'Round can only be started when workflow_step is between_rounds.'];
             $this->redirect('/scorer/menu');
         }
 
@@ -185,7 +185,7 @@ class RoundController extends BaseController
         $this->logger->log(
             Logger::LEVEL_INFO,
             Logger::EVENT_SYSTEM,
-            'Scoring workflow changed to not_started (round finished, state applied)',
+            'Scoring workflow changed to between_rounds (round finished, state applied)',
             [
                 'round_id' => $roundId,
                 'staff_id' => $staffId,
@@ -201,7 +201,7 @@ class RoundController extends BaseController
         // Export is now handled within RoundWorkflowService::finishRound() before course_played_id is reset
         unset($_SESSION['errors']);
         $_SESSION['just_finished_round'] = true;
-        $_SESSION['success'] = 'Round finished. Workflow reset to not_started and roster statuses reset to active.';
+        $_SESSION['success'] = 'Round finished. Workflow set to between_rounds and roster statuses reset to active.';
 
         $this->redirect('/scorer/menu');
     }

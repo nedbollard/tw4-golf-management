@@ -49,7 +49,7 @@ class RoundWorkflowService
 
         $roundId = $this->db->insert('TW4_live.round', [
             'number_round' => 0,
-            'workflow_step' => 'not_started',
+            'workflow_step' => 'between_rounds',
             'card_count' => 0,
             'updated_by' => 'system',
         ]);
@@ -106,8 +106,8 @@ class RoundWorkflowService
             throw new \RuntimeException('Unable to initialise live round row.');
         }
 
-        if (($existing['workflow_step'] ?? 'not_started') !== 'not_started') {
-            throw new \RuntimeException('Round can only be started when workflow_step is not_started.');
+        if (!$this->isBetweenRoundsStep((string) ($existing['workflow_step'] ?? 'between_rounds'))) {
+            throw new \RuntimeException('Round can only be started when workflow_step is between_rounds.');
         }
 
         $formData = $this->getStartRoundFormData();
@@ -208,9 +208,9 @@ class RoundWorkflowService
             throw new \RuntimeException('Invalid live round row.');
         }
 
-        $currentStep = (string) ($round['workflow_step'] ?? 'not_started');
-        if (!in_array($currentStep, ['not_started', 'results_presented'], true)) {
-            throw new \RuntimeException('Reset is only allowed when workflow_step is not_started or results_presented.');
+        $currentStep = (string) ($round['workflow_step'] ?? 'between_rounds');
+        if (!in_array($currentStep, ['between_rounds', 'not_started', 'results_presented'], true)) {
+            throw new \RuntimeException('Reset is only allowed when workflow_step is between_rounds or results_presented.');
         }
 
         $resultsCountRow = $this->db->fetchOne('SELECT COUNT(*) AS total FROM TW4_live.results');
@@ -348,10 +348,14 @@ class RoundWorkflowService
         $this->db->beginTransaction();
 
         try {
+            $eclecticContext = $this->buildRoundEclecticContext($roundId);
             $this->applyHandicapUpdatesBeforeHistory($updatedBy, $seasonYear, $numberRound);
             $this->refreshBestFiveForFinish($seasonYear, $numberRound, $updatedBy);
-            $this->refreshEclecticForFinish($roundId, $seasonYear, $numberRound, $updatedBy);
+            if ((bool) ($eclecticContext['include_eclectic'] ?? false)) {
+                $this->refreshEclecticForFinish($roundId, $seasonYear, $numberRound, $updatedBy, $eclecticContext);
+            }
             $this->replaceHistorySnapshot($roundId, $seasonYear, $numberRound, $updatedBy);
+            $this->persistRoundEclecticContext($seasonYear, $numberRound, $eclecticContext, $updatedBy);
 
             // Export snapshots BEFORE resetting course_played_id so course names are available
             $this->exportRoundSnapshots($seasonYear, $numberRound);
@@ -365,7 +369,7 @@ class RoundWorkflowService
 
             $stmt = $this->db->query(
                 "UPDATE TW4_live.round
-                 SET workflow_step = 'not_started',
+                 SET workflow_step = 'between_rounds',
                      round_date = NULL,
                      course_played_id = NULL,
                      card_count = 0,
@@ -826,9 +830,9 @@ class RoundWorkflowService
         }
     }
 
-    private function refreshEclecticForFinish(int $roundId, string $seasonYear, int $numberRound, string $updatedBy): void
+    private function refreshEclecticForFinish(int $roundId, string $seasonYear, int $numberRound, string $updatedBy, array $eclecticContext): void
     {
-        $idents = $this->getEclecticIdentsForRound($roundId);
+        $idents = $this->getEclecticIdentsForRound($roundId, $eclecticContext);
 
         $holdingRows = $this->db->fetchAll(
             'SELECT ident_eclectic, season_year, row_id_player, number_round_movement,
@@ -849,11 +853,12 @@ class RoundWorkflowService
 
         $holdingByKey = [];
         foreach ($holdingRows as $row) {
-            $ident = trim((string) ($row['ident_eclectic'] ?? ''));
+            $ident = $this->normalizeEclecticIdent((string) ($row['ident_eclectic'] ?? ''));
             $playerId = (int) ($row['row_id_player'] ?? 0);
             if ($ident === '' || $playerId < 1) {
                 continue;
             }
+            $row['ident_eclectic'] = $ident;
             $holdingByKey[$ident . '|' . $playerId] = $row;
         }
 
@@ -889,6 +894,11 @@ class RoundWorkflowService
         }
 
         foreach ($idents as $ident) {
+            $ident = $this->normalizeEclecticIdent($ident);
+            if ($ident === '') {
+                continue;
+            }
+
             foreach ($scoresByPlayer as $playerId => $scores) {
                 if (count($scores) < 9) {
                     continue;
@@ -970,8 +980,17 @@ class RoundWorkflowService
     /**
      * @return array<int, string>
      */
-    private function getEclecticIdentsForRound(int $roundId): array
+    private function getEclecticIdentsForRound(int $roundId, array $eclecticContext): array
     {
+        if ((bool) ($eclecticContext['include_eclectic'] ?? false)) {
+            $idents = [
+                trim((string) ($eclecticContext['played_course_name'] ?? '')),
+                trim((string) ($eclecticContext['configured_ident_eclectic'] ?? '')),
+            ];
+
+            return $this->dedupeEclecticIdentsCaseInsensitive($idents);
+        }
+
         $row = $this->db->fetchOne(
             'SELECT cp.name_course, cp.ident_eclectic
              FROM TW4_live.round r
@@ -986,8 +1005,138 @@ class RoundWorkflowService
             trim((string) ($row['ident_eclectic'] ?? '')),
         ];
 
-        $idents = array_values(array_filter(array_unique($idents), static fn(string $v): bool => $v !== ''));
-        return $idents;
+        return $this->dedupeEclecticIdentsCaseInsensitive($idents);
+    }
+
+    /**
+     * @param array<int, string> $idents
+     * @return array<int, string>
+     */
+    private function dedupeEclecticIdentsCaseInsensitive(array $idents): array
+    {
+        $result = [];
+        $seen = [];
+
+        foreach ($idents as $ident) {
+            $value = $this->normalizeEclecticIdent((string) $ident);
+            if ($value === '') {
+                continue;
+            }
+
+            $key = $value;
+            if (isset($seen[$key])) {
+                continue;
+            }
+
+            $seen[$key] = true;
+            $result[] = $value;
+        }
+
+        return $result;
+    }
+
+    private function normalizeEclecticIdent(string $ident): string
+    {
+        return strtolower(trim($ident));
+    }
+
+    private function buildRoundEclecticContext(int $roundId): array
+    {
+        $row = $this->db->fetchOne(
+            'SELECT cp.name_course, cp.ident_eclectic
+             FROM TW4_live.round r
+             LEFT JOIN TW4_base.course_played cp ON cp.row_id = r.course_played_id
+             WHERE r.row_id = ?
+             LIMIT 1',
+            [$roundId]
+        );
+
+        $playedCourseName = trim((string) ($row['name_course'] ?? ''));
+        $courseIdent = trim((string) ($row['ident_eclectic'] ?? ''));
+        $configuredIdent = $this->getConfiguredEclecticIdent();
+        $includeEclectic = $this->shouldIncludeEclectic($courseIdent, $configuredIdent);
+
+        $combinedName = $configuredIdent !== '' ? $configuredIdent : $courseIdent;
+        if ($combinedName === '') {
+            $combinedName = 'Eclectic';
+        }
+
+        $playedSlug = $this->slugifyReportName($playedCourseName === '' ? 'Course' : $playedCourseName);
+        $combinedSlug = $this->slugifyReportName($combinedName);
+
+        return [
+            'include_eclectic' => $includeEclectic,
+            'configured_ident_eclectic' => $configuredIdent,
+            'played_course_name' => $playedCourseName,
+            'combined_name' => $combinedName,
+            'course_report_files' => [
+                '41_Eclectic_' . $playedSlug . '.html',
+            ],
+            'combined_report_filename' => '49_Eclectic_' . $combinedSlug . '.html',
+        ];
+    }
+
+    private function persistRoundEclecticContext(string $seasonYear, int $numberRound, array $context, string $updatedBy): void
+    {
+        $this->db->query(
+            'DELETE FROM TW4_history.round_eclectic_context
+             WHERE season_year = ? AND number_round = ?',
+            [$seasonYear, $numberRound]
+        );
+
+        $this->db->insert('TW4_history.round_eclectic_context', [
+            'season_year' => $seasonYear,
+            'number_round' => $numberRound,
+            'include_eclectic' => (int) ((bool) ($context['include_eclectic'] ?? false)),
+            'configured_ident_eclectic' => (string) ($context['configured_ident_eclectic'] ?? ''),
+            'played_course_name' => (string) ($context['played_course_name'] ?? ''),
+            'combined_name' => (string) ($context['combined_name'] ?? ''),
+            'course_report_files_json' => json_encode($context['course_report_files'] ?? []),
+            'combined_report_filename' => (string) ($context['combined_report_filename'] ?? ''),
+            'updated_by' => $updatedBy,
+            'updated_ts' => date('Y-m-d H:i:s'),
+            'hist_updated_by' => $updatedBy,
+        ]);
+    }
+
+    private function getConfiguredEclecticIdent(): string
+    {
+        $row = $this->db->fetchOne(
+            'SELECT TRIM(config_value_string) AS ident
+             FROM TW4_base.config_application
+             WHERE config_name = ?
+             LIMIT 1',
+            ['ident_eclectic']
+        );
+
+        return trim((string) ($row['ident'] ?? ''));
+    }
+
+    private function shouldIncludeEclectic(string $courseIdent, string $configuredIdent): bool
+    {
+        $course = strtolower(trim($courseIdent));
+        $configured = strtolower(trim($configuredIdent));
+        if ($course === '' || $configured === '') {
+            return false;
+        }
+
+        if (in_array($configured, ['none', 'nil', 'n/a', 'na', 'off'], true)) {
+            return false;
+        }
+
+        return $course === $configured;
+    }
+
+    private function slugifyReportName(string $name): string
+    {
+        $value = trim($name);
+        if ($value === '') {
+            return 'Course';
+        }
+
+        $value = preg_replace('/[^A-Za-z0-9]+/', '_', $value) ?? $value;
+        $value = trim($value, '_');
+        return $value === '' ? 'Course' : $value;
     }
 
     /**
@@ -1199,7 +1348,7 @@ class RoundWorkflowService
              FROM TW4_live.round WHERE row_id = ?',
             [$roundId]
         );
-        $step = $round['workflow_step'] ?? 'not_started';
+        $step = $round['workflow_step'] ?? 'between_rounds';
         $cardCount = $this->getCardCount($roundId);
         $lock = $this->lockService->getLockStatus($roundId, $staffId);
         $lockBlocked = $lock && !empty($lock['blocked']);
@@ -1211,7 +1360,7 @@ class RoundWorkflowService
             4 => ['label' => 'Finish the Round', 'status' => 'waiting', 'enabled' => false, 'route' => '/rounds/finish'],
         ];
 
-        if ($step === 'not_started') {
+        if ($this->isBetweenRoundsStep((string) $step)) {
             $steps[1]['enabled'] = !$lockBlocked;
         } elseif ($step === 'card_entry_open') {
             $steps[1]['status'] = 'completed';
@@ -1236,6 +1385,11 @@ class RoundWorkflowService
             'lock' => $lock,
             'steps' => $steps,
         ];
+    }
+
+    private function isBetweenRoundsStep(string $step): bool
+    {
+        return in_array($step, ['between_rounds', 'not_started'], true);
     }
 
     public function getCardCount(int $roundId): int

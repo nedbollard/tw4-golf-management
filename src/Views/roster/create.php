@@ -108,25 +108,33 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'scorer');
         return;
     }
 
-    saveButton.addEventListener('click', (e) => {
+    const lockSave = () => {
+        form.dataset.saveLocked = 'true';
+        saveButton.textContent = 'Saving ...';
+        saveButton.style.pointerEvents = 'none';
+        saveButton.style.opacity = '1';
+        saveButton.setAttribute('aria-disabled', 'true');
+        saveButton.disabled = true;
+    };
+
+    form.addEventListener('submit', (e) => {
         if (form.dataset.saveLocked === 'true') {
             e.preventDefault();
             return;
         }
 
         if (!form.reportValidity()) {
+            e.preventDefault();
             return;
         }
 
-        form.dataset.saveLocked = 'true';
-        saveButton.textContent = 'Saving ...';
-        saveButton.style.pointerEvents = 'none';
-        saveButton.style.opacity = '1';
-        saveButton.setAttribute('aria-disabled', 'true');
+        lockSave();
+    });
 
-        window.setTimeout(() => {
-            form.submit();
-        }, 300);
+    saveButton.addEventListener('click', (e) => {
+        if (form.dataset.saveLocked === 'true') {
+            e.preventDefault();
+        }
     });
 })();
 </script>

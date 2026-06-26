@@ -21,7 +21,7 @@ class Round
         $r->roundDate = (string) ($row['round_date'] ?? '');
         $r->coursePlayedId = isset($row['course_played_id']) ? (int) $row['course_played_id'] : null;
         $r->notes = $row['notes'] ?? null;
-        $r->workflowStep = (string) ($row['workflow_step'] ?? 'not_started');
+        $r->workflowStep = (string) ($row['workflow_step'] ?? 'between_rounds');
         return $r;
     }
 }

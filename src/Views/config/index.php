@@ -72,13 +72,34 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($configs as $config): ?>
+                                <?php
+                                $sortedConfigs = $configs;
+                                usort($sortedConfigs, static function (array $a, array $b): int {
+                                    $nameA = (string) ($a['config_name'] ?? '');
+                                    $nameB = (string) ($b['config_name'] ?? '');
+
+                                    $weights = [
+                                        'team_haggle_state' => 100,
+                                        'ident_eclectic' => 101,
+                                    ];
+
+                                    $weightA = $weights[$nameA] ?? 1000;
+                                    $weightB = $weights[$nameB] ?? 1000;
+
+                                    if ($weightA !== $weightB) {
+                                        return $weightA <=> $weightB;
+                                    }
+
+                                    return strcmp($nameA, $nameB);
+                                });
+                                ?>
+                                <?php foreach ($sortedConfigs as $config): ?>
                                     <?php if ($config['config_name'] === 'config_status') continue; ?>
                                     <?php
                                     $rawName = (string) $config['config_name'];
                                     $displayName = in_array($rawName, ['handicap_sytem', 'handicap_system'], true)
                                         ? 'handicap_method'
-                                        : $rawName;
+                                        : ($rawName === 'ident_eclectic' ? 'Eclectic Competition' : $rawName);
                                     ?>
                                     <tr>
                                         <td>

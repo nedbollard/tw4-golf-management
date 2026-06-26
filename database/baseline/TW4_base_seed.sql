@@ -16,7 +16,8 @@ VALUES
 	(6, 'season_year', '25_26', NULL, 'string', 'admin', '2026-05-07 08:17:50'),
 	(8, 'max_handicap', '54', 54, 'int', 'admin', '2026-05-07 08:17:50'),
 	(9, 'entry_fee', '5', 5, 'int', 'admin', '2026-05-07 08:17:50'),
-	(10, 'handicap_method', 'modern', NULL, 'string', 'admin', '2026-05-07 08:41:14');
+	(10, 'handicap_method', 'modern', NULL, 'string', 'admin', '2026-05-07 08:41:14'),
+	(11, 'ident_eclectic', 'twilight', NULL, 'string', 'admin', '2026-06-25 09:00:00');
 
 DELETE FROM staff;
 INSERT INTO staff

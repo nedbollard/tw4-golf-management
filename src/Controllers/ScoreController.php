@@ -235,8 +235,17 @@ class ScoreController extends BaseController
         $notice = null;
         $showPublishedResultsNudge = false;
 
-        if (!$active || ($active['workflow_step'] ?? 'not_started') === 'not_started') {
+        $workflowStep = (string) ($active['workflow_step'] ?? 'between_rounds');
+        $isBetweenRounds = in_array($workflowStep, ['between_rounds', 'not_started'], true);
+
+        if (!$active) {
             $notice = 'No live round is active yet.';
+            $showPublishedResultsNudge = true;
+        } elseif ($isBetweenRounds) {
+            $roundNumber = (int) ($active['round_number'] ?? 0);
+            $notice = $roundNumber > 0
+                ? sprintf('Round %d is finished.', $roundNumber)
+                : 'No live round is active yet.';
             $showPublishedResultsNudge = true;
         } else {
             $roundId = (int) ($active['round_id'] ?? 0);

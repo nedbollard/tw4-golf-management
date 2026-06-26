@@ -46,6 +46,7 @@ class SnapshotExportService
     public function exportRoundSnapshots(string $seasonYear, int $roundNumber, bool $overwrite = true): array
     {
         $context = $this->loadContext($seasonYear, $roundNumber);
+        $roundEclecticContext = $this->loadRoundEclecticContext($seasonYear, $roundNumber);
         $roundSlug = self::buildRoundSlug($roundNumber, $context['round_date']);
 
         $targetDir = dirname(__DIR__, 2) . '/public/reports/' . $seasonYear . '/' . $roundSlug;
@@ -56,8 +57,11 @@ class SnapshotExportService
         $this->normalizeFilesystemPermissions($targetDir, true);
 
         $courseAFileSlug = $this->slugifyCourseName((string) ($context['eclectic_played_name'] ?? ($context['name_course'] ?? 'Course')));
-        $courseBFileSlug = $this->slugifyCourseName((string) ($context['eclectic_other_name'] ?? ($context['eclectic_played_name'] ?? ($context['name_course'] ?? 'Course'))));
         $combinedFileSlug = $this->slugifyCourseName((string) ($context['eclectic_combined_name'] ?? 'Combined'));
+
+        if (!empty($roundEclecticContext)) {
+            $context['eclectic_combined_name'] = (string) ($roundEclecticContext['combined_name'] ?? ($context['eclectic_combined_name'] ?? 'Eclectic'));
+        }
 
         $files = [
             '10_Results.html' => $this->renderResults($context),
@@ -65,23 +69,26 @@ class SnapshotExportService
             '31_Best_5_Scores.html' => $this->renderBest5($context),
         ];
 
-        // Render eclectic reports with graceful failure for missing data (early-round scenarios)
-        try {
-            $files['41_Eclectic_' . $courseAFileSlug . '.html'] = $this->renderEclectic($context, 'played');
-        } catch (\Throwable $e) {
-            $files['41_Eclectic_' . $courseAFileSlug . '.html'] = $this->renderEclecticNotYetAvailable($context, 'played', $e);
-        }
+        $includeEclectic = empty($roundEclecticContext)
+            ? true
+            : ((int) ($roundEclecticContext['include_eclectic'] ?? 0) === 1);
 
-        try {
-            $files['42_Eclectic_' . $courseBFileSlug . '.html'] = $this->renderEclectic($context, 'other');
-        } catch (\Throwable $e) {
-            $files['42_Eclectic_' . $courseBFileSlug . '.html'] = $this->renderEclecticNotYetAvailable($context, 'other', $e);
-        }
+        if ($includeEclectic) {
+            $courseFiles = $this->resolveCourseEclecticFilenames($roundEclecticContext, $courseAFileSlug);
+            foreach ($courseFiles as $courseFile) {
+                try {
+                    $files[$courseFile] = $this->renderEclectic($context, 'played');
+                } catch (\Throwable $e) {
+                    $files[$courseFile] = $this->renderEclecticNotYetAvailable($context, 'played', $e);
+                }
+            }
 
-        try {
-            $files['49_Eclectic_' . $combinedFileSlug . '.html'] = $this->renderEclectic($context, 'combined');
-        } catch (\Throwable $e) {
-            $files['49_Eclectic_' . $combinedFileSlug . '.html'] = $this->renderEclecticNotYetAvailable($context, 'combined', $e);
+            $combinedFile = $this->resolveCombinedEclecticFilename($roundEclecticContext, $combinedFileSlug);
+            try {
+                $files[$combinedFile] = $this->renderEclectic($context, 'combined');
+            } catch (\Throwable $e) {
+                $files[$combinedFile] = $this->renderEclecticNotYetAvailable($context, 'combined', $e);
+            }
         }
 
         $files['51_Small_Beer.html'] = $this->renderSmallBeer($context);
@@ -431,6 +438,57 @@ class SnapshotExportService
         ];
     }
 
+    private function loadRoundEclecticContext(string $seasonYear, int $roundNumber): array
+    {
+        $row = $this->db->fetchOne(
+            'SELECT include_eclectic,
+                    configured_ident_eclectic,
+                    played_course_name,
+                    combined_name,
+                    course_report_files_json,
+                    combined_report_filename
+             FROM TW4_history.round_eclectic_context
+             WHERE season_year = ? AND number_round = ?
+             LIMIT 1',
+            [$seasonYear, $roundNumber]
+        );
+
+        if (!$row) {
+            return [];
+        }
+
+        return $row;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function resolveCourseEclecticFilenames(array $contextRow, string $fallbackSlug): array
+    {
+        $json = (string) ($contextRow['course_report_files_json'] ?? '');
+        if ($json !== '') {
+            $decoded = json_decode($json, true);
+            if (is_array($decoded)) {
+                $filtered = array_values(array_filter(array_map('strval', $decoded), static fn(string $v): bool => $v !== ''));
+                if (!empty($filtered)) {
+                    return $filtered;
+                }
+            }
+        }
+
+        return ['41_Eclectic_' . $fallbackSlug . '.html'];
+    }
+
+    private function resolveCombinedEclecticFilename(array $contextRow, string $fallbackSlug): string
+    {
+        $filename = trim((string) ($contextRow['combined_report_filename'] ?? ''));
+        if ($filename !== '') {
+            return $filename;
+        }
+
+        return '49_Eclectic_' . $fallbackSlug . '.html';
+    }
+
     private function buildRoundHandicapMovements(string $seasonYear, int $roundNumber): array
     {
         return $this->db->fetchAll(
@@ -773,11 +831,13 @@ class SnapshotExportService
                 . '<td>' . (int) ($row['score_hole_7'] ?? 0) . '</td>'
                 . '<td>' . (int) ($row['score_hole_8'] ?? 0) . '</td>'
                 . '<td>' . (int) ($row['score_hole_9'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['score_movement'] ?? 0) . '</td>'
+                . '<td>' . (int) ($row['number_round_movement'] ?? 0) . '</td>'
                 . '</tr>';
         }
 
         if ($bodyRows === '') {
-            $bodyRows = '<tr><td colspan="12">No eclectic standings available.</td></tr>';
+            $bodyRows = '<tr><td colspan="14">No eclectic standings available.</td></tr>';
         }
 
         return $this->wrap(
@@ -786,7 +846,7 @@ class SnapshotExportService
             '<h2>' . $this->e($heading) . '</h2>'
             . '<h3>Date: ' . $this->e((string) ($ctx['round_date'] ?? 'n/a')) . '</h3>'
             . '<h3>Course: ' . $this->e((string) ($ctx['name_course'] ?? 'n/a')) . '</h3>'
-            . '<table><tr><th>Standing</th><th>Player</th><th>Total</th><th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th><th>H7</th><th>H8</th><th>H9</th></tr>'
+            . '<table><tr><th>Standing</th><th>Player</th><th>Total</th><th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th><th>H7</th><th>H8</th><th>H9</th><th>Last Change</th><th>Round</th></tr>'
             . $bodyRows
             . '</table>'
         );
@@ -849,9 +909,27 @@ class SnapshotExportService
                 es.score_hole_7,
                 es.score_hole_8,
                 es.score_hole_9,
-                es.number_round_movement
+                                es.number_round_movement,
+                                COALESCE(prev_move.score_total - move_row.score_total, 0) AS score_movement
              FROM TW4_live.eclectic_scores es
              LEFT JOIN TW4_base.roster r ON r.row_id = es.row_id_player
+                         LEFT JOIN TW4_history.eclectic_scores move_row
+                                        ON move_row.ident_eclectic = es.ident_eclectic
+                                     AND move_row.season_year = es.season_year
+                                     AND move_row.row_id_player = es.row_id_player
+                                     AND move_row.number_round_movement = es.number_round_movement
+                         LEFT JOIN TW4_history.eclectic_scores prev_move
+                                        ON prev_move.ident_eclectic = move_row.ident_eclectic
+                                     AND prev_move.season_year = move_row.season_year
+                                     AND prev_move.row_id_player = move_row.row_id_player
+                                     AND prev_move.number_round_movement = (
+                                                SELECT MAX(prev2.number_round_movement)
+                                                FROM TW4_history.eclectic_scores prev2
+                                                WHERE prev2.ident_eclectic = move_row.ident_eclectic
+                                                    AND prev2.season_year = move_row.season_year
+                                                    AND prev2.row_id_player = move_row.row_id_player
+                                                    AND prev2.number_round_movement < move_row.number_round_movement
+                                     )
              WHERE es.season_year = ?
                AND es.ident_eclectic = ?
              ORDER BY es.score_total ASC,

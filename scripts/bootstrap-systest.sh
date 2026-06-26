@@ -34,6 +34,9 @@ HOLDING_SCHEMA_FILE="database/baseline/TW4_holding_schema.sql"
 BASE_SEED_FILE="database/baseline/TW4_base_seed.sql"
 POST_BOOTSTRAP_MIGRATIONS=(
     "src/migrations/036_eclectic_movement_only_and_ident_order.sql"
+    "src/migrations/018_seed_live_round.sql"
+    "src/migrations/037_between_rounds_workflow_state.sql"
+    "src/migrations/038_eclectic_config_and_round_context.sql"
 )
 
 ensure_application_log_table() {
@@ -123,9 +126,13 @@ done
 
 ensure_application_log_table
 
+print_status "Ensuring TW4_live.round has a baseline between_rounds row..."
+docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    mysql -N -s -u root -e "INSERT INTO TW4_live.round (number_round, workflow_step, updated_by) SELECT 0, 'between_rounds', 'system' WHERE NOT EXISTS (SELECT 1 FROM TW4_live.round); UPDATE TW4_live.round SET workflow_step='between_rounds' WHERE workflow_step='not_started';"
+
 print_status "Verifying required databases and tables..."
 docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
-    mysql -N -s -u root -e "SHOW DATABASES LIKE 'TW4_base'; SHOW DATABASES LIKE 'TW4_live'; SHOW DATABASES LIKE 'TW4_history'; SHOW DATABASES LIKE 'TW4_holding'; SHOW TABLES IN TW4_base LIKE 'staff'; SHOW TABLES IN TW4_base LIKE 'config_application'; SHOW TABLES IN TW4_base LIKE 'application_log'; SHOW TABLES IN TW4_base LIKE 'handicap_audit'; SHOW TABLES IN TW4_live LIKE 'round'; SHOW TABLES IN TW4_live LIKE 'card'; SHOW TABLES IN TW4_live LIKE 'card_by_hole'; SHOW TABLES IN TW4_live LIKE 'results'; SHOW TABLES IN TW4_live LIKE 'best_five_scores'; SHOW TABLES IN TW4_history LIKE 'round'; SHOW TABLES IN TW4_history LIKE 'card'; SHOW TABLES IN TW4_history LIKE 'card_by_hole'; SHOW TABLES IN TW4_history LIKE 'results'; SHOW TABLES IN TW4_history LIKE 'best_five_scores'; SHOW TABLES IN TW4_holding LIKE 'best_five_scores';"
+    mysql -N -s -u root -e "SHOW DATABASES LIKE 'TW4_base'; SHOW DATABASES LIKE 'TW4_live'; SHOW DATABASES LIKE 'TW4_history'; SHOW DATABASES LIKE 'TW4_holding'; SHOW TABLES IN TW4_base LIKE 'staff'; SHOW TABLES IN TW4_base LIKE 'config_application'; SHOW TABLES IN TW4_base LIKE 'application_log'; SHOW TABLES IN TW4_base LIKE 'handicap_audit'; SHOW TABLES IN TW4_live LIKE 'round'; SHOW TABLES IN TW4_live LIKE 'card'; SHOW TABLES IN TW4_live LIKE 'card_by_hole'; SHOW TABLES IN TW4_live LIKE 'results'; SHOW TABLES IN TW4_live LIKE 'best_five_scores'; SHOW TABLES IN TW4_history LIKE 'round'; SHOW TABLES IN TW4_history LIKE 'card'; SHOW TABLES IN TW4_history LIKE 'card_by_hole'; SHOW TABLES IN TW4_history LIKE 'results'; SHOW TABLES IN TW4_history LIKE 'best_five_scores'; SHOW TABLES IN TW4_history LIKE 'round_eclectic_context'; SHOW TABLES IN TW4_holding LIKE 'best_five_scores';"
 
 ADMIN_ROW="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SELECT username, role, is_active FROM TW4_base.staff WHERE username='admin' LIMIT 1;")"
@@ -135,6 +142,18 @@ STAFF_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$
 
 CONFIG_STATUS="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SELECT config_value_string FROM TW4_base.config_application WHERE config_name='config_status' LIMIT 1;")"
+
+CONFIG_IDENT_ECLECTIC="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    mysql -N -s -u root -e "SELECT config_value_string FROM TW4_base.config_application WHERE config_name='ident_eclectic' LIMIT 1;")"
+
+ROUND_ECLECTIC_CONTEXT_TABLE="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    mysql -N -s -u root -e "SHOW TABLES IN TW4_history LIKE 'round_eclectic_context';")"
+
+BETWEEN_ROUNDS_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    mysql -N -s -u root -e "SELECT COUNT(*) FROM TW4_live.round WHERE workflow_step='between_rounds';")"
+
+ROUND_WORKFLOW_ENUM_HAS_BETWEEN_ROUNDS="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    mysql -N -s -u root -e "SELECT CASE WHEN COLUMN_TYPE LIKE '%between_rounds%' THEN 1 ELSE 0 END FROM information_schema.columns WHERE table_schema='TW4_live' AND table_name='round' AND column_name='workflow_step' LIMIT 1;")"
 
 APPLICATION_LOG_TABLE="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SHOW TABLES IN TW4_base LIKE 'application_log';")"
@@ -172,6 +191,26 @@ fi
 
 if [ "$CONFIG_STATUS" != "waiting" ]; then
     print_error "Config seed verification failed. Expected config_status=waiting, got: ${CONFIG_STATUS:-<empty>}"
+    exit 1
+fi
+
+if [ -z "${CONFIG_IDENT_ECLECTIC:-}" ]; then
+    print_error "Config seed verification failed. Expected ident_eclectic to be present in TW4_base.config_application."
+    exit 1
+fi
+
+if [ "$ROUND_ECLECTIC_CONTEXT_TABLE" != "round_eclectic_context" ]; then
+    print_error "Schema verification failed. Expected TW4_history.round_eclectic_context to exist."
+    exit 1
+fi
+
+if [ "$BETWEEN_ROUNDS_COUNT" = "0" ]; then
+    print_error "Workflow verification failed. Expected TW4_live.round to include workflow_step=between_rounds."
+    exit 1
+fi
+
+if [ "$ROUND_WORKFLOW_ENUM_HAS_BETWEEN_ROUNDS" != "1" ]; then
+    print_error "Workflow verification failed. TW4_live.round.workflow_step enum does not include between_rounds."
     exit 1
 fi
 

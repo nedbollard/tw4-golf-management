@@ -15,6 +15,7 @@ class ResultsArchiveService
 
     public function getArchiveTree(): array
     {
+        $eclecticContextByRound = $this->loadRoundEclecticContexts();
         $rows = $this->db->fetchAll(
             'SELECT hr.season_year,
                     hr.number_round,
@@ -51,19 +52,27 @@ class ResultsArchiveService
                 'name_course' => (string) ($row['name_course'] ?? ''),
                 'name_club' => (string) ($row['name_club'] ?? ''),
                 'ident_eclectic' => (string) ($row['ident_eclectic'] ?? ''),
-                'snapshots' => $this->buildSnapshotLinks($season, $roundSlug, $row),
+                'snapshots' => $this->buildSnapshotLinks(
+                    $season,
+                    $roundSlug,
+                    $row,
+                    $eclecticContextByRound[$this->buildRoundKey($season, $roundNumber)] ?? null
+                ),
             ];
         }
 
         return array_values($tree);
     }
 
-    private function buildSnapshotLinks(string $seasonYear, string $roundSlug, array $round): array
+    private function buildSnapshotLinks(string $seasonYear, string $roundSlug, array $round, ?array $eclecticContext = null): array
     {
         $result = [];
         $publicRoot = $this->getPublicRoot();
         foreach (SnapshotExportService::snapshotDefinitions() as $snapshot) {
-            $filename = $this->resolveSnapshotFilename((string) ($snapshot['filename'] ?? ''), $round);
+            $filename = $this->resolveSnapshotFilename((string) ($snapshot['filename'] ?? ''), $round, $eclecticContext);
+            if ($filename === null) {
+                continue;
+            }
             $relativePath = 'reports/' . $seasonYear . '/' . $roundSlug . '/' . $filename;
             $absolutePath = $publicRoot . '/' . $relativePath;
 
@@ -83,8 +92,36 @@ class ResultsArchiveService
         return dirname(__DIR__, 2) . '/public';
     }
 
-    private function resolveSnapshotFilename(string $template, array $round): string
+    private function resolveSnapshotFilename(string $template, array $round, ?array $eclecticContext = null): ?string
     {
+        $isEclecticTemplate = str_contains($template, 'Eclectic');
+        if ($eclecticContext !== null && $isEclecticTemplate) {
+            $includeEclectic = (int) ($eclecticContext['include_eclectic'] ?? 0) === 1;
+            if (!$includeEclectic) {
+                return null;
+            }
+
+            if (str_contains($template, '49_Eclectic_')) {
+                $combined = trim((string) ($eclecticContext['combined_report_filename'] ?? ''));
+                if ($combined !== '') {
+                    return $combined;
+                }
+            }
+
+            $json = (string) ($eclecticContext['course_report_files_json'] ?? '');
+            if ($json !== '' && str_contains($template, '41_Eclectic_')) {
+                $decoded = json_decode($json, true);
+                if (is_array($decoded) && !empty($decoded)) {
+                    return (string) ($decoded[0] ?? '');
+                }
+            }
+
+            if ($json !== '' && str_contains($template, '42_Eclectic_')) {
+                // Hide legacy second-course slot when the round context is explicit.
+                return null;
+            }
+        }
+
         $playedCourse = $this->slugifyCourseName((string) ($round['name_course'] ?? 'Course'));
         $combinedName = trim((string) ($round['ident_eclectic'] ?? ''));
         if ($combinedName === '') {
@@ -99,6 +136,36 @@ class ResultsArchiveService
             [$playedCourse, $otherCourse, $combinedCourse],
             $template
         );
+    }
+
+    private function loadRoundEclecticContexts(): array
+    {
+        $rows = $this->db->fetchAll(
+            'SELECT season_year,
+                    number_round,
+                    include_eclectic,
+                    course_report_files_json,
+                    combined_report_filename
+             FROM TW4_history.round_eclectic_context'
+        );
+
+        $result = [];
+        foreach ($rows as $row) {
+            $season = (string) ($row['season_year'] ?? '');
+            $numberRound = (int) ($row['number_round'] ?? 0);
+            if ($season === '' || $numberRound < 1) {
+                continue;
+            }
+
+            $result[$this->buildRoundKey($season, $numberRound)] = $row;
+        }
+
+        return $result;
+    }
+
+    private function buildRoundKey(string $seasonYear, int $roundNumber): string
+    {
+        return $seasonYear . '|' . $roundNumber;
     }
 
     private function resolveAlternateEclecticCourseName(array $round): string

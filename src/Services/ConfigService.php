@@ -93,6 +93,7 @@ class ConfigService
             'handicap_method' => ['value' => 'modern', 'type' => 'string'],
             'max_handicap' => ['value' => 54, 'type' => 'int'],
             'team_haggle_state' => ['value' => 'F', 'type' => 'string'],
+            'ident_eclectic' => ['value' => 'twilight', 'type' => 'string'],
             'club_number' => ['value' => 294, 'type' => 'int'],
             'entry_fee' => ['value' => 0, 'type' => 'int'],
         ];

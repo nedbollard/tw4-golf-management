@@ -39,6 +39,23 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                     </span>
                 </div>
 
+                <?php if (!empty($success)): ?>
+                    <div class="admin-alert admin-alert-success" role="status">
+                        <?php echo htmlspecialchars((string) $success); ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($errors)): ?>
+                    <div class="admin-alert admin-alert-error" role="alert">
+                        <?php
+                        $errorMessages = is_array($errors) ? $errors : [$errors];
+                        foreach ($errorMessages as $error):
+                        ?>
+                            <div><?php echo htmlspecialchars((string) $error); ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+
                 <div class="admin-grid" role="list" aria-label="Admin actions">
                     <div class="admin-panel" role="listitem">
                         <h3>Configure System</h3>

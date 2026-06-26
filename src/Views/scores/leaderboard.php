@@ -14,7 +14,10 @@
 <?php
 $leaderboard = $resultsData['leaderboard'] ?? [];
 $roundNumber = (int) ($round['round_number'] ?? 0);
-$workflowStep = (string) ($round['workflow_step'] ?? 'not_started');
+$workflowStep = (string) ($round['workflow_step'] ?? 'between_rounds');
+$workflowLabel = in_array($workflowStep, ['between_rounds', 'not_started'], true)
+    ? 'finished'
+    : $workflowStep;
 $fromScorerMenu = strpos($_SERVER['HTTP_REFERER'] ?? '', '/scorer/menu') !== false;
 ?>
 
@@ -33,7 +36,7 @@ $fromScorerMenu = strpos($_SERVER['HTTP_REFERER'] ?? '', '/scorer/menu') !== fal
                 </div>
 
                 <div class="leaderboard-status">
-                    <span class="status-chip">Live Round <?php echo $roundNumber > 0 ? $roundNumber : '—'; ?><?php $courseName = trim((string) ($round['course_name'] ?? '')); if ($courseName) echo ' · Course ' . htmlspecialchars($courseName); ?> | <?php echo htmlspecialchars($workflowStep); ?></span>
+                    <span class="status-chip">Round <?php echo $roundNumber > 0 ? $roundNumber : '—'; ?><?php $courseName = trim((string) ($round['course_name'] ?? '')); if ($courseName) echo ' · Course ' . htmlspecialchars($courseName); ?> | <?php echo htmlspecialchars($workflowLabel); ?></span>
                 </div>
 
                 <?php if (!empty($notice)): ?>

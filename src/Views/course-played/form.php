@@ -39,6 +39,7 @@
 
                         $baseData = $coursePlayed ?? [];
                         $formData = !empty($old) ? $old : $baseData;
+                        $selectedClub = trim((string) ($formData['name_club'] ?? ''));
                         ?>
 
                         <form method="POST" action="<?php echo $mode === 'create' ? '/course-played/store' : '/course-played/' . (int) $coursePlayed['row_id'] . '/update'; ?>">
@@ -53,7 +54,8 @@
                                     <select id="name_club" name="name_club" class="form-select" required>
                                         <option value="">Select Club</option>
                                         <?php foreach ($clubs as $club): ?>
-                                            <option value="<?php echo htmlspecialchars($club); ?>" <?php echo (($formData['name_club'] ?? '') === $club) ? 'selected' : ''; ?>>
+                                            <?php $isSelectedClub = strcasecmp($selectedClub, trim((string) $club)) === 0; ?>
+                                            <option value="<?php echo htmlspecialchars($club); ?>" <?php echo $isSelectedClub ? 'selected' : ''; ?>>
                                                 <?php echo htmlspecialchars($club); ?>
                                             </option>
                                         <?php endforeach; ?>

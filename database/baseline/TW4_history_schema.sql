@@ -17,6 +17,7 @@ DROP TABLE IF EXISTS `card_by_hole`;
 DROP TABLE IF EXISTS `card`;
 DROP TABLE IF EXISTS `results`;
 DROP TABLE IF EXISTS `best_five_scores`;
+DROP TABLE IF EXISTS `round_eclectic_context`;
 DROP TABLE IF EXISTS `round`;
 
 CREATE TABLE `round` (
@@ -144,6 +145,25 @@ CREATE TABLE `eclectic_scores` (
   UNIQUE KEY `uk_history_eclectic_scores_movement_ident_player` (`ident_eclectic`,`season_year`,`number_round_movement`,`row_id_player`),
   KEY `idx_history_eclectic_scores_movement_ident` (`ident_eclectic`,`season_year`,`number_round_movement`),
   KEY `idx_history_eclectic_scores_player` (`row_id_player`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `round_eclectic_context` (
+  `row_id` int NOT NULL AUTO_INCREMENT,
+  `season_year` char(5) NOT NULL,
+  `number_round` int NOT NULL,
+  `include_eclectic` tinyint(1) NOT NULL DEFAULT '0',
+  `configured_ident_eclectic` varchar(16) DEFAULT NULL,
+  `played_course_name` varchar(64) DEFAULT NULL,
+  `combined_name` varchar(64) DEFAULT NULL,
+  `course_report_files_json` text,
+  `combined_report_filename` varchar(128) DEFAULT NULL,
+  `updated_by` varchar(100) NOT NULL,
+  `updated_ts` timestamp NULL DEFAULT NULL,
+  `hist_updated_by` varchar(100) NOT NULL,
+  `hist_updated_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`row_id`),
+  UNIQUE KEY `uk_round_eclectic_context_round` (`season_year`,`number_round`),
+  KEY `idx_round_eclectic_context_include` (`include_eclectic`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
