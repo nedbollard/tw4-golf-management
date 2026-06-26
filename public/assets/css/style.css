@@ -1539,6 +1539,25 @@ body.page-admin-menu {
     text-align: center;
 }
 
+.admin-alert {
+    border-radius: 12px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    padding: 10px 14px;
+}
+
+.admin-alert-success {
+    background: #ecfdf5;
+    border: 2px solid #34d399;
+    color: #065f46;
+}
+
+.admin-alert-error {
+    background: #fef2f2;
+    border: 2px solid #ef4444;
+    color: #991b1b;
+}
+
 .admin-grid {
     display: grid;
     gap: 14px;
