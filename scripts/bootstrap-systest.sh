@@ -143,9 +143,6 @@ STAFF_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$
 CONFIG_STATUS="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SELECT config_value_string FROM TW4_base.config_application WHERE config_name='config_status' LIMIT 1;")"
 
-CONFIG_IDENT_ECLECTIC="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
-    mysql -N -s -u root -e "SELECT config_value_string FROM TW4_base.config_application WHERE config_name='ident_eclectic' LIMIT 1;")"
-
 ROUND_ECLECTIC_CONTEXT_TABLE="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SHOW TABLES IN TW4_history LIKE 'round_eclectic_context';")"
 
@@ -191,11 +188,6 @@ fi
 
 if [ "$CONFIG_STATUS" != "waiting" ]; then
     print_error "Config seed verification failed. Expected config_status=waiting, got: ${CONFIG_STATUS:-<empty>}"
-    exit 1
-fi
-
-if [ -z "${CONFIG_IDENT_ECLECTIC:-}" ]; then
-    print_error "Config seed verification failed. Expected ident_eclectic to be present in TW4_base.config_application."
     exit 1
 fi
 

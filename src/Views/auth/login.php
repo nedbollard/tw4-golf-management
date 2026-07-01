@@ -11,7 +11,6 @@
     <link href="/assets/css/style.css" rel="stylesheet">
 </head>
 <body class="page-login">
-    <?php $old = $_SESSION['old'] ?? []; ?>
     <div class="login-layout">
         <header class="login-header">
             <h1>Twilight Golf Scoring</h1>
@@ -29,6 +28,7 @@
                     <p class="login-intro">Sign in to continue to the scoring tools.</p>
 
                     <form method="POST" action="/login">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                         <div class="tw-form-group">
                             <label for="username" class="tw-form-label">Username</label>
                             <input
@@ -50,16 +50,13 @@
                         </div>
                     </form>
 
-                    <?php if (isset($_SESSION['errors'])): ?>
+                    <?php if (!empty($errors)): ?>
                     <div class="login-error">
-                        <?php foreach ($_SESSION['errors'] as $error): ?>
+                        <?php foreach ($errors as $error): ?>
                             <p><?php echo htmlspecialchars($error); ?></p>
                         <?php endforeach; ?>
                     </div>
-                    <?php unset($_SESSION['errors']); ?>
                     <?php endif; ?>
-
-                    <?php unset($_SESSION['old']); ?>
                 </div>
             </div>
 

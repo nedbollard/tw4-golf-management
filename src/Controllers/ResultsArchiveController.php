@@ -25,11 +25,7 @@ class ResultsArchiveController extends BaseController
             'title' => 'Results Archive - TW4 Golf Management',
             'archiveTree' => $tree,
             'selectedSeason' => $selectedSeason,
-            'selectedRound' => $selectedRound,
-            'success' => $_SESSION['success'] ?? null,
-            'errors' => $_SESSION['errors'] ?? [],
+            'selectedRound' => $selectedRound
         ]);
-
-        unset($_SESSION['success'], $_SESSION['errors']);
     }
 }

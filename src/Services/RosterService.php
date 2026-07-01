@@ -11,11 +11,13 @@ use App\Utility\NameHelper;
 class RosterService
 {
     private Database $db;
+    private AuthService $authService;
     private const NON_INACTIVE_STATUSES = ['active', 'scored'];
 
-    public function __construct(Database $db)
+    public function __construct(Database $db, AuthService $authService = null)
     {
         $this->db = $db;
+        $this->authService = $authService ?? new AuthService($db);
     }
 
     public function createPlayer(array $data): int
@@ -343,9 +345,8 @@ class RosterService
 
     private function resolveActorUsername(): string
     {
-        $auth = $this->db->getAuth();
-        if ($auth->isLoggedIn()) {
-            $currentUser = $auth->getUser();
+        if ($this->authService->isLoggedIn()) {
+            $currentUser = $this->authService->getUser();
             $username = trim((string) ($currentUser['username'] ?? ''));
             if ($username !== '') {
                 return $username;

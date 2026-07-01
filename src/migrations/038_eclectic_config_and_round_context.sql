@@ -1,24 +1,9 @@
--- Migration 038: Add configurable eclectic competition key and per-round
+-- Migration 038: Add per-round
 -- history context for eclectic report naming/behavior.
 --
 -- Forward-only change: no backfill is performed.
 
 USE TW4_base;
-
-INSERT INTO config_application (
-    config_name,
-    config_value_string,
-    config_type,
-    updated_by
-)
-SELECT
-    'ident_eclectic',
-    'twilight',
-    'string',
-    'system'
-WHERE NOT EXISTS (
-    SELECT 1 FROM config_application WHERE config_name = 'ident_eclectic'
-);
 
 CREATE TABLE IF NOT EXISTS TW4_history.round_eclectic_context (
     row_id INT NOT NULL AUTO_INCREMENT,

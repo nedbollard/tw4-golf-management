@@ -40,12 +40,13 @@
                         </div>
 
                         <form method="POST" action="/course-club/store">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="name_club" class="form-label">Club Name *</label>
                                         <input type="text" class="form-control" id="name_club" name="name_club" 
-                                               value="<?php echo htmlspecialchars($_SESSION['old']['name_club'] ?? $newCourse ?? ''); ?>" 
+                                                 value="<?php echo htmlspecialchars($old['name_club'] ?? $newCourse ?? ''); ?>" 
                                                maxlength="16" required>
                                         <div class="form-text">Club abbreviation (e.g., OVGC)</div>
                                     </div>
@@ -54,7 +55,7 @@
                                     <div class="mb-3">
                                         <label for="number_hole" class="form-label">Hole Number *</label>
                                         <input type="number" class="form-control" id="number_hole" name="number_hole" 
-                                               value="<?php echo htmlspecialchars($_SESSION['old']['number_hole'] ?? ''); ?>" 
+                                                 value="<?php echo htmlspecialchars($old['number_hole'] ?? ''); ?>" 
                                                min="1" max="18" required>
                                         <div class="form-text">1-18</div>
                                     </div>
@@ -66,7 +67,7 @@
                                     <div class="mb-3">
                                         <label for="name_hole" class="form-label">Hole Name *</label>
                                         <input type="text" class="form-control" id="name_hole" name="name_hole" 
-                                               value="<?php echo htmlspecialchars($_SESSION['old']['name_hole'] ?? ''); ?>" 
+                                                 value="<?php echo htmlspecialchars($old['name_hole'] ?? ''); ?>" 
                                                maxlength="24" required>
                                         <div class="form-text">Descriptive hole name</div>
                                     </div>
@@ -76,10 +77,10 @@
                                         <label for="gender" class="form-label">Gender *</label>
                                         <select class="form-select" id="gender" name="gender" required>
                                             <option value="">Select Gender</option>
-                                            <option value="M" <?php echo (($_SESSION['old']['gender'] ?? '') === 'M') ? 'selected' : ''; ?>>
+                                            <option value="M" <?php echo (($old['gender'] ?? '') === 'M') ? 'selected' : ''; ?>>
                                                 Male
                                             </option>
-                                            <option value="F" <?php echo (($_SESSION['old']['gender'] ?? '') === 'F') ? 'selected' : ''; ?>>
+                                            <option value="F" <?php echo (($old['gender'] ?? '') === 'F') ? 'selected' : ''; ?>>
                                                 Female
                                             </option>
                                         </select>
@@ -93,7 +94,7 @@
                                     <div class="mb-3">
                                         <label for="par" class="form-label">Par *</label>
                                         <input type="number" class="form-control" id="par" name="par" 
-                                               value="<?php echo htmlspecialchars($_SESSION['old']['par'] ?? ''); ?>" 
+                                                 value="<?php echo htmlspecialchars($old['par'] ?? ''); ?>" 
                                                min="3" max="5" required>
                                         <div class="form-text">3-5 (Par 3, 4, or 5)</div>
                                     </div>
@@ -102,7 +103,7 @@
                                     <div class="mb-3">
                                         <label for="stroke" class="form-label">Stroke Index *</label>
                                         <input type="number" class="form-control" id="stroke" name="stroke" 
-                                               value="<?php echo htmlspecialchars($_SESSION['old']['stroke'] ?? ''); ?>" 
+                                                 value="<?php echo htmlspecialchars($old['stroke'] ?? ''); ?>" 
                                                min="1" max="20" required>
                                         <div class="form-text">1-20 (1 = hardest, 18 = easiest)</div>
                                     </div>
@@ -127,11 +128,6 @@
     <script>
         // Auto-focus first field
         document.getElementById('name_club').focus();
-        
-        // Clear session errors on form submission
-        document.querySelector('form').addEventListener('submit', function() {
-            <?php unset($_SESSION['errors'], $_SESSION['old']); ?>
-        });
     </script>
 </body>
 </html>

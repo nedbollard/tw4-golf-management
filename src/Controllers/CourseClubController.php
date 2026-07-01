@@ -35,8 +35,6 @@ class CourseClubController extends BaseController
         $courseClubService = $this->getCourseClubService();
         $courseClubs = $courseClubService->getAllCourseClubs();
         $clubNames = $courseClubService->getUniqueClubNames();
-        $success = $_SESSION['success'] ?? [];
-        $errors = $_SESSION['errors'] ?? [];
         
         // Pre-select filters if provided in URL
         $selectedClub = $club;
@@ -48,15 +46,11 @@ class CourseClubController extends BaseController
         $this->render('course-club/index', [
             'courseClubs' => $courseClubs,
             'clubNames' => $clubNames,
-            'success' => $success,
-            'errors' => $errors,
             'selectedClub' => $selectedClub,
             'selectedGender' => $selectedGender,
             'pendingEdits' => $pendingEdits,
-            'user' => $this->app->getDatabase()->getAuth()->getUser()
+            'user' => $this->authService->getUser()
         ]);
-
-        unset($_SESSION['success'], $_SESSION['errors']);
     }
 
     /**
@@ -78,7 +72,7 @@ class CourseClubController extends BaseController
         $this->render('course-club/create', [
             'clubNames' => $clubNames,
             'newCourse' => $newCourse,
-            'user' => $this->app->getDatabase()->getAuth()->getUser()
+            'user' => $this->authService->getUser()
         ]);
     }
 
@@ -89,12 +83,18 @@ class CourseClubController extends BaseController
     {
         $this->requireRole('admin');
         
+        if (!$this->validateCsrf()) {
+            $this->flash->error('Invalid CSRF token');
+            $this->redirect('/course-club/create');
+            return;
+        }
+
         $data = $this->getPostData();
         $errors = $this->validateCourseClubData($data);
         
         if (!empty($errors)) {
-            $_SESSION['errors'] = $errors;
-            $_SESSION['old'] = $data;
+            $this->flash->error($errors);
+            $this->flash->setOld($data);
             $this->redirect('/course-club/create');
             return;
         }
@@ -103,13 +103,13 @@ class CourseClubController extends BaseController
         
         // Check if hole number already exists for this club
         if ($courseClubService->holeNumberExists($data['name_club'], (int) $data['number_hole'])) {
-            $_SESSION['errors'] = ['number_hole' => 'Hole number already exists for this club'];
-            $_SESSION['old'] = $data;
+            $this->flash->error('Hole number already exists for this club');
+            $this->flash->setOld($data);
             $this->redirect('/course-club/create');
             return;
         }
 
-        $user = $this->app->getDatabase()->getAuth()->getUser();
+        $user = $this->authService->getUser();
         
         $courseClub = new \App\Models\CourseClub(
             $data['name_club'],
@@ -122,10 +122,10 @@ class CourseClubController extends BaseController
         );
 
         if ($courseClubService->createCourseClub($courseClub)) {
-            $_SESSION['success'] = 'Course hole created successfully';
+            $this->flash->success('Course hole created successfully');
             $this->redirect('/course-club');
         } else {
-            $_SESSION['errors'] = ['create' => 'Failed to create course hole'];
+            $this->flash->error('Failed to create course hole');
             $this->redirect('/course-club/create');
         }
     }
@@ -140,7 +140,7 @@ class CourseClubController extends BaseController
         $courseClubService = $this->getCourseClubService();
         $courseClub = $courseClubService->getCourseClubById($id);
         if (!$courseClub) {
-            $_SESSION['errors'] = ['not_found' => 'Course hole not found'];
+            $this->flash->error('Course hole not found');
             $this->redirect('/course-club');
             return;
         }
@@ -150,7 +150,7 @@ class CourseClubController extends BaseController
         $this->render('course-club/edit', [
             'courseClub' => $courseClub,
             'clubNames' => $clubNames,
-            'user' => $this->app->getDatabase()->getAuth()->getUser()
+            'user' => $this->authService->getUser()
         ]);
     }
 
@@ -161,10 +161,16 @@ class CourseClubController extends BaseController
     {
         $this->requireRole('admin');
         
+        if (!$this->validateCsrf()) {
+            $this->flash->error('Invalid CSRF token');
+            $this->redirect("/course-club/{$id}/edit");
+            return;
+        }
+
         $courseClubService = $this->getCourseClubService();
         $courseClub = $courseClubService->getCourseClubById($id);
         if (!$courseClub) {
-            $_SESSION['errors'] = ['not_found' => 'Course hole not found'];
+            $this->flash->error('Course hole not found');
             $this->redirect('/course-club');
             return;
         }
@@ -173,16 +179,16 @@ class CourseClubController extends BaseController
         $errors = $this->validateCourseClubData($data);
         
         if (!empty($errors)) {
-            $_SESSION['errors'] = $errors;
-            $_SESSION['old'] = $data;
+            $this->flash->error($errors);
+            $this->flash->setOld($data);
             $this->redirect("/course-club/{$id}/edit");
             return;
         }
 
         // Check if hole number already exists for this club (excluding current record)
         if ($courseClubService->holeNumberExists($data['name_club'], (int) $data['number_hole'], $id, $data['gender'])) {
-            $_SESSION['errors'] = ['number_hole' => 'Hole number already exists for this club'];
-            $_SESSION['old'] = $data;
+            $this->flash->error('Hole number already exists for this club');
+            $this->flash->setOld($data);
             $this->redirect("/course-club/{$id}/edit");
             return;
         }
@@ -199,7 +205,7 @@ class CourseClubController extends BaseController
             'stroke' => (int) $data['stroke']
         ];
         
-        $_SESSION['success'] = 'Edit saved as pending. Return to Course Holes to apply all edits.';
+        $this->flash->success('Edit saved as pending. Return to Course Holes to apply all edits.');
         
         $this->redirect('/course-club#' . $courseClub->getNameClub() . '-' . $courseClub->getGender());
     }
@@ -212,6 +218,12 @@ class CourseClubController extends BaseController
         $this->requireRole('admin');
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!$this->validateCsrf()) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'message' => 'Invalid CSRF token']);
+                return;
+            }
+
             $data = $this->getPostData();
             
             // Validate that we have course clubs data
@@ -323,7 +335,7 @@ class CourseClubController extends BaseController
                             $courseClub->setPar((int) $par);
                             $courseClub->setStroke((int) $stroke);
                             
-                            $user = $this->app->getDatabase()->getAuth()->getUser();
+                            $user = $this->authService->getUser();
                             $courseClub->setUpdatedBy($user['username']);
                             
                             if ($courseClubService->updateCourseClub($courseClub)) {
@@ -360,17 +372,17 @@ class CourseClubController extends BaseController
         $courseClubService = $this->getCourseClubService();
         $courseClub = $courseClubService->getCourseClubById($id);
         if (!$courseClub) {
-            $_SESSION['errors'] = ['not_found' => 'Course hole not found'];
+            $this->flash->error('Course hole not found');
             $this->redirect('/course-club');
             return;
         }
 
-        $user = $this->app->getDatabase()->getAuth()->getUser();
+        $user = $this->authService->getUser();
         
         if ($courseClubService->deleteCourseClub($id, $user['username'])) {
-            $_SESSION['success'] = 'Course hole deleted successfully';
+            $this->flash->success('Course hole deleted successfully');
         } else {
-            $_SESSION['errors'] = ['delete' => 'Failed to delete course hole'];
+            $this->flash->error('Failed to delete course hole');
         }
         
         $this->redirect('/course-club');
@@ -388,12 +400,8 @@ class CourseClubController extends BaseController
         
         $this->render('course-club/add-course', [
             'clubNames' => $clubNames,
-            'errors' => $_SESSION['errors'] ?? [],
-            'old' => $_SESSION['old'] ?? [],
-            'user' => $this->app->getDatabase()->getAuth()->getUser()
+            'user' => $this->authService->getUser()
         ]);
-
-        unset($_SESSION['errors'], $_SESSION['old']);
     }
 
     /**
@@ -403,12 +411,18 @@ class CourseClubController extends BaseController
     {
         $this->requireRole('admin');
         
+        if (!$this->validateCsrf()) {
+            $this->flash->error('Invalid CSRF token');
+            $this->redirect('/course-club/add-course');
+            return;
+        }
+
         $data = $this->getPostData();
         $errors = $this->validateCourseData($data);
         
         if (!empty($errors)) {
-            $_SESSION['errors'] = $errors;
-            $_SESSION['old'] = $data;
+            $this->flash->error($errors);
+            $this->flash->setOld($data);
             $this->redirect('/course-club/add-course');
             return;
         }
@@ -419,15 +433,15 @@ class CourseClubController extends BaseController
         
         // Block duplicates for the same course and gender only.
         if ($courseClubService->courseGenderExists($courseName, $gender)) {
-            $_SESSION['errors'] = ['course_name' => "Course '{$courseName}' already has {$gender} entries"]; 
-            $_SESSION['old'] = $data;
+            $this->flash->error("Course '{$courseName}' already has {$gender} entries");
+            $this->flash->setOld($data);
             $this->redirect('/course-club/add-course');
             return;
         }
 
         // Store the new course name in session for redirect
         $_SESSION['newCourseAdded'] = $courseName;
-        $_SESSION['success'] = "Course '{$courseName}' selected for {$gender}. You can now add all 18 holes.";
+        $this->flash->success("Course '{$courseName}' selected for {$gender}. You can now add all 18 holes.");
         
         // Redirect to bulk create form with course and gender preselected.
         $this->redirect('/course-club/bulk-create?course=' . urlencode($courseName) . '&gender=' . urlencode($gender));
@@ -442,13 +456,9 @@ class CourseClubController extends BaseController
         
         $courseName = urldecode($_GET['course'] ?? $_SESSION['newCourseAdded'] ?? '');
         $selectedGender = $_GET['gender'] ?? '';
-        $success = $_SESSION['success'] ?? [];
-        $errors = $_SESSION['errors'] ?? [];
-        $old = $_SESSION['old'] ?? [];
-        unset($_SESSION['success'], $_SESSION['errors'], $_SESSION['old']);
         
         if (empty($courseName)) {
-            $_SESSION['errors'] = ['course' => 'Course name is required'];
+            $this->flash->error('Course name is required');
             $this->redirect('/course-club/add-course');
             return;
         }
@@ -461,10 +471,7 @@ class CourseClubController extends BaseController
         $this->render('course-club/bulk-create', [
             'courseName' => $courseName,
             'selectedGender' => $selectedGender,
-            'success' => $success,
-            'errors' => $errors,
-            'old' => $old,
-            'user' => $this->app->getDatabase()->getAuth()->getUser()
+            'user' => $this->authService->getUser()
         ]);
     }
 
@@ -475,6 +482,16 @@ class CourseClubController extends BaseController
     {
         $this->requireRole('admin');
         
+        if (!$this->validateCsrf()) {
+            $this->flash->error('Invalid CSRF token');
+            $this->flash->setOld([
+                'gender' => trim($_POST['gender'] ?? ''),
+                'holes' => $_POST['holes'] ?? []
+            ]);
+            $this->redirect('/course-club/bulk-create?course=' . urlencode(trim($_POST['club_name'] ?? '')));
+            return;
+        }
+
         // Use $_POST directly for form data (not JSON)
         $courseName = trim($_POST['club_name'] ?? '');
         $gender = trim($_POST['gender'] ?? '');
@@ -482,22 +499,22 @@ class CourseClubController extends BaseController
         
         // Validate header data
         if (empty($courseName) || empty($gender) || !in_array($gender, ['M', 'F'])) {
-            $_SESSION['errors'] = ['header' => 'Invalid course name or gender'];
-            $_SESSION['old'] = [
+            $this->flash->error('Invalid course name or gender');
+            $this->flash->setOld([
                 'gender' => $gender,
                 'holes' => $holesData
-            ];
+            ]);
             $this->redirect('/course-club/bulk-create?course=' . urlencode($courseName));
             return;
         }
 
         // Validate we have exactly 18 holes
         if (empty($holesData) || !is_array($holesData) || count($holesData) !== 18) {
-            $_SESSION['errors'] = ['holes' => 'All 18 holes must be provided. Found: ' . count($holesData)];
-            $_SESSION['old'] = [
+            $this->flash->error('All 18 holes must be provided. Found: ' . count($holesData));
+            $this->flash->setOld([
                 'gender' => $gender,
                 'holes' => $holesData
-            ];
+            ]);
             $this->redirect('/course-club/bulk-create?course=' . urlencode($courseName));
             return;
         }
@@ -559,17 +576,17 @@ class CourseClubController extends BaseController
         }
 
         if (!empty($errors)) {
-            $_SESSION['errors'] = $errors;
-            $_SESSION['old'] = [
+            $this->flash->error($errors);
+            $this->flash->setOld([
                 'gender' => $gender,
                 'holes' => $holesData
-            ];
+            ]);
             $this->redirect('/course-club/bulk-create?course=' . urlencode($courseName));
             return;
         }
 
         // Create all holes
-        $user = $this->app->getDatabase()->getAuth()->getUser();
+        $user = $this->authService->getUser();
         $successCount = 0;
         
         foreach ($holes as $holeNumber => $holeData) {
@@ -590,14 +607,14 @@ class CourseClubController extends BaseController
 
         if ($successCount === 18) {
             $genderLabel = $gender === 'M' ? 'Male' : 'Female';
-            $_SESSION['success'] = "Successfully created all 18 holes for {$courseName} ({$genderLabel})";
+            $this->flash->success("Successfully created all 18 holes for {$courseName} ({$genderLabel})");
             $this->redirect('/course-club');
         } else {
-            $_SESSION['errors'] = ["Created {$successCount}/18 holes, but some failed"];
-            $_SESSION['old'] = [
+            $this->flash->error("Created {$successCount}/18 holes, but some failed");
+            $this->flash->setOld([
                 'gender' => $gender,
                 'holes' => $holesData
-            ];
+            ]);
             $this->redirect('/course-club/bulk-create?course=' . urlencode($courseName));
         }
     }

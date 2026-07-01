@@ -63,10 +63,11 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                 <?php endif; ?>
 
                 <form method="POST" action="/staff/add">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                     <div class="mb-3">
                         <label for="username" class="form-label">Username</label>
                         <input type="text" class="form-control" id="username" name="username"
-                               value="<?php echo htmlspecialchars($_SESSION['old']['username'] ?? ''); ?>" required>
+                               value="<?php echo htmlspecialchars($old['username'] ?? ''); ?>" required>
                         <small class="form-text text-muted">Display name for staff member</small>
                         <?php if (isset($errors['username'])): ?>
                             <div class="text-danger small"><?php echo htmlspecialchars($errors['username']); ?></div>
@@ -78,8 +79,8 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                             <label for="role" class="form-label">Role</label>
                             <select class="form-select" id="role" name="role" required>
                                 <option value="">Select Role</option>
-                                <option value="admin" <?php echo ($_SESSION['old']['role'] ?? '') === 'admin' ? 'selected' : ''; ?>>Admin</option>
-                                <option value="scorer" <?php echo ($_SESSION['old']['role'] ?? '') === 'scorer' ? 'selected' : ''; ?>>Scorer</option>
+                                <option value="admin" <?php echo ($old['role'] ?? '') === 'admin' ? 'selected' : ''; ?>>Admin</option>
+                                <option value="scorer" <?php echo ($old['role'] ?? '') === 'scorer' ? 'selected' : ''; ?>>Scorer</option>
                             </select>
                             <?php if (isset($errors['role'])): ?>
                                 <div class="text-danger small"><?php echo htmlspecialchars($errors['role']); ?></div>
@@ -91,7 +92,7 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                     <div class="mb-3">
                         <label for="first_name" class="form-label">First Name</label>
                         <input type="text" class="form-control" id="first_name" name="first_name"
-                               value="<?php echo htmlspecialchars($_SESSION['old']['first_name'] ?? ''); ?>">
+                               value="<?php echo htmlspecialchars($old['first_name'] ?? ''); ?>">
                         <small class="form-text text-muted">First name of staff member</small>
                         <?php if (isset($errors['first_name'])): ?>
                             <div class="text-danger small"><?php echo htmlspecialchars($errors['first_name']); ?></div>
@@ -101,7 +102,7 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                     <div class="mb-3">
                         <label for="last_name" class="form-label">Last Name</label>
                         <input type="text" class="form-control" id="last_name" name="last_name"
-                               value="<?php echo htmlspecialchars($_SESSION['old']['last_name'] ?? ''); ?>">
+                               value="<?php echo htmlspecialchars($old['last_name'] ?? ''); ?>">
                         <small class="form-text text-muted">Last name of staff member</small>
                         <?php if (isset($errors['last_name'])): ?>
                             <div class="text-danger small"><?php echo htmlspecialchars($errors['last_name']); ?></div>

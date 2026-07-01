@@ -11,6 +11,8 @@ set -euo pipefail
 # Expectations:
 # - Run this AFTER you finish a round in the app.
 # - Works against local dev docker-compose stack.
+# - Course eclectic report(s) are always expected.
+# - Combined eclectic report is expected for include, omitted for bypass.
 
 SEASON=""
 ROUND=""
@@ -88,10 +90,6 @@ run_mysql_scalar() {
     mysql -u root -N -B -e "$sql"
 }
 
-echo "Checking config ident..."
-CONFIG_IDENT="$(run_mysql_scalar "SELECT COALESCE(TRIM(config_value_string), '') FROM TW4_base.config_application WHERE config_name='ident_eclectic' LIMIT 1;")"
-echo "  config ident_eclectic: ${CONFIG_IDENT:-<empty>}"
-
 echo "Checking history round row..."
 ROUND_ROW="$(run_mysql_scalar "SELECT CONCAT(COALESCE(DATE_FORMAT(round_date,'%Y-%m-%d'),''),'|',COALESCE(CAST(course_played_id AS CHAR),'')) FROM TW4_history.round WHERE season_year='$SEASON' AND number_round=$ROUND LIMIT 1;")"
 if [[ -z "$ROUND_ROW" ]]; then
@@ -154,27 +152,38 @@ fi
 echo "  found files:"
 find "$REPORT_DIR" -maxdepth 1 -type f -printf '    %f\n' | sort
 
-if [[ "$INCLUDE_FLAG" == "1" ]]; then
-  COURSE_FILES="$(echo "$COURSE_JSON" | tr -d '[]" ' | tr ',' '\n' | sed '/^$/d')"
-  while IFS= read -r file; do
-    [[ -z "$file" ]] && continue
-    if [[ ! -f "$REPORT_DIR/$file" ]]; then
-      echo "FAIL: expected eclectic course file missing: $file" >&2
-      exit 7
-    fi
-  done <<< "$COURSE_FILES"
+COURSE_FILES="$(echo "$COURSE_JSON" | tr -d '[]" ' | tr ',' '\n' | sed '/^$/d')"
+if [[ -z "$COURSE_FILES" ]]; then
+  echo "FAIL: expected at least one course eclectic filename in course_report_files_json" >&2
+  exit 7
+fi
 
-  if [[ -n "$COMBINED_FILE" && ! -f "$REPORT_DIR/$COMBINED_FILE" ]]; then
-    echo "FAIL: expected eclectic combined file missing: $COMBINED_FILE" >&2
+while IFS= read -r file; do
+  [[ -z "$file" ]] && continue
+  if [[ ! -f "$REPORT_DIR/$file" ]]; then
+    echo "FAIL: expected eclectic course file missing: $file" >&2
     exit 8
+  fi
+done <<< "$COURSE_FILES"
+
+if [[ "$EXPECT" == "include" ]]; then
+  if [[ -z "$COMBINED_FILE" ]]; then
+    echo "FAIL: include expected but combined_report_filename is empty" >&2
+    exit 9
+  fi
+
+  if [[ ! -f "$REPORT_DIR/$COMBINED_FILE" ]]; then
+    echo "FAIL: expected eclectic combined file missing: $COMBINED_FILE" >&2
+    exit 10
   fi
 
   echo "PASS: include scenario validated."
 else
-  if find "$REPORT_DIR" -maxdepth 1 -type f -name '4*_Eclectic_*.html' | grep -q .; then
-    echo "FAIL: bypass expected but eclectic report files exist in $REPORT_DIR" >&2
-    exit 9
+  if [[ -n "$COMBINED_FILE" && -f "$REPORT_DIR/$COMBINED_FILE" ]]; then
+    echo "FAIL: bypass expected but combined eclectic file exists: $COMBINED_FILE" >&2
+    exit 11
   fi
+
   echo "PASS: bypass scenario validated."
 fi
 

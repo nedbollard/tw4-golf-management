@@ -92,46 +92,7 @@ class Router
             throw new \RuntimeException("Controller {$controllerClass} not found");
         }
 
-        // Create controller with appropriate dependencies
-        if ($controllerClass === 'App\\Controllers\\AuthController') {
-            $authService = new \App\Services\AuthService($this->app->getDatabase());
-            $logger = new \App\Services\Logger($this->app->getDatabase());
-            $controller = new $controllerClass($this->app, $authService, $logger);
-        } elseif ($controllerClass === 'App\\Controllers\\PlayerController') {
-            $playerService = new \App\Services\PlayerService($this->app->getDatabase());
-            $controller = new $controllerClass($this->app, $playerService);
-        } elseif ($controllerClass === 'App\\Controllers\\HomeController') {
-            $configService = new \App\Services\ConfigService($this->app->getDatabase());
-            $controller = new $controllerClass($this->app, $configService);
-        } elseif ($controllerClass === 'App\\Controllers\\ConfigController') {
-            $configService = new \App\Services\ConfigService($this->app->getDatabase());
-            $logger = new \App\Services\Logger($this->app->getDatabase());
-            $controller = new $controllerClass($this->app, $configService, $logger);
-        } elseif ($controllerClass === 'App\\Controllers\\StaffController') {
-            $logger = new \App\Services\Logger($this->app->getDatabase());
-            $controller = new $controllerClass($this->app, $logger);
-        } elseif ($controllerClass === 'App\\Controllers\\LogController') {
-            $logger = new \App\Services\Logger($this->app->getDatabase());
-            $controller = new $controllerClass($this->app, $logger);
-        } elseif ($controllerClass === 'App\\Controllers\\RosterController') {
-            $rosterService = new \App\Services\RosterService($this->app->getDatabase());
-            $controller = new $controllerClass($this->app, $rosterService);
-        } elseif ($controllerClass === 'App\\Controllers\\AdminController') {
-            $logger = new \App\Services\Logger($this->app->getDatabase());
-            $controller = new $controllerClass($this->app, $logger);
-        } elseif ($controllerClass === 'App\\Controllers\\ScorerController') {
-            $controller = new $controllerClass($this->app);
-        } elseif ($controllerClass === 'App\\Controllers\\RoleSwitchController') {
-            $controller = new $controllerClass($this->app);
-        } elseif ($controllerClass === 'App\\Controllers\\CourseClubController') {
-            $logger = new \App\Services\Logger($this->app->getDatabase());
-            $controller = new $controllerClass($this->app, $logger);
-        } elseif ($controllerClass === 'App\\Controllers\\CoursePlayedController') {
-            $logger = new \App\Services\Logger($this->app->getDatabase());
-            $controller = new $controllerClass($this->app, $logger);
-        } else {
-            $controller = new $controllerClass($this->app);
-        }
+        $controller = $this->resolveController($controllerClass);
         
         if (!method_exists($controller, $method)) {
             throw new \RuntimeException("Method {$method} not found in {$controllerClass}");
@@ -168,5 +129,74 @@ class Router
     {
         http_response_code(404);
         include __DIR__ . '/../Views/errors/404.php';
+    }
+
+    /**
+     * Resolve controller dependencies using reflection
+     */
+    private function resolveController(string $controllerClass): object
+    {
+        $reflection = new \ReflectionClass($controllerClass);
+        $constructor = $reflection->getConstructor();
+        
+        if ($constructor === null) {
+            return new $controllerClass($this->app);
+        }
+        
+        $parameters = $constructor->getParameters();
+        $dependencies = [];
+        
+        foreach ($parameters as $parameter) {
+            $dependencies[] = $this->resolveDependency($parameter);
+        }
+        
+        return $reflection->newInstanceArgs($dependencies);
+    }
+
+    /**
+     * Resolve a single dependency based on type hint
+     */
+    private function resolveDependency(\ReflectionParameter $parameter): mixed
+    {
+        $type = $parameter->getType();
+        
+        // Handle Application parameter
+        if ($type && $type->getName() === Application::class) {
+            return $this->app;
+        }
+        
+        // Handle service dependencies
+        if ($type && !$type->isBuiltin()) {
+            $serviceClass = $type->getName();
+            return $this->resolveService($serviceClass);
+        }
+        
+        // Handle optional parameters
+        if ($parameter->isDefaultValueAvailable()) {
+            return $parameter->getDefaultValue();
+        }
+        
+        throw new \RuntimeException("Cannot resolve dependency: {$parameter->getName()}");
+    }
+
+    /**
+     * Resolve service instances
+     */
+    private function resolveService(string $serviceClass): object
+    {
+        // Map service classes to their instantiation logic
+        $serviceMap = [
+            \App\Services\AuthService::class => fn() => new \App\Services\AuthService($this->app->getDatabase()),
+            \App\Services\PlayerService::class => fn() => new \App\Services\PlayerService($this->app->getDatabase()),
+            \App\Services\ConfigService::class => fn() => new \App\Services\ConfigService($this->app->getDatabase()),
+            \App\Services\Logger::class => fn() => new \App\Services\Logger($this->app->getDatabase()),
+            \App\Services\RosterService::class => fn() => new \App\Services\RosterService($this->app->getDatabase()),
+        ];
+        
+        if (isset($serviceMap[$serviceClass])) {
+            return $serviceMap[$serviceClass]();
+        }
+        
+        throw new \RuntimeException("Service not registered: {$serviceClass}");
     }
 }

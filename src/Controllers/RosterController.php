@@ -66,42 +66,44 @@ class RosterController extends BaseController
         $this->requireAuth();
         
         $this->render('roster/create', [
-            'title' => 'Add New Player - TW4 Golf Management',
-            'errors' => $_SESSION['errors'] ?? [],
-            'old' => $_SESSION['old'] ?? []
+            'title' => 'Add New Player - TW4 Golf Management'
         ]);
-        
-        unset($_SESSION['errors'], $_SESSION['old']);
     }
 
     public function store(): void
     {
         $this->requireAuth();
         
+        if (!$this->validateCsrf()) {
+            $this->flash->error('Invalid CSRF token');
+            $this->redirect('/roster/create');
+            return;
+        }
+
         $data = $this->getPostData();
         
         // Validate required fields
         $errors = $this->validatePlayerData($data);
         
         if (!empty($errors)) {
-            $_SESSION['errors'] = $errors;
-            $_SESSION['old'] = $data;
+            $this->flash->error($errors);
+            $this->flash->setOld($data);
             $this->redirect('/roster/create');
             return;
         }
         
         try {
             $playerId = $this->rosterService->createPlayer($data);
-            $_SESSION['success'] = 'Player created successfully!';
+            $this->flash->success('Player created successfully!');
             $this->redirect('/roster/' . $playerId);
         } catch (\InvalidArgumentException $e) {
-            $_SESSION['errors'] = ['general' => $e->getMessage()];
-            $_SESSION['old'] = $data;
+            $this->flash->error($e->getMessage());
+            $this->flash->setOld($data);
             $this->redirect('/roster/create');
             return;
         } catch (\Throwable $e) {
-            $_SESSION['errors'] = ['general' => 'Unable to create player right now.'];
-            $_SESSION['old'] = $data;
+            $this->flash->error('Unable to create player right now.');
+            $this->flash->setOld($data);
             $this->redirect('/roster/create');
         }
     }
@@ -119,24 +121,27 @@ class RosterController extends BaseController
         
         $this->render('roster/edit', [
             'title' => 'Edit Player - ' . $this->rosterService->getDisplayName($player),
-            'player' => $player,
-            'errors' => $_SESSION['errors'] ?? []
+            'player' => $player
         ]);
-        
-        unset($_SESSION['errors']);
     }
 
     public function update(int $playerId): void
     {
         $this->requireAuth();
         
+        if (!$this->validateCsrf()) {
+            $this->flash->error('Invalid CSRF token');
+            $this->redirect('/roster/' . $playerId . '/edit');
+            return;
+        }
+
         $data = $this->getPostData();
         
         // Validate required fields
         $errors = $this->validatePlayerData($data, $playerId);
         
         if (!empty($errors)) {
-            $_SESSION['errors'] = $errors;
+            $this->flash->error($errors);
             $this->redirect('/roster/' . $playerId . '/edit');
             return;
         }
@@ -145,18 +150,18 @@ class RosterController extends BaseController
             $success = $this->rosterService->updatePlayer($playerId, $data);
             
             if ($success) {
-                $_SESSION['success'] = 'Player updated successfully!';
+                $this->flash->success('Player updated successfully!');
             } else {
-                $_SESSION['errors'] = ['general' => 'No changes made'];
+                $this->flash->error('No changes made');
             }
             
             $this->redirect('/roster/' . $playerId);
         } catch (\InvalidArgumentException $e) {
-            $_SESSION['errors'] = ['general' => $e->getMessage()];
+            $this->flash->error($e->getMessage());
             $this->redirect('/roster/' . $playerId . '/edit');
             return;
         } catch (\Throwable $e) {
-            $_SESSION['errors'] = ['general' => 'Unable to update player right now.'];
+            $this->flash->error('Unable to update player right now.');
             $this->redirect('/roster/' . $playerId . '/edit');
         }
     }
@@ -182,12 +187,18 @@ class RosterController extends BaseController
     {
         $this->requireAuth();
         
+        if (!$this->validateCsrf()) {
+            $this->flash->error('Invalid CSRF token');
+            $this->redirect('/roster');
+            return;
+        }
+
         $success = $this->rosterService->deletePlayer($playerId);
         
         if ($success) {
-            $_SESSION['success'] = 'Player deactivated successfully!';
+            $this->flash->success('Player deactivated successfully!');
         } else {
-            $_SESSION['errors'] = ['general' => 'Failed to deactivate player'];
+            $this->flash->error('Failed to deactivate player');
         }
         
         $this->redirect('/roster');
@@ -218,9 +229,9 @@ class RosterController extends BaseController
         $success = $this->rosterService->activatePlayer($playerId);
         
         if ($success) {
-            $_SESSION['success'] = 'Player activated successfully!';
+            $this->flash->success('Player activated successfully!');
         } else {
-            $_SESSION['errors'] = ['general' => 'Failed to activate player'];
+            $this->flash->error('Failed to activate player');
         }
         
         $this->redirect('/roster');

@@ -13,7 +13,6 @@ use App\Services\RoundLockService;
  */
 class AuthController extends BaseController
 {
-    private AuthService $authService;
     private Logger $logger;
     
     public function __construct(Application $app, AuthService $authService, Logger $logger)
@@ -26,7 +25,7 @@ class AuthController extends BaseController
     public function showLogin(): void
     {
         // If already logged in, redirect to appropriate menu
-        if ($user = $this->app->getDatabase()->getAuth()->getUser()) {
+        if ($user = $this->authService->getUser()) {
             if ($user['user_role'] === 'admin') {
                 $this->redirect('/admin/menu');
             } elseif ($user['user_role'] === 'scorer') {
@@ -37,33 +36,39 @@ class AuthController extends BaseController
             return;
         }
 
-        include __DIR__ . '/../Views/auth/login.php';
+        $this->render('auth/login', [
+            'title' => 'Login - TW4 Golf Management',
+        ]);
     }
 
     public function showRegister(): void
     {
-        if ($this->app->getDatabase()->getAuth()->isLoggedIn()) {
+        if ($this->authService->isLoggedIn()) {
             $this->redirect('/');
         }
 
         $this->render('auth/register', [
-            'title' => 'Register - TW4 Golf Management',
-            'errors' => $_SESSION['errors'] ?? []
+            'title' => 'Register - TW4 Golf Management'
         ]);
-
-        unset($_SESSION['errors']);
     }
 
     public function login(): void
     {
+        if (!$this->validateCsrf()) {
+            $this->flash->error('Invalid CSRF token');
+            $this->redirect('/login');
+            return;
+        }
+
         $data = $this->getPostData();
         
         $errors = $this->validateLoginData($data);
         
         if (!empty($errors)) {
-            $_SESSION['errors'] = $errors;
-            $_SESSION['old'] = $data;
+            $this->flash->error($errors);
+            $this->flash->setOld($data);
             $this->redirect('/login');
+            return;
         }
 
         if ($this->authService->login($data['username'], $data['password'])) {
@@ -71,7 +76,7 @@ class AuthController extends BaseController
             $this->logger->logLogin($data['username'], true);
             
             // Redirect to role-specific menu
-            $user = $this->app->getDatabase()->getAuth()->getUser();
+            $user = $this->authService->getUser();
             if ($user['user_role'] === 'admin') {
                 $this->redirect('/admin/menu');
             } elseif ($user['user_role'] === 'scorer') {
@@ -83,14 +88,15 @@ class AuthController extends BaseController
             // Log failed login
             $this->logger->logLogin($data['username'], false, 'Invalid credentials');
             
-            $_SESSION['errors'] = ['login' => 'Invalid username or password'];
+            $this->flash->error('Invalid username or password');
+            $this->flash->setOld($data);
             $this->redirect('/login');
         }
     }
 
     public function logout(): void
     {
-        $user = $this->app->getDatabase()->getAuth()->getUser();
+        $user = $this->authService->getUser();
         if ($user && isset($user['username'])) {
             $this->logger->logLogout($user['username']);
 
@@ -104,19 +110,28 @@ class AuthController extends BaseController
 
     public function register(): void
     {
+        if (!$this->validateCsrf()) {
+            $this->flash->error('Invalid CSRF token');
+            $this->redirect('/register');
+            return;
+        }
+
         $data = $this->getPostData();
         
         $errors = $this->validateRegistrationData($data);
         
         if (!empty($errors)) {
-            $_SESSION['errors'] = $errors;
+            $this->flash->error($errors);
+            $this->flash->setOld($data);
             $this->redirect('/register');
+            return;
         }
 
         if ($this->authService->registerStaff($data)) {
             $this->redirect('/login');
         } else {
-            $_SESSION['errors'] = ['register' => 'Registration failed. Please try again.'];
+            $this->flash->error('Registration failed. Please try again.');
+            $this->flash->setOld($data);
             $this->redirect('/register');
         }
     }

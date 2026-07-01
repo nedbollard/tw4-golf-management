@@ -60,8 +60,20 @@ class SnapshotExportService
         $combinedFileSlug = $this->slugifyCourseName((string) ($context['eclectic_combined_name'] ?? 'Combined'));
 
         if (!empty($roundEclecticContext)) {
-            $context['eclectic_combined_name'] = (string) ($roundEclecticContext['combined_name'] ?? ($context['eclectic_combined_name'] ?? 'Eclectic'));
+            $contextCombinedName = trim((string) ($roundEclecticContext['combined_name'] ?? ''));
+            $currentCombinedName = trim((string) ($context['eclectic_combined_name'] ?? ''));
+            if ($currentCombinedName === '' || strcasecmp($contextCombinedName, $currentCombinedName) === 0) {
+                $context['eclectic_combined_name'] = $contextCombinedName !== ''
+                    ? $contextCombinedName
+                    : ($context['eclectic_combined_name'] ?? 'Eclectic');
+            }
         }
+
+        $combinedContextName = trim((string) ($context['eclectic_combined_name'] ?? ''));
+        $combinedContextKey = strtolower($combinedContextName);
+        $includeCombinedEclectic = $combinedContextName !== ''
+            && !in_array($combinedContextKey, ['none', 'nil', 'n/a', 'na', 'off'], true);
+        $context['include_combined_eclectic'] = $includeCombinedEclectic;
 
         $files = [
             '10_Results.html' => $this->renderResults($context),
@@ -69,20 +81,16 @@ class SnapshotExportService
             '31_Best_5_Scores.html' => $this->renderBest5($context),
         ];
 
-        $includeEclectic = empty($roundEclecticContext)
-            ? true
-            : ((int) ($roundEclecticContext['include_eclectic'] ?? 0) === 1);
-
-        if ($includeEclectic) {
-            $courseFiles = $this->resolveCourseEclecticFilenames($roundEclecticContext, $courseAFileSlug);
-            foreach ($courseFiles as $courseFile) {
-                try {
-                    $files[$courseFile] = $this->renderEclectic($context, 'played');
-                } catch (\Throwable $e) {
-                    $files[$courseFile] = $this->renderEclecticNotYetAvailable($context, 'played', $e);
-                }
+        $courseFiles = $this->resolveCourseEclecticFilenames($roundEclecticContext, $courseAFileSlug);
+        foreach ($courseFiles as $courseFile) {
+            try {
+                $files[$courseFile] = $this->renderEclectic($context, 'played');
+            } catch (\Throwable $e) {
+                $files[$courseFile] = $this->renderEclecticNotYetAvailable($context, 'played', $e);
             }
+        }
 
+        if ($includeCombinedEclectic) {
             $combinedFile = $this->resolveCombinedEclecticFilename($roundEclecticContext, $combinedFileSlug);
             try {
                 $files[$combinedFile] = $this->renderEclectic($context, 'combined');
@@ -262,6 +270,11 @@ class SnapshotExportService
 
         $courseName = trim((string) ($round['name_course'] ?? ''));
         $combinedIdent = trim((string) ($round['ident_eclectic'] ?? ''));
+        $roundEclecticContext = $this->loadRoundEclecticContext($seasonYear, $roundNumber);
+        $contextCombinedName = trim((string) ($roundEclecticContext['combined_name'] ?? ''));
+        if ($contextCombinedName !== '' && strcasecmp($contextCombinedName, $combinedIdent) === 0) {
+            $combinedIdent = $contextCombinedName;
+        }
         if ($combinedIdent === '') {
             // Fallback keeps a combined track available in single-course setups.
             $combinedIdent = $courseName;
@@ -483,6 +496,21 @@ class SnapshotExportService
     {
         $filename = trim((string) ($contextRow['combined_report_filename'] ?? ''));
         if ($filename !== '') {
+            $expected = '49_Eclectic_' . $fallbackSlug . '.html';
+            if (strcasecmp($filename, $expected) === 0) {
+                return $filename;
+            }
+        }
+
+        if ($filename !== '') {
+            // Guard against stale persisted context that points to a previous combined ident.
+            // Fall back to the slug resolved from current round data.
+            if (str_starts_with($filename, '49_Eclectic_') && str_ends_with($filename, '.html')) {
+                return '49_Eclectic_' . $fallbackSlug . '.html';
+            }
+        }
+
+        if ($filename !== '') {
             return $filename;
         }
 
@@ -690,6 +718,8 @@ class SnapshotExportService
 
     private function renderMovements(array $ctx): string
     {
+        $showCombinedEclectic = (bool) ($ctx['include_combined_eclectic'] ?? true);
+
         $playedName = trim((string) ($ctx['eclectic_played_name'] ?? ($ctx['name_course'] ?? '')));
         if ($playedName === '') {
             $playedName = 'Played Course';
@@ -752,16 +782,24 @@ class SnapshotExportService
             $eclecticPlayedRows = '<tr><td colspan="3">No eclectic movements for this played course.</td></tr>';
         }
 
-        $eclecticCombinedRows = '';
-        foreach (($ctx['eclectic_combined_movement'] ?? []) as $row) {
-            $eclecticCombinedRows .= '<tr>'
-                . '<td>' . $this->e((string) ($row['display_player'] ?? '')) . '</td>'
-                . '<td>' . (int) ($row['score_movement'] ?? 0) . '</td>'
-                . '<td>' . (int) ($row['score_total'] ?? 0) . '</td>'
-                . '</tr>';
-        }
-        if ($eclecticCombinedRows === '') {
-            $eclecticCombinedRows = '<tr><td colspan="3">No eclectic movements for combined standings.</td></tr>';
+        $combinedSection = '';
+        if ($showCombinedEclectic) {
+            $eclecticCombinedRows = '';
+            foreach (($ctx['eclectic_combined_movement'] ?? []) as $row) {
+                $eclecticCombinedRows .= '<tr>'
+                    . '<td>' . $this->e((string) ($row['display_player'] ?? '')) . '</td>'
+                    . '<td>' . (int) ($row['score_movement'] ?? 0) . '</td>'
+                    . '<td>' . (int) ($row['score_total'] ?? 0) . '</td>'
+                    . '</tr>';
+            }
+            if ($eclecticCombinedRows === '') {
+                $eclecticCombinedRows = '<tr><td colspan="3">No eclectic movements for combined standings.</td></tr>';
+            }
+
+            $combinedSection = '<h4>Eclectic Movements (' . $this->e($combinedName) . ')</h4>'
+                . '<table><tr><th>Player</th><th>Movement</th><th>Total</th></tr>'
+                . $eclecticCombinedRows
+                . '</table>';
         }
 
         return $this->wrap(
@@ -782,10 +820,7 @@ class SnapshotExportService
             . '<table><tr><th>Player</th><th>Movement</th><th>Total</th></tr>'
             . $eclecticPlayedRows
             . '</table>'
-            . '<h4>Eclectic Movements (' . $this->e($combinedName) . ')</h4>'
-            . '<table><tr><th>Player</th><th>Movement</th><th>Total</th></tr>'
-            . $eclecticCombinedRows
-            . '</table>'
+            . $combinedSection
         );
     }
 
@@ -890,7 +925,7 @@ class SnapshotExportService
 
     private function buildEclecticSnapshot(string $seasonYear, int $roundNumber, string $ident): array
     {
-        $ident = trim($ident);
+        $ident = $this->normalizeEclecticIdent($ident);
         if ($ident === '') {
             return [];
         }
@@ -909,38 +944,47 @@ class SnapshotExportService
                 es.score_hole_7,
                 es.score_hole_8,
                 es.score_hole_9,
-                                es.number_round_movement,
-                                COALESCE(prev_move.score_total - move_row.score_total, 0) AS score_movement
+                es.number_round_movement,
+                COALESCE(
+                    (
+                        SELECT prev.score_total
+                        FROM TW4_history.eclectic_scores prev
+                                                WHERE prev.season_year = ?
+                          AND prev.row_id_player = es.row_id_player
+                                                    AND prev.ident_eclectic COLLATE utf8mb4_general_ci = CAST(? AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci
+                          AND prev.number_round_movement = (
+                              SELECT MAX(prev2.number_round_movement)
+                              FROM TW4_history.eclectic_scores prev2
+                                                            WHERE prev2.season_year = ?
+                                AND prev2.row_id_player = es.row_id_player
+                                                                AND prev2.ident_eclectic COLLATE utf8mb4_general_ci = CAST(? AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci
+                                AND prev2.number_round_movement < es.number_round_movement
+                          )
+                        LIMIT 1
+                    ) - (
+                        SELECT curr.score_total
+                        FROM TW4_history.eclectic_scores curr
+                                                WHERE curr.season_year = ?
+                          AND curr.row_id_player = es.row_id_player
+                                                    AND curr.ident_eclectic COLLATE utf8mb4_general_ci = CAST(? AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci
+                          AND curr.number_round_movement = es.number_round_movement
+                        LIMIT 1
+                    ),
+                    0
+                ) AS score_movement
              FROM TW4_live.eclectic_scores es
              LEFT JOIN TW4_base.roster r ON r.row_id = es.row_id_player
-                         LEFT JOIN TW4_history.eclectic_scores move_row
-                                        ON move_row.ident_eclectic = es.ident_eclectic
-                                     AND move_row.season_year = es.season_year
-                                     AND move_row.row_id_player = es.row_id_player
-                                     AND move_row.number_round_movement = es.number_round_movement
-                         LEFT JOIN TW4_history.eclectic_scores prev_move
-                                        ON prev_move.ident_eclectic = move_row.ident_eclectic
-                                     AND prev_move.season_year = move_row.season_year
-                                     AND prev_move.row_id_player = move_row.row_id_player
-                                     AND prev_move.number_round_movement = (
-                                                SELECT MAX(prev2.number_round_movement)
-                                                FROM TW4_history.eclectic_scores prev2
-                                                WHERE prev2.ident_eclectic = move_row.ident_eclectic
-                                                    AND prev2.season_year = move_row.season_year
-                                                    AND prev2.row_id_player = move_row.row_id_player
-                                                    AND prev2.number_round_movement < move_row.number_round_movement
-                                     )
              WHERE es.season_year = ?
                AND es.ident_eclectic = ?
              ORDER BY es.score_total ASC,
                       COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", es.row_id_player)) ASC',
-            [$seasonYear, $ident]
+                        [$seasonYear, $ident, $seasonYear, $ident, $seasonYear, $ident, $seasonYear, $ident]
         );
     }
 
     private function buildEclecticMovement(string $seasonYear, int $roundNumber, string $ident): array
     {
-        $ident = trim($ident);
+        $ident = $this->normalizeEclecticIdent($ident);
         if ($ident === '') {
             return [];
         }
@@ -966,6 +1010,11 @@ class SnapshotExportService
                       COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", es.row_id_player)) ASC',
                         [$seasonYear, $ident, $seasonYear, $ident, $roundNumber]
         );
+    }
+
+    private function normalizeEclecticIdent(string $ident): string
+    {
+        return strtolower(trim($ident));
     }
 
     private function slugifyCourseName(string $name): string

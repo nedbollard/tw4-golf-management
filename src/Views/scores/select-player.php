@@ -27,7 +27,9 @@
 
                 <?php if (!empty($success)): ?>
                     <div class="select-player-alert select-player-alert-success" role="status">
-                        <?php echo htmlspecialchars((string) $success); ?>
+                        <?php foreach ((array) $success as $message): ?>
+                            <div><?php echo htmlspecialchars((string) $message); ?></div>
+                        <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
 

@@ -30,7 +30,7 @@ class ConfigController extends BaseController
         );
         $workflowStep = (string) ($roundState['workflow_step'] ?? 'between_rounds');
         if (!in_array($workflowStep, ['between_rounds', 'not_started'], true)) {
-            $_SESSION['errors'] = ['Configuration is locked while a round is in progress.'];
+            $this->flash->error('Configuration is locked while a round is in progress.');
             $this->redirect('/admin/menu');
             return;
         }
@@ -41,13 +41,7 @@ class ConfigController extends BaseController
         $this->render('config/index', [
             'configs' => $allConfigs,
             'status' => $status,
-            'errors' => $_SESSION['errors'] ?? [],
-            'success' => isset($_SESSION['success']) ? (is_array($_SESSION['success']) ? $_SESSION['success'] : [$_SESSION['success']]) : []
         ]);
-        
-        // Clear session messages
-        unset($_SESSION['errors']);
-        unset($_SESSION['success']);
     }
 
     public function save(): void
@@ -59,12 +53,18 @@ class ConfigController extends BaseController
             return;
         }
 
+        if (!$this->validateCsrf()) {
+            $this->flash->error('Invalid CSRF token');
+            $this->redirect('/config');
+            return;
+        }
+
         $roundState = $this->app->getDatabase()->fetchOne(
             'SELECT workflow_step FROM TW4_live.round ORDER BY row_id ASC LIMIT 1'
         );
         $workflowStep = (string) ($roundState['workflow_step'] ?? 'between_rounds');
         if (!in_array($workflowStep, ['between_rounds', 'not_started'], true)) {
-            $_SESSION['errors'] = ['config' => 'Configuration is locked while a round is in progress.'];
+            $this->flash->error('Configuration is locked while a round is in progress.');
             $this->redirect('/config');
             return;
         }
@@ -112,7 +112,7 @@ class ConfigController extends BaseController
         }
         
         if (!empty($errors)) {
-            $_SESSION['errors'] = $errors;
+            $this->flash->error($errors);
             $this->redirect('/config');
             return;
         }
@@ -160,9 +160,9 @@ class ConfigController extends BaseController
         }
         
         if ($successCount > 0) {
-            $_SESSION['success'] = "Successfully updated $successCount configuration values.";
+            $this->flash->success("Successfully updated $successCount configuration values.");
         } else {
-            $_SESSION['success'] = "No changes were made to configuration values.";
+            $this->flash->success('No changes were made to configuration values.');
         }
         
         $this->redirect('/config');
@@ -210,15 +210,6 @@ class ConfigController extends BaseController
 
             if ($name === 'season_year' && preg_match('/^\d{2}_\d{2}$/', trim($value)) !== 1) {
                 return ['valid' => false, 'message' => 'Season year must use the format NN_NN, for example 25_26', 'value' => $value];
-            }
-
-            if ($name === 'ident_eclectic') {
-                $normalized = trim($value);
-                if ($normalized === '') {
-                    return ['valid' => false, 'message' => 'Eclectic competition cannot be empty', 'value' => $value];
-                }
-
-                return ['valid' => true, 'value' => $normalized];
             }
 
             // Check if it's a valid string (not empty for required fields)

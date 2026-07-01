@@ -43,6 +43,7 @@
                         ?>
 
                         <form method="POST" action="<?php echo $mode === 'create' ? '/course-played/store' : '/course-played/' . (int) $coursePlayed['row_id'] . '/update'; ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                             <div class="row g-3 mb-4">
                                 <div class="col-md-4">
                                     <label for="name_course" class="form-label">Course Name *</label>

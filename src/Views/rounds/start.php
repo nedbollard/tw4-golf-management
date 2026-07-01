@@ -43,6 +43,7 @@ $seasonYear = (string) ($formData['current_season_year'] ?? '');
                 <?php endif; ?>
 
                 <form method="POST" action="/rounds">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                     <div class="start-round-form-group">
                         <label class="start-round-form-label">Season</label>
                         <input type="text" class="start-round-form-readonly" value="<?php echo htmlspecialchars($seasonYear); ?>" readonly>

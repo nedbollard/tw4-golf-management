@@ -93,6 +93,7 @@ $selectedClosestToPin = (string) ($old['closest_to_pin_identifier'] ?? 'not take
                         <div class="section-title-accent"></div>
                     </div>
                     <form method="POST" action="/scores/present-results">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                         <div class="present-results-form-group">
                             <label for="closest_to_pin_identifier" class="present-results-form-label">Winner</label>
                             <select id="closest_to_pin_identifier" name="closest_to_pin_identifier" class="present-results-form-select" required>

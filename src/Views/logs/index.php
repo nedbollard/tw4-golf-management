@@ -33,6 +33,22 @@
                         <div class="section-title-accent"></div>
                     </div>
 
+                    <?php if (!empty($success)): ?>
+                        <div class="alert alert-success" role="status">
+                            <?php foreach ((array) $success as $message): ?>
+                                <div><?php echo htmlspecialchars((string) $message); ?></div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($errors)): ?>
+                        <div class="alert alert-danger" role="alert">
+                            <?php foreach ((array) $errors as $message): ?>
+                                <div><?php echo htmlspecialchars((string) $message); ?></div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+
                     <?php if (!empty($loadError)): ?>
                         <div class="alert alert-warning" role="alert">
                             <?php echo htmlspecialchars($loadError); ?>

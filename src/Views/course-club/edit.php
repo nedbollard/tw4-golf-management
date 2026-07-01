@@ -54,6 +54,7 @@
     $updateUrl = '/course-club/' . $courseClub->getRowId() . '/update';
 ?>
 <form method="POST" action="<?php echo $updateUrl; ?>">
+    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                             <div class="row">
                                 <!-- Fixed Fields (Left Column) -->
                                 <div class="col-md-6">
@@ -99,7 +100,7 @@
                                     <div class="mb-3">
                                         <label for="name_hole" class="form-label">Hole Name *</label>
                                         <input type="text" class="form-control" id="name_hole" name="name_hole" 
-                                               value="<?php echo htmlspecialchars($_SESSION['old']['name_hole'] ?? $courseClub->getNameHole()); ?>" 
+                                               value="<?php echo htmlspecialchars($old['name_hole'] ?? $courseClub->getNameHole()); ?>" 
                                                maxlength="24" required>
                                         <div class="form-text">Descriptive hole name</div>
                                     </div>
@@ -107,7 +108,7 @@
                                     <div class="mb-3">
                                         <label for="par" class="form-label">Par *</label>
                                         <input type="number" class="form-control" id="par" name="par" 
-                                               value="<?php echo htmlspecialchars($_SESSION['old']['par'] ?? $courseClub->getPar()); ?>" 
+                                               value="<?php echo htmlspecialchars($old['par'] ?? $courseClub->getPar()); ?>" 
                                                min="3" max="5" required>
                                         <div class="form-text">3-5 (Par 3, 4, or 5)</div>
                                     </div>
@@ -115,7 +116,7 @@
                                     <div class="mb-3">
                                         <label for="stroke" class="form-label">Stroke Index *</label>
                                         <input type="number" class="form-control" id="stroke" name="stroke" 
-                                               value="<?php echo htmlspecialchars($_SESSION['old']['stroke'] ?? $courseClub->getStroke()); ?>" 
+                                               value="<?php echo htmlspecialchars($old['stroke'] ?? $courseClub->getStroke()); ?>" 
                                                min="1" max="18" required>
                                         <div class="form-text">1-18 (1 = hardest, 18 = easiest)</div>
                                     </div>
@@ -151,11 +152,6 @@
     <script>
         // Auto-focus hole name field
         document.getElementById('name_hole').focus();
-        
-        // Clear session errors on form submission
-        document.querySelector('form').addEventListener('submit', function(e) {
-            <?php unset($_SESSION['errors'], $_SESSION['old']); ?>
-        });
     </script>
 </body>
 </html>

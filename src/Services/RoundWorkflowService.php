@@ -351,9 +351,8 @@ class RoundWorkflowService
             $eclecticContext = $this->buildRoundEclecticContext($roundId);
             $this->applyHandicapUpdatesBeforeHistory($updatedBy, $seasonYear, $numberRound);
             $this->refreshBestFiveForFinish($seasonYear, $numberRound, $updatedBy);
-            if ((bool) ($eclecticContext['include_eclectic'] ?? false)) {
-                $this->refreshEclecticForFinish($roundId, $seasonYear, $numberRound, $updatedBy, $eclecticContext);
-            }
+            // Always refresh per-course eclectic tracks; include_eclectic controls combined reporting.
+            $this->refreshEclecticForFinish($roundId, $seasonYear, $numberRound, $updatedBy, $eclecticContext);
             $this->replaceHistorySnapshot($roundId, $seasonYear, $numberRound, $updatedBy);
             $this->persistRoundEclecticContext($seasonYear, $numberRound, $eclecticContext, $updatedBy);
 
@@ -982,28 +981,26 @@ class RoundWorkflowService
      */
     private function getEclecticIdentsForRound(int $roundId, array $eclecticContext): array
     {
-        if ((bool) ($eclecticContext['include_eclectic'] ?? false)) {
-            $idents = [
-                trim((string) ($eclecticContext['played_course_name'] ?? '')),
-                trim((string) ($eclecticContext['configured_ident_eclectic'] ?? '')),
-            ];
-
-            return $this->dedupeEclecticIdentsCaseInsensitive($idents);
-        }
-
-        $row = $this->db->fetchOne(
-            'SELECT cp.name_course, cp.ident_eclectic
-             FROM TW4_live.round r
-             LEFT JOIN TW4_base.course_played cp ON cp.row_id = r.course_played_id
-             WHERE r.row_id = ?
-             LIMIT 1',
-            [$roundId]
-        );
-
         $idents = [
-            trim((string) ($row['name_course'] ?? '')),
-            trim((string) ($row['ident_eclectic'] ?? '')),
+            trim((string) ($eclecticContext['played_course_name'] ?? '')),
+            trim((string) ($eclecticContext['combined_name'] ?? '')),
         ];
+
+        if ($idents[0] === '' && $idents[1] === '') {
+            $row = $this->db->fetchOne(
+                'SELECT cp.name_course, cp.ident_eclectic
+                 FROM TW4_live.round r
+                 LEFT JOIN TW4_base.course_played cp ON cp.row_id = r.course_played_id
+                 WHERE r.row_id = ?
+                 LIMIT 1',
+                [$roundId]
+            );
+
+            $idents = [
+                trim((string) ($row['name_course'] ?? '')),
+                trim((string) ($row['ident_eclectic'] ?? '')),
+            ];
+        }
 
         return $this->dedupeEclecticIdentsCaseInsensitive($idents);
     }
@@ -1053,10 +1050,9 @@ class RoundWorkflowService
 
         $playedCourseName = trim((string) ($row['name_course'] ?? ''));
         $courseIdent = trim((string) ($row['ident_eclectic'] ?? ''));
-        $configuredIdent = $this->getConfiguredEclecticIdent();
-        $includeEclectic = $this->shouldIncludeEclectic($courseIdent, $configuredIdent);
+        $includeEclectic = $this->shouldIncludeEclectic($courseIdent);
 
-        $combinedName = $configuredIdent !== '' ? $configuredIdent : $courseIdent;
+        $combinedName = $courseIdent;
         if ($combinedName === '') {
             $combinedName = 'Eclectic';
         }
@@ -1066,7 +1062,7 @@ class RoundWorkflowService
 
         return [
             'include_eclectic' => $includeEclectic,
-            'configured_ident_eclectic' => $configuredIdent,
+            'configured_ident_eclectic' => '',
             'played_course_name' => $playedCourseName,
             'combined_name' => $combinedName,
             'course_report_files' => [
@@ -1099,32 +1095,18 @@ class RoundWorkflowService
         ]);
     }
 
-    private function getConfiguredEclecticIdent(): string
-    {
-        $row = $this->db->fetchOne(
-            'SELECT TRIM(config_value_string) AS ident
-             FROM TW4_base.config_application
-             WHERE config_name = ?
-             LIMIT 1',
-            ['ident_eclectic']
-        );
-
-        return trim((string) ($row['ident'] ?? ''));
-    }
-
-    private function shouldIncludeEclectic(string $courseIdent, string $configuredIdent): bool
+    private function shouldIncludeEclectic(string $courseIdent): bool
     {
         $course = strtolower(trim($courseIdent));
-        $configured = strtolower(trim($configuredIdent));
-        if ($course === '' || $configured === '') {
+        if ($course === '') {
             return false;
         }
 
-        if (in_array($configured, ['none', 'nil', 'n/a', 'na', 'off'], true)) {
+        if (in_array($course, ['none', 'nil', 'n/a', 'na', 'off'], true)) {
             return false;
         }
 
-        return $course === $configured;
+        return true;
     }
 
     private function slugifyReportName(string $name): string

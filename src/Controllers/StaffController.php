@@ -30,13 +30,7 @@ class StaffController extends BaseController
         
         $this->render('staff/index', [
             'staff' => $staff,
-            'errors' => $_SESSION['errors'] ?? [],
-            'success' => $_SESSION['success'] ?? []
         ]);
-        
-        // Clear session messages
-        unset($_SESSION['errors']);
-        unset($_SESSION['success']);
     }
 
     public function add(): void
@@ -44,6 +38,13 @@ class StaffController extends BaseController
         $this->requireRole('admin');
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!$this->validateCsrf()) {
+                $this->flash->error('Invalid CSRF token');
+                $this->flash->setOld($this->getPostData());
+                $this->redirect('/staff');
+                return;
+            }
+
             $data = $this->getPostData();
             $errors = [];
             
@@ -67,8 +68,8 @@ class StaffController extends BaseController
             }
             
             if (!empty($errors)) {
-                $_SESSION['errors'] = $errors;
-                $_SESSION['old'] = $data;
+                $this->flash->error($errors);
+                $this->flash->setOld($data);
                 $this->redirect('/staff');
                 return;
             }
@@ -100,27 +101,15 @@ class StaffController extends BaseController
                     'role' => $data['role']
                 ], $_SESSION['username'] ?? null);
                 
-                $_SESSION['success'] = "Staff member '{$data['username']}' added successfully.";
+                $this->flash->success("Staff member '{$data['username']}' added successfully.");
             } else {
-                $_SESSION['errors'] = ['general' => 'Failed to add staff member.'];
+                $this->flash->error('Failed to add staff member.');
             }
             
             $this->redirect('/staff');
         }
         
-        // Show add form for GET requests
-        $errors = $_SESSION['errors'] ?? [];
-        $success = $_SESSION['success'] ?? [];
-        
-        // Clear session messages and old data BEFORE rendering
-        unset($_SESSION['errors']);
-        unset($_SESSION['success']);
-        unset($_SESSION['old']);
-        
-        $this->render('staff/add', [
-            'errors' => $errors,
-            'success' => $success
-        ]);
+        $this->render('staff/add');
     }
 
     public function edit($id): void
@@ -132,27 +121,28 @@ class StaffController extends BaseController
         
         $staff = Staff::findById($this->app->getDatabase(), $rowId);
         if (!$staff) {
-            $_SESSION['errors'] = ['general' => 'Staff member not found.'];
+            $this->flash->error('Staff member not found.');
             $this->redirect('/staff');
             return;
         }
         
         $this->render('staff/edit', [
             'staff' => $staff,
-            'errors' => $_SESSION['errors'] ?? [],
-            'success' => $_SESSION['success'] ?? []
         ]);
-        
-        // Clear session messages
-        unset($_SESSION['errors']);
-        unset($_SESSION['success']);
     }
 
     public function update($id): void
     {
         $this->requireRole('admin');
+        $rowId = (int)$id;
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!$this->validateCsrf()) {
+                $this->flash->error('Invalid CSRF token');
+                $this->redirect("/staff/edit/{$rowId}");
+                return;
+            }
+
             $data = $this->getPostData();
             $errors = [];
             
@@ -175,8 +165,8 @@ class StaffController extends BaseController
             }
             
             if (!empty($errors)) {
-                $_SESSION['errors'] = $errors;
-                $_SESSION['old'] = $data;
+                $this->flash->error($errors);
+                $this->flash->setOld($data);
                 $this->redirect("/staff/edit/{$rowId}");
                 return;
             }
@@ -184,7 +174,7 @@ class StaffController extends BaseController
             // Load existing staff member
             $staff = Staff::findById($this->app->getDatabase(), $staffId);
             if (!$staff) {
-                $_SESSION['errors'] = ['general' => 'Staff member not found.'];
+                $this->flash->error('Staff member not found.');
                 $this->redirect('/staff');
                 return;
             }
@@ -217,9 +207,9 @@ class StaffController extends BaseController
                     'password_changed' => !empty($data['password'])
                 ], $_SESSION['username'] ?? null);
                 
-                $_SESSION['success'] = "Staff member '{$data['username']}' updated successfully.";
+                $this->flash->success("Staff member '{$data['username']}' updated successfully.");
             } else {
-                $_SESSION['errors'] = ['general' => 'Failed to update staff member.'];
+                $this->flash->error('Failed to update staff member.');
             }
             
             $this->redirect('/staff');
@@ -235,14 +225,14 @@ class StaffController extends BaseController
         
         $staff = Staff::findById($this->app->getDatabase(), $rowId);
         if (!$staff) {
-            $_SESSION['errors'] = ['general' => 'Staff member not found.'];
+            $this->flash->error('Staff member not found.');
             $this->redirect('/staff');
             return;
         }
         
         // Prevent deletion of self
         if ($staff->getUsername() === ($_SESSION['username'] ?? '')) {
-            $_SESSION['errors'] = ['general' => 'You cannot delete your own account.'];
+            $this->flash->error('You cannot delete your own account.');
             $this->redirect('/staff');
             return;
         }
@@ -259,9 +249,9 @@ class StaffController extends BaseController
                 'last_name' => $staff->getLastName()
             ], $_SESSION['username'] ?? null);
             
-            $_SESSION['success'] = "Staff member '{$staff->getUsername()}' deleted successfully (retained for audit).";
+            $this->flash->success("Staff member '{$staff->getUsername()}' deleted successfully (retained for audit).");
         } else {
-            $_SESSION['errors'] = ['general' => 'Failed to delete staff member.'];
+            $this->flash->error('Failed to delete staff member.');
         }
         
         $this->redirect('/staff');

@@ -37,7 +37,7 @@ class RoundController extends BaseController
         $round = $workflow->getPermanentRound();
 
         if (!in_array((string) ($round['workflow_step'] ?? 'between_rounds'), ['between_rounds', 'not_started'], true)) {
-            $_SESSION['errors'] = ['round' => 'Round can only be started when workflow_step is between_rounds.'];
+            $this->flash->error('Round can only be started when workflow_step is between_rounds.');
             $this->redirect('/scorer/menu');
         }
 
@@ -45,24 +45,26 @@ class RoundController extends BaseController
 
         $this->render('rounds/start', [
             'title' => 'Start Round - TW4 Golf Management',
-            'formData' => $formData,
-            'errors' => $_SESSION['errors'] ?? [],
-            'old' => $_SESSION['old'] ?? [],
+            'formData' => $formData
         ]);
-
-        unset($_SESSION['errors'], $_SESSION['old']);
     }
 
     public function store(): void
     {
         $this->requireRole('scorer');
 
-        $user = $this->app->getDatabase()->getAuth()->getUser();
+        if (!$this->validateCsrf()) {
+            $this->flash->error('Invalid CSRF token');
+            $this->redirect('/rounds/start');
+            return;
+        }
+
+        $user = $this->authService->getUser();
         $workflow = new RoundWorkflowService($this->app->getDatabase());
         $round = $workflow->getPermanentRound();
 
         if (!in_array((string) ($round['workflow_step'] ?? 'between_rounds'), ['between_rounds', 'not_started'], true)) {
-            $_SESSION['errors'] = ['round' => 'Round can only be started when workflow_step is between_rounds.'];
+            $this->flash->error('Round can only be started when workflow_step is between_rounds.');
             $this->redirect('/scorer/menu');
         }
 
@@ -91,8 +93,8 @@ class RoundController extends BaseController
         }
 
         if (!empty($errors)) {
-            $_SESSION['errors'] = $errors;
-            $_SESSION['old'] = $postData;
+            $this->flash->error($errors);
+            $this->flash->setOld($postData);
             $this->redirect('/rounds/start');
         }
 
@@ -101,8 +103,8 @@ class RoundController extends BaseController
         try {
             $workflow->startRound($postData, (int) ($user['user_id'] ?? 0));
         } catch (\RuntimeException $e) {
-            $_SESSION['errors'] = ['round' => $e->getMessage()];
-            $_SESSION['old'] = $postData;
+            $this->flash->error($e->getMessage());
+            $this->flash->setOld($postData);
             $this->redirect('/rounds/start');
             return;
         }
@@ -136,7 +138,7 @@ class RoundController extends BaseController
     {
         $this->requireRole('scorer');
 
-        $user = $this->app->getDatabase()->getAuth()->getUser();
+        $user = $this->authService->getUser();
         $staffId = (int) ($user['user_id'] ?? 0);
         $username = (string) ($user['username'] ?? 'system');
         $lockService = new RoundLockService($this->app->getDatabase());
@@ -144,7 +146,7 @@ class RoundController extends BaseController
         $active = $workflow->getActiveRoundForScorerMenu();
 
         if (!$active) {
-            $_SESSION['errors'] = ['No active round found to finish.'];
+            $this->flash->error('No active round found to finish.');
             $this->redirect('/scorer/menu');
             return;
         }
@@ -153,7 +155,7 @@ class RoundController extends BaseController
 
         if (!$lockService->assertLockHeld($roundId, $staffId)
             && !$lockService->acquireLock($roundId, $staffId)) {
-            $_SESSION['errors'] = ['Unable to acquire the scoring lock to finish the round.'];
+            $this->flash->error('Unable to acquire the scoring lock to finish the round.');
             $this->redirect('/scorer/menu');
             return;
         }
@@ -166,13 +168,13 @@ class RoundController extends BaseController
         try {
             $finished = $workflow->finishRound($roundId, $staffId);
         } catch (\Throwable $e) {
-            $_SESSION['errors'] = [$e->getMessage()];
+            $this->flash->error($e->getMessage());
             $this->redirect('/scorer/menu');
             return;
         }
 
         if (!$finished) {
-            $_SESSION['errors'] = ['Round could not be finished. Ensure workflow is results_presented and your lock is active.'];
+            $this->flash->error('Round could not be finished. Ensure workflow is results_presented and your lock is active.');
             $this->redirect('/scorer/menu');
             return;
         }
@@ -199,9 +201,8 @@ class RoundController extends BaseController
         );
 
         // Export is now handled within RoundWorkflowService::finishRound() before course_played_id is reset
-        unset($_SESSION['errors']);
         $_SESSION['just_finished_round'] = true;
-        $_SESSION['success'] = 'Round finished. Workflow set to between_rounds and roster statuses reset to active.';
+        $this->flash->success('Round finished. Workflow set to between_rounds and roster statuses reset to active.');
 
         $this->redirect('/scorer/menu');
     }
@@ -210,7 +211,7 @@ class RoundController extends BaseController
     {
         $this->requireRole('admin');
 
-        $user = $this->app->getDatabase()->getAuth()->getUser();
+        $user = $this->authService->getUser();
         $lockService = new RoundLockService($this->app->getDatabase());
         $lockService->forceReleaseLock((int) $id, (int) ($user['user_id'] ?? 0), 'admin_forced');
 

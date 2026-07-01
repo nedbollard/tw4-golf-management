@@ -16,6 +16,29 @@ class Database
         $this->connect();
     }
 
+    /**
+     * Validate column name to prevent SQL injection
+     * Only allows alphanumeric characters and underscores, must start with letter or underscore
+     */
+    private function validateColumn(string $column): void
+    {
+        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $column)) {
+            throw new \RuntimeException("Invalid column name: {$column}");
+        }
+    }
+
+    /**
+     * Validate table name to prevent SQL injection
+     * Allows table or schema-qualified table names using alphanumeric characters and underscores,
+     * with each segment starting with a letter or underscore.
+     */
+    private function validateTable(string $table): void
+    {
+        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)?$/', $table)) {
+            throw new \RuntimeException("Invalid table name: {$table}");
+        }
+    }
+
     public function getConnection(): \PDO
     {
         if ($this->connection === null) {
@@ -38,12 +61,14 @@ class Database
 
     public function find(string $table, array $where = [], string $orderBy = ''): ?array
     {
+        $this->validateTable($table);
         $whereClause = '';
         $params = [];
 
         if (!empty($where)) {
             $clauses = [];
             foreach ($where as $column => $value) {
+                $this->validateColumn($column);
                 $clauses[] = "{$column} = ?";
                 $params[] = $value;
             }
@@ -51,6 +76,15 @@ class Database
         }
 
         if (!empty($orderBy)) {
+            // Validate orderBy contains only valid column names
+            $orderByColumns = explode(',', $orderBy);
+            foreach ($orderByColumns as $col) {
+                $col = trim($col);
+                if (strpos($col, ' ') !== false) {
+                    $col = explode(' ', $col)[0]; // Handle "column ASC/DESC"
+                }
+                $this->validateColumn($col);
+            }
             $orderBy = ' ORDER BY ' . $orderBy;
         }
 
@@ -62,12 +96,14 @@ class Database
 
     public function findAll(string $table, array $where = [], string $orderBy = ''): array
     {
+        $this->validateTable($table);
         $whereClause = '';
         $params = [];
 
         if (!empty($where)) {
             $clauses = [];
             foreach ($where as $column => $value) {
+                $this->validateColumn($column);
                 $clauses[] = "{$column} = ?";
                 $params[] = $value;
             }
@@ -75,6 +111,15 @@ class Database
         }
 
         if (!empty($orderBy)) {
+            // Validate orderBy contains only valid column names
+            $orderByColumns = explode(',', $orderBy);
+            foreach ($orderByColumns as $col) {
+                $col = trim($col);
+                if (strpos($col, ' ') !== false) {
+                    $col = explode(' ', $col)[0]; // Handle "column ASC/DESC"
+                }
+                $this->validateColumn($col);
+            }
             $orderBy = ' ORDER BY ' . $orderBy;
         }
 
@@ -84,12 +129,14 @@ class Database
 
     public function count(string $table, array $where = []): int
     {
+        $this->validateTable($table);
         $whereClause = '';
         $params = [];
 
         if (!empty($where)) {
             $clauses = [];
             foreach ($where as $column => $value) {
+                $this->validateColumn($column);
                 $clauses[] = "{$column} = ?";
                 $params[] = $value;
             }
@@ -115,6 +162,10 @@ class Database
 
     public function insert(string $table, array $data): int
     {
+        $this->validateTable($table);
+        foreach (array_keys($data) as $column) {
+            $this->validateColumn($column);
+        }
         $columns = implode(', ', array_keys($data));
         $placeholders = implode(', ', array_fill(0, count($data), '?'));
         
@@ -126,14 +177,17 @@ class Database
 
     public function update(string $table, array $data, array $where): int
     {
+        $this->validateTable($table);
         $setClause = [];
         foreach ($data as $column => $value) {
+            $this->validateColumn($column);
             $setClause[] = "{$column} = ?";
         }
         $setClause = implode(', ', $setClause);
         
         $whereClause = [];
         foreach ($where as $column => $value) {
+            $this->validateColumn($column);
             $whereClause[] = "{$column} = ?";
         }
         $whereClause = implode(' AND ', $whereClause);
@@ -148,8 +202,10 @@ class Database
 
     public function delete(string $table, array $where): int
     {
+        $this->validateTable($table);
         $whereClause = [];
         foreach ($where as $column => $value) {
+            $this->validateColumn($column);
             $whereClause[] = "{$column} = ?";
         }
         $whereClause = implode(' AND ', $whereClause);
@@ -198,17 +254,5 @@ class Database
         } catch (\PDOException $e) {
             throw new \RuntimeException("Database connection failed: " . $e->getMessage(), 0, $e);
         }
-    }
-
-    public function __destruct()
-    {
-        if ($this->connection !== null) {
-            $this->connection = null;
-        }
-    }
-
-    public function getAuth()
-    {
-        return new \App\Services\AuthService($this);
     }
 }

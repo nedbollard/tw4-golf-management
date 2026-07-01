@@ -39,6 +39,7 @@
                         <?php endif; ?>
 
                         <form method="POST" action="/course-club/store-course">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                             <div class="mb-3">
                                 <label for="course_name" class="form-label">Course/Club Name *</label>
                                 <input type="text" class="form-control" id="course_name" name="course_name" 

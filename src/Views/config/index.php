@@ -62,6 +62,7 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                 <?php endif; ?>
 
                 <form method="POST" action="/config">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                     <div class="config-table-wrap">
                         <table class="config-table">
                             <thead>

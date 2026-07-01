@@ -42,10 +42,6 @@ $isBetweenRounds = in_array($activeStep, ['between_rounds', 'not_started'], true
 $displayRound = $activeRound && (((int) ($activeRound['round_number'] ?? 0)) > 0 || !$isBetweenRounds)
     ? $activeRound
     : null;
-$errors      = $_SESSION['errors'] ?? [];
-$success     = $_SESSION['success'] ?? null;
-
-unset($_SESSION['errors'], $_SESSION['success']);
 ?>
 
 <div class="scorer-layout">
@@ -86,6 +82,22 @@ unset($_SESSION['errors'], $_SESSION['success']);
                 You hold the scoring lock for this round.
             </div>
         <?php endif; ?>
+
+                <?php if (!empty($success)): ?>
+                    <div class="lock-banner" role="status">
+                        <?php foreach ((array) $success as $message): ?>
+                            <div><?php echo htmlspecialchars((string) $message); ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($errors)): ?>
+                    <div class="lock-banner lock-blocked" role="alert">
+                        <?php foreach ((array) $errors as $message): ?>
+                            <div><?php echo htmlspecialchars((string) $message); ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
 
                 <div class="scorer-section-label">Core scoring functions — complete in order</div>
 
@@ -169,7 +181,9 @@ unset($_SESSION['errors'], $_SESSION['success']);
 
         <?php if (!empty($success)): ?>
             <div class="scorer-alert scorer-alert-success" role="status">
-                <?php echo htmlspecialchars((string) $success); ?>
+                <?php foreach ((array) $success as $message): ?>
+                    <div><?php echo htmlspecialchars((string) $message); ?></div>
+                <?php endforeach; ?>
             </div>
         <?php endif; ?>
 

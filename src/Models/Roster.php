@@ -92,9 +92,9 @@ class Roster
     }
 
     // Setters
-    public function setMemberIdentifier(string $memberIdentifier): void
+    public function setPlayerIdentifier(string $playerIdentifier): void
     {
-        $this->memberIdentifier = $memberIdentifier;
+        $this->playerIdentifier = $playerIdentifier;
     }
 
     public function setFirstName(string $firstName): void
@@ -142,7 +142,7 @@ class Roster
     // Business logic methods
     public function getDisplayName(): string
     {
-        return !empty($this->alias) ? $this->alias : $this->memberIdentifier;
+        return !empty($this->alias) ? $this->alias : $this->playerIdentifier;
     }
 
     public function getFullName(): string

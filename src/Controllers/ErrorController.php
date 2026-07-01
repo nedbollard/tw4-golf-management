@@ -26,7 +26,7 @@ class ErrorController extends BaseController
         $this->render('errors/error', [
             'code' => $code,
             'message' => $message,
-            'user' => $this->app->getDatabase()->getAuth()->getUser(),
+            'user' => $this->authService->getUser(),
         ]);
     }
 }

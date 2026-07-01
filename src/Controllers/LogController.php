@@ -105,7 +105,7 @@ class LogController extends BaseController
             $logs = $this->logger->getLogs($filters, $search, $order, 10000, 0);
         } catch (\Throwable $e) {
             error_log('Log export failed: ' . $e->getMessage());
-            $_SESSION['error'] = 'Log export is temporarily unavailable. Please try again after checking database health.';
+            $this->flash->error('Log export is temporarily unavailable. Please try again after checking database health.');
             $this->redirect('/logs');
             return;
         }
@@ -158,6 +158,12 @@ class LogController extends BaseController
         $this->requireRole('admin');
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!$this->validateCsrf()) {
+                $this->flash->error('Invalid CSRF token');
+                $this->redirect('/logs');
+                return;
+            }
+
             $days = max(1, (int)($_POST['days'] ?? 30));
             $cutoffDate = date('Y-m-d H:i:s', strtotime("-$days days"));
             
@@ -171,7 +177,7 @@ class LogController extends BaseController
                 $_SESSION['username'] ?? null
             );
             
-            $_SESSION['success'] = "Log cleanup request logged. Implementation pending.";
+            $this->flash->success('Log cleanup request logged. Implementation pending.');
             $this->redirect('/logs');
         }
         

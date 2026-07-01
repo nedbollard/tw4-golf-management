@@ -48,7 +48,7 @@ class HomeController extends BaseController
         }
         
         // Check if user is logged in
-        $auth = $this->app->getDatabase()->getAuth();
+        $auth = $this->authService;
         $user = $auth->getUser();
         $isLoggedIn = $auth->isLoggedIn();
         

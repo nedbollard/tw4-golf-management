@@ -30,12 +30,8 @@ class CoursePlayedController extends BaseController
 
         $this->render('course-played/index', [
             'coursesPlayed' => $coursesPlayed,
-            'errors' => $_SESSION['errors'] ?? [],
-            'success' => $_SESSION['success'] ?? [],
-            'user' => $this->app->getDatabase()->getAuth()->getUser(),
+            'user' => $this->authService->getUser(),
         ]);
-
-        unset($_SESSION['errors'], $_SESSION['success']);
     }
 
     public function create(): void
@@ -50,17 +46,19 @@ class CoursePlayedController extends BaseController
             'coursePlayed' => null,
             'holes' => [],
             'clubs' => $clubs,
-            'errors' => $_SESSION['errors'] ?? [],
-            'old' => $_SESSION['old'] ?? [],
-            'user' => $this->app->getDatabase()->getAuth()->getUser(),
+            'user' => $this->authService->getUser(),
         ]);
-
-        unset($_SESSION['errors'], $_SESSION['old']);
     }
 
     public function store(): void
     {
         $this->requireRole('admin');
+
+        if (!$this->validateCsrf()) {
+            $this->flash->error('Invalid CSRF token');
+            $this->redirect('/course-played/create');
+            return;
+        }
 
         $data = $this->getPostData();
         [$errors, $numberHoles] = $this->validateCoursePlayedInput($data);
@@ -71,13 +69,13 @@ class CoursePlayedController extends BaseController
         }
 
         if (!empty($errors)) {
-            $_SESSION['errors'] = $errors;
-            $_SESSION['old'] = $data;
+            $this->flash->error($errors);
+            $this->flash->setOld($data);
             $this->redirect('/course-played/create');
             return;
         }
 
-        $username = $this->app->getDatabase()->getAuth()->getUser()['username'] ?? 'system';
+        $username = $this->authService->getUser()['username'] ?? 'system';
         $ok = $service->createCoursePlayed([
             'name_course' => trim($data['name_course']),
             'name_club' => trim($data['name_club']),
@@ -85,13 +83,13 @@ class CoursePlayedController extends BaseController
         ], $numberHoles, $username);
 
         if ($ok) {
-            $_SESSION['success'] = 'Course Played created successfully.';
+            $this->flash->success('Course Played created successfully.');
             $this->redirect('/course-played');
             return;
         }
 
-        $_SESSION['errors'] = ['Failed to create Course Played.'];
-        $_SESSION['old'] = $data;
+        $this->flash->error('Failed to create Course Played.');
+        $this->flash->setOld($data);
         $this->redirect('/course-played/create');
     }
 
@@ -102,7 +100,7 @@ class CoursePlayedController extends BaseController
         $service = $this->getCoursePlayedService();
         $coursePlayed = $service->getCoursePlayedById($id);
         if (!$coursePlayed) {
-            $_SESSION['errors'] = ['Course Played not found.'];
+            $this->flash->error('Course Played not found.');
             $this->redirect('/course-played');
             return;
         }
@@ -115,22 +113,24 @@ class CoursePlayedController extends BaseController
             'coursePlayed' => $coursePlayed,
             'holes' => $holes,
             'clubs' => $clubs,
-            'errors' => $_SESSION['errors'] ?? [],
-            'old' => $_SESSION['old'] ?? [],
-            'user' => $this->app->getDatabase()->getAuth()->getUser(),
+            'user' => $this->authService->getUser(),
         ]);
-
-        unset($_SESSION['errors'], $_SESSION['old']);
     }
 
     public function update(int $id): void
     {
         $this->requireRole('admin');
 
+        if (!$this->validateCsrf()) {
+            $this->flash->error('Invalid CSRF token');
+            $this->redirect('/course-played/' . $id . '/edit');
+            return;
+        }
+
         $service = $this->getCoursePlayedService();
         $coursePlayed = $service->getCoursePlayedById($id);
         if (!$coursePlayed) {
-            $_SESSION['errors'] = ['Course Played not found.'];
+            $this->flash->error('Course Played not found.');
             $this->redirect('/course-played');
             return;
         }
@@ -143,13 +143,13 @@ class CoursePlayedController extends BaseController
         }
 
         if (!empty($errors)) {
-            $_SESSION['errors'] = $errors;
-            $_SESSION['old'] = $data;
+            $this->flash->error($errors);
+            $this->flash->setOld($data);
             $this->redirect('/course-played/' . $id . '/edit');
             return;
         }
 
-        $username = $this->app->getDatabase()->getAuth()->getUser()['username'] ?? 'system';
+        $username = $this->authService->getUser()['username'] ?? 'system';
         $ok = $service->updateCoursePlayed($id, [
             'name_course' => trim($data['name_course']),
             'name_club' => trim($data['name_club']),
@@ -157,13 +157,13 @@ class CoursePlayedController extends BaseController
         ], $numberHoles, $username);
 
         if ($ok) {
-            $_SESSION['success'] = 'Course Played updated successfully.';
+            $this->flash->success('Course Played updated successfully.');
             $this->redirect('/course-played');
             return;
         }
 
-        $_SESSION['errors'] = ['Failed to update Course Played.'];
-        $_SESSION['old'] = $data;
+        $this->flash->error('Failed to update Course Played.');
+        $this->flash->setOld($data);
         $this->redirect('/course-played/' . $id . '/edit');
     }
 
@@ -171,13 +171,13 @@ class CoursePlayedController extends BaseController
     {
         $this->requireRole('admin');
 
-        $username = $this->app->getDatabase()->getAuth()->getUser()['username'] ?? 'system';
+        $username = $this->authService->getUser()['username'] ?? 'system';
         $ok = $this->getCoursePlayedService()->deleteCoursePlayed($id, $username);
 
         if ($ok) {
-            $_SESSION['success'] = 'Course Played deleted successfully.';
+            $this->flash->success('Course Played deleted successfully.');
         } else {
-            $_SESSION['errors'] = ['Failed to delete Course Played.'];
+            $this->flash->error('Failed to delete Course Played.');
         }
 
         $this->redirect('/course-played');

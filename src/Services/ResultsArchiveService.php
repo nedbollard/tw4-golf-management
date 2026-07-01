@@ -96,16 +96,26 @@ class ResultsArchiveService
     {
         $isEclecticTemplate = str_contains($template, 'Eclectic');
         if ($eclecticContext !== null && $isEclecticTemplate) {
-            $includeEclectic = (int) ($eclecticContext['include_eclectic'] ?? 0) === 1;
-            if (!$includeEclectic) {
+            $combinedSource = trim((string) ($round['ident_eclectic'] ?? ''));
+            if ($combinedSource === '') {
+                $combinedSource = trim((string) ($eclecticContext['combined_name'] ?? ''));
+            }
+
+            $combinedName = strtolower($combinedSource);
+            $showCombined = $combinedName !== ''
+                && !in_array($combinedName, ['none', 'nil', 'n/a', 'na', 'off'], true);
+            if (!$showCombined && str_contains($template, '49_Eclectic_')) {
                 return null;
             }
 
             if (str_contains($template, '49_Eclectic_')) {
                 $combined = trim((string) ($eclecticContext['combined_report_filename'] ?? ''));
+                $expected = '49_Eclectic_' . $this->slugifyCourseName($combinedSource) . '.html';
                 if ($combined !== '') {
-                    return $combined;
+                    return strcasecmp($combined, $expected) === 0 ? $combined : $expected;
                 }
+
+                return $expected;
             }
 
             $json = (string) ($eclecticContext['course_report_files_json'] ?? '');
@@ -144,6 +154,7 @@ class ResultsArchiveService
             'SELECT season_year,
                     number_round,
                     include_eclectic,
+                    combined_name,
                     course_report_files_json,
                     combined_report_filename
              FROM TW4_history.round_eclectic_context'

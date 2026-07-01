@@ -20,7 +20,7 @@ class ScorerController extends BaseController
     {
         $this->requireRole('scorer');
 
-        $user = $this->app->getDatabase()->getAuth()->getUser();
+        $user = $this->authService->getUser();
 
         $workflow = new RoundWorkflowService($this->app->getDatabase());
         $active = $workflow->getActiveRoundForScorerMenu();

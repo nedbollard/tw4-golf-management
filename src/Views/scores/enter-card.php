@@ -96,6 +96,7 @@ $sfpTotalClass = static function ($points): string {
                 <?php endif; ?>
 
                 <form method="POST" action="/scores/enter/<?php echo (int) ($player['row_id'] ?? 0); ?>" id="score-entry-form">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                     <input type="hidden" name="action" id="form-action" value="">
                     <div class="table-responsive mb-2">
                         <table class="table table-bordered score-grid align-middle mb-2">

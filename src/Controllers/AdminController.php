@@ -27,12 +27,7 @@ class AdminController extends BaseController
     {
         $this->requireRole('admin');
 
-        $this->render('admin/menu', [
-            'errors' => $_SESSION['errors'] ?? [],
-            'success' => $_SESSION['success'] ?? null,
-        ]);
-
-        unset($_SESSION['errors'], $_SESSION['success']);
+        $this->render('admin/menu');
     }
 
     public function scoringState(): void
@@ -44,18 +39,14 @@ class AdminController extends BaseController
 
         $this->render('admin/scoring-state', [
             'round' => $round,
-            'errors' => $_SESSION['errors'] ?? [],
-            'success' => $_SESSION['success'] ?? null,
         ]);
-
-        unset($_SESSION['errors'], $_SESSION['success']);
     }
 
     public function unlockScoringProcess(): void
     {
         $this->requireRole('admin');
 
-        $user = $this->app->getDatabase()->getAuth()->getUser();
+        $user = $this->authService->getUser();
         $adminStaffId = (int) ($user['user_id'] ?? 0);
         $username = (string) ($user['username'] ?? 'system');
 
@@ -71,7 +62,7 @@ class AdminController extends BaseController
         );
 
         if ($roundId < 1) {
-            $_SESSION['errors'] = ['No live round is available to unlock.'];
+            $this->flash->error('No live round is available to unlock.');
             $this->redirect('/admin/scoring-state');
             return;
         }
@@ -104,7 +95,7 @@ class AdminController extends BaseController
             $username
         );
 
-        $_SESSION['success'] = 'Scoring lock released.';
+        $this->flash->success('Scoring lock released.');
         $this->redirect('/admin/scoring-state');
     }
 
@@ -112,7 +103,7 @@ class AdminController extends BaseController
     {
         $this->requireRole('admin');
 
-        $user = $this->app->getDatabase()->getAuth()->getUser();
+        $user = $this->authService->getUser();
         $adminStaffId = (int) ($user['user_id'] ?? 0);
         $username = (string) ($user['username'] ?? 'system');
 
@@ -148,9 +139,9 @@ class AdminController extends BaseController
                 $username
             );
 
-            $_SESSION['success'] = 'Scoring state reset to card entry open. Live results were cleared.';
+            $this->flash->success('Scoring state reset to card entry open. Live results were cleared.');
         } catch (\RuntimeException $e) {
-            $_SESSION['errors'] = [$e->getMessage()];
+            $this->flash->error($e->getMessage());
         }
 
         $this->redirect('/admin/scoring-state');
