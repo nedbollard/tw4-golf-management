@@ -120,18 +120,21 @@ class ConfigController extends BaseController
         // Save all valid updates with audit information
         $successCount = 0;
         $username = $_SESSION['username'] ?? 'unknown';
-        $firstUpdate = false;
+        $statusPromotedToReady = false;
+        $currentStatus = $this->configService->getConfigStatus();
         
         foreach ($updates as $configId => $update) {
             if ($this->configService->updateConfigRow($configId, $update['value'], $update['type'], $username)) {
                 $successCount++;
-                $firstUpdate = true;
             }
         }
         
-        // Auto-set config_status to "ready" on first update
-        if ($firstUpdate) {
-            $this->configService->setConfigStatus('ready');
+        // Auto-set config_status to "ready" after a valid save, even if no field values changed.
+        if ($currentStatus !== 'ready') {
+            $statusPromotedToReady = $this->configService->setConfigStatus('ready');
+        }
+
+        if ($statusPromotedToReady) {
             $this->logger->info("System status automatically set to 'ready' after configuration update", [
                 'updated_by' => $username,
                 'changes_count' => count($changes)
@@ -161,6 +164,8 @@ class ConfigController extends BaseController
         
         if ($successCount > 0) {
             $this->flash->success("Successfully updated $successCount configuration values.");
+        } elseif ($statusPromotedToReady) {
+            $this->flash->success('No configuration values changed, but status is now set to ready.');
         } else {
             $this->flash->success('No changes were made to configuration values.');
         }

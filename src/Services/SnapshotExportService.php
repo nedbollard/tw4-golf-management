@@ -994,7 +994,10 @@ class SnapshotExportService
                 es.row_id_player,
                 COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", es.row_id_player)) AS display_player,
                 es.score_total,
-                COALESCE(prev.score_total, 0) - es.score_total AS score_movement,
+                CASE
+                    WHEN prev.score_total IS NULL THEN -es.score_total
+                    ELSE es.score_total - prev.score_total
+                END AS score_movement,
                 es.number_round_movement
              FROM TW4_live.eclectic_scores es
              LEFT JOIN TW4_base.roster r ON r.row_id = es.row_id_player
@@ -1005,7 +1008,7 @@ class SnapshotExportService
              WHERE es.season_year = ?
                AND es.ident_eclectic = ?
                AND es.number_round_movement = ?
-             ORDER BY score_movement DESC,
+                         ORDER BY score_movement ASC,
                       es.score_total ASC,
                       COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", es.row_id_player)) ASC',
                         [$seasonYear, $ident, $seasonYear, $ident, $roundNumber]

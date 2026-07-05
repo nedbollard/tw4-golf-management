@@ -35,6 +35,7 @@ class ScoreController extends BaseController
     public function enter(): void
     {
         $this->requireRole('scorer');
+        $this->requireScoringConfigReady('/scorer/menu');
 
         $user = $this->authService->getUser();
         $workflow = new RoundWorkflowService($this->app->getDatabase());
@@ -63,6 +64,7 @@ class ScoreController extends BaseController
     public function enterCard(int $playerId): void
     {
         $this->requireRole('scorer');
+        $this->requireScoringConfigReady('/scorer/menu');
 
         $workflow = new RoundWorkflowService($this->app->getDatabase());
         $active = $workflow->getActiveRoundForScorerMenu();
@@ -99,6 +101,7 @@ class ScoreController extends BaseController
     public function storeCard(int $playerId): void
     {
         $this->requireRole('scorer');
+        $this->requireScoringConfigReady('/scorer/menu');
 
         if (!$this->validateCsrf()) {
             $this->flash->error('Invalid CSRF token');
@@ -178,6 +181,7 @@ class ScoreController extends BaseController
     public function presentResults(): void
     {
         $this->requireRole('scorer');
+        $this->requireScoringConfigReady('/scorer/menu');
 
         $user = $this->authService->getUser();
         $staffId = (int) ($user['user_id'] ?? 0);
@@ -266,6 +270,7 @@ class ScoreController extends BaseController
     public function finalizeResults(): void
     {
         $this->requireRole('scorer');
+        $this->requireScoringConfigReady('/scorer/menu');
 
         if (!$this->validateCsrf()) {
             $this->flash->error('Invalid CSRF token');

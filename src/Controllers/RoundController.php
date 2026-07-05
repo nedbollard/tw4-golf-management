@@ -32,6 +32,7 @@ class RoundController extends BaseController
     public function start(): void
     {
         $this->requireRole('scorer');
+        $this->requireScoringConfigReady('/scorer/menu');
 
         $workflow = new RoundWorkflowService($this->app->getDatabase());
         $round = $workflow->getPermanentRound();
@@ -52,6 +53,7 @@ class RoundController extends BaseController
     public function store(): void
     {
         $this->requireRole('scorer');
+        $this->requireScoringConfigReady('/scorer/menu');
 
         if (!$this->validateCsrf()) {
             $this->flash->error('Invalid CSRF token');
@@ -76,12 +78,13 @@ class RoundController extends BaseController
         );
 
         $errors = [];
-        $roundDate = $postData['round_date'] ?? '';
+        $roundDate = $this->normalizeRoundDateInput((string) ($postData['round_date'] ?? ''));
+        $postData['round_date'] = $roundDate;
         $roundNumber = isset($postData['round_number']) ? (int) $postData['round_number'] : 0;
         $coursePlayedId = isset($postData['course_played_id']) ? (int) $postData['course_played_id'] : 0;
 
         if ($roundDate === '' || preg_match('/^\d{4}-\d{2}-\d{2}$/', $roundDate) !== 1) {
-            $errors['round_date'] = 'Round date is required.';
+            $errors['round_date'] = 'Round date is required in format dd/mm/yyyy.';
         }
 
         if ($roundNumber < 1) {
@@ -137,6 +140,7 @@ class RoundController extends BaseController
     public function finish(): void
     {
         $this->requireRole('scorer');
+        $this->requireScoringConfigReady('/scorer/menu');
 
         $user = $this->authService->getUser();
         $staffId = (int) ($user['user_id'] ?? 0);
@@ -216,5 +220,37 @@ class RoundController extends BaseController
         $lockService->forceReleaseLock((int) $id, (int) ($user['user_id'] ?? 0), 'admin_forced');
 
         $this->redirect('/scorer/menu');
+    }
+
+    private function normalizeRoundDateInput(string $input): string
+    {
+        $value = trim($input);
+        if ($value === '') {
+            return '';
+        }
+
+        // Allow users to type local format while storing ISO date.
+        if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $value, $matches) === 1) {
+            $day = (int) $matches[1];
+            $month = (int) $matches[2];
+            $year = (int) $matches[3];
+
+            if (checkdate($month, $day, $year)) {
+                return sprintf('%04d-%02d-%02d', $year, $month, $day);
+            }
+
+            return '';
+        }
+
+        // Keep compatibility with native date inputs that submit ISO.
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $matches) === 1) {
+            $year = (int) $matches[1];
+            $month = (int) $matches[2];
+            $day = (int) $matches[3];
+
+            return checkdate($month, $day, $year) ? $value : '';
+        }
+
+        return '';
     }
 }

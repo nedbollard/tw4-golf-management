@@ -13,7 +13,11 @@
 <body class="page-start-round">
 <?php
 $courses = $formData['courses'] ?? [];
-$defaultDate = $old['round_date'] ?? ($formData['default_round_date'] ?? date('Y-m-d'));
+$defaultDateRaw = (string) ($old['round_date'] ?? ($formData['default_round_date'] ?? date('Y-m-d')));
+$defaultDate = $defaultDateRaw;
+if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $defaultDateRaw) === 1) {
+    $defaultDate = date('d/m/Y', strtotime($defaultDateRaw));
+}
 $defaultRoundNumber = $old['round_number'] ?? ($formData['default_round_number'] ?? 1);
 $defaultCourseId = $old['course_played_id'] ?? ($formData['default_course_played_id'] ?? '');
 $clubNumber = (int) ($formData['club_number'] ?? 0);
@@ -52,8 +56,10 @@ $seasonYear = (string) ($formData['current_season_year'] ?? '');
 
                     <div class="start-round-form-group">
                         <label for="round_date" class="start-round-form-label">Date</label>
-                        <input type="date" class="start-round-form-input" id="round_date" name="round_date"
-                               value="<?php echo htmlspecialchars((string) $defaultDate); ?>" required>
+                           <input type="text" class="start-round-form-input" id="round_date" name="round_date"
+                               value="<?php echo htmlspecialchars((string) $defaultDate); ?>" placeholder="dd/mm/yyyy"
+                               inputmode="numeric" pattern="\d{2}/\d{2}/\d{4}" required>
+                           <div class="start-round-form-text">Use format dd/mm/yyyy.</div>
                     </div>
 
                     <div class="start-round-form-group">

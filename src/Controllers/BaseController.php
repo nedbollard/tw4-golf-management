@@ -6,6 +6,7 @@ use App\Core\Application;
 use App\Services\ConfigService;
 use App\Services\AuthService;
 use App\Services\FlashMessage;
+use App\Services\Logger;
 
 /**
  * Base Controller class with common functionality
@@ -125,7 +126,12 @@ abstract class BaseController
     protected function getPostData(): array
     {
         $rawData = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-        return $this->sanitizeRecursive($rawData);
+        $sanitized = $this->sanitizeRecursive($rawData);
+
+        // CSRF and submit-control fields are transport metadata, not model data.
+        unset($sanitized['csrf_token'], $sanitized['_token'], $sanitized['submit']);
+
+        return $sanitized;
     }
 
     /**
@@ -151,5 +157,35 @@ abstract class BaseController
     protected function requireRole(string $role): void
     {
         $this->authService->requireRole($role);
+    }
+
+    protected function requireScoringConfigReady(string $redirect = '/scorer/menu'): void
+    {
+        $status = $this->configService->getConfigStatus();
+        if ($status === 'ready') {
+            return;
+        }
+
+        try {
+            $logger = new Logger($this->app->getDatabase());
+            $username = isset($_SESSION['username']) ? (string) $_SESSION['username'] : null;
+            $logger->log(
+                Logger::LEVEL_WARNING,
+                Logger::EVENT_SECURITY,
+                'Blocked scoring action while configuration status is not ready',
+                [
+                    'config_status' => $status,
+                    'request_method' => (string) ($_SERVER['REQUEST_METHOD'] ?? 'unknown'),
+                    'request_uri' => (string) ($_SERVER['REQUEST_URI'] ?? 'unknown'),
+                    'redirect' => $redirect,
+                ],
+                $username
+            );
+        } catch (\Throwable $e) {
+            // Avoid blocking request flow if logging is unavailable.
+        }
+
+        $this->flash->error('Scoring is disabled until configuration status is set to ready by an admin.');
+        $this->redirect($redirect);
     }
 }

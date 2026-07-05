@@ -20,6 +20,9 @@ class ScorerController extends BaseController
     {
         $this->requireRole('scorer');
 
+        $configStatus = $this->configService->getConfigStatus();
+        $scoringDisabled = $configStatus !== 'ready';
+
         $user = $this->authService->getUser();
 
         $workflow = new RoundWorkflowService($this->app->getDatabase());
@@ -38,9 +41,22 @@ class ScorerController extends BaseController
             unset($_SESSION['just_finished_round']);
         }
 
+        if ($scoringDisabled && isset($roundState['steps']) && is_array($roundState['steps'])) {
+            foreach ($roundState['steps'] as &$step) {
+                $step['enabled'] = false;
+            }
+            unset($step);
+        }
+
+        $errors = [];
+        if ($scoringDisabled) {
+            $errors[] = 'Scoring is disabled until configuration status is set to ready by an admin.';
+        }
+
         $this->render('scorer/menu', [
             'user'       => $user,
             'roundState' => $roundState,
+            'errors'     => $errors,
         ]);
     }
 }
