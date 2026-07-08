@@ -265,6 +265,19 @@ class RoundWorkflowService
             );
 
             if ($seasonYear !== '' && $roundNumber > 0) {
+                // Restore roster handicaps to their pre-round values before deleting the audit trail.
+                // This ensures re-finishing the round will correctly record the handicap changes.
+                $this->db->query(
+                    'UPDATE TW4_base.roster r
+                     INNER JOIN TW4_base.handicap_audit ha ON ha.row_id_player = r.row_id
+                     SET r.handicap = ha.handicap_previous
+                     WHERE ha.season_year = ? 
+                       AND ha.number_round = ? 
+                       AND ha.handicap_source = ?',
+                    [$seasonYear, $roundNumber, 'card_scoring']
+                );
+
+                // Now delete the audit entries for this round
                 $this->db->query(
                     'DELETE FROM TW4_base.handicap_audit
                      WHERE season_year = ? AND number_round = ? AND handicap_source = ?',
