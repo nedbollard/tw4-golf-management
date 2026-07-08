@@ -268,21 +268,19 @@ class RoundWorkflowService
                 // Restore roster handicaps to their pre-round values using handicap_applied from cards.
                 // This works even if audit entries were previously deleted, because cards retain handicap_applied.
                 // This ensures re-finishing the round will correctly record the handicap changes.
+                // (Card table only contains cards for the current live round, so no round filter needed)
                 $this->db->query(
                     'UPDATE TW4_base.roster r
                      SET r.handicap = (
                          SELECT c.handicap_applied
                          FROM TW4_live.card c
                          WHERE c.row_id_player = r.row_id
-                           AND c.number_round = ?
                          LIMIT 1
                      )
                      WHERE r.row_id IN (
                          SELECT DISTINCT row_id_player
                          FROM TW4_live.card
-                         WHERE number_round = ?
-                     )',
-                    [$roundNumber, $roundNumber]
+                     )'
                 );
 
                 // Now delete the audit entries for this round
