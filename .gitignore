@@ -12,3 +12,5 @@ private/logs/
 cookies.txt
 # Generated finish-round snapshot/report output (runtime data)
 public/reports/
+# Database backups and exports (temporary working files)
+backup/
