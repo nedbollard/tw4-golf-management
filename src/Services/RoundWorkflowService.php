@@ -266,6 +266,11 @@ class RoundWorkflowService
 
             if ($seasonYear !== '' && $roundNumber > 0) {
                 $this->db->query(
+                    'DELETE FROM TW4_base.handicap_audit
+                     WHERE season_year = ? AND number_round = ? AND handicap_source = ?',
+                    [$seasonYear, $roundNumber, 'card_scoring']
+                );
+                $this->db->query(
                     'DELETE FROM TW4_history.best_five_scores
                      WHERE season_year = ? AND number_round_movement = ?',
                     [$seasonYear, $roundNumber]
