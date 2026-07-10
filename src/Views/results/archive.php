@@ -62,7 +62,7 @@ $selectedRound = trim((string) ($selectedRound ?? ''));
                         <?php foreach ($archiveTree as $season): ?>
                             <?php
                             $seasonCode = (string) ($season['season_year'] ?? 'unknown');
-                            $seasonOpen = ($selectedSeason === '' || $selectedSeason === $seasonCode);
+                            $seasonOpen = ($selectedSeason !== '' && $selectedSeason === $seasonCode);
                             ?>
                             <details class="results-season" <?php echo $seasonOpen ? 'open' : ''; ?>>
                                 <summary>
@@ -99,9 +99,17 @@ $selectedRound = trim((string) ($selectedRound ?? ''));
                                         </summary>
 
                                         <ul class="snapshot-list">
-                                            <?php foreach ($snapshots as $snapshot): ?>
+                                            <?php
+                                            $roundIsLegacy = !empty($round['is_legacy']);
+                                            foreach ($snapshots as $snapshot):
+                                                $snapExists = !empty($snapshot['exists']);
+                                                // Legacy seasons never had these reports and never will - omit the row entirely.
+                                                if (!$snapExists && $roundIsLegacy) {
+                                                    continue;
+                                                }
+                                            ?>
                                                 <li>
-                                                    <?php if (!empty($snapshot['exists'])): ?>
+                                                    <?php if ($snapExists): ?>
                                                         <a href="<?php echo htmlspecialchars((string) $snapshot['href']); ?>" class="snapshot-link">
                                                             <?php echo htmlspecialchars((string) $snapshot['filename']); ?>
                                                         </a>

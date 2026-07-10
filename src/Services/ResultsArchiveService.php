@@ -22,6 +22,7 @@ class ResultsArchiveService
                     hr.round_date,
                     hr.course_played_id,
                     hr.card_count,
+                    hr.updated_by,
                     cp.name_course,
                     cp.name_club,
                     cp.ident_eclectic
@@ -52,6 +53,7 @@ class ResultsArchiveService
                 'name_course' => (string) ($row['name_course'] ?? ''),
                 'name_club' => (string) ($row['name_club'] ?? ''),
                 'ident_eclectic' => (string) ($row['ident_eclectic'] ?? ''),
+                'is_legacy' => (strtolower(trim((string) ($row['updated_by'] ?? ''))) === 'legacy_import'),
                 'snapshots' => $this->buildSnapshotLinks(
                     $season,
                     $roundSlug,
