@@ -19,6 +19,7 @@ class SnapshotExportService
             ['filename' => '10_Results.html', 'label' => 'Results'],
             ['filename' => '20_Movements.html', 'label' => 'Movements'],
             ['filename' => '31_Best_5_Scores.html', 'label' => 'Best 5 Scores'],
+            ['filename' => '33_Best_5_Haggle.html', 'label' => 'Best 5 Haggle Teams'],
             ['filename' => '41_Eclectic_%COURSE_A%.html', 'label' => 'Eclectic Course 1'],
             ['filename' => '42_Eclectic_%COURSE_B%.html', 'label' => 'Eclectic Course 2'],
             ['filename' => '49_Eclectic_%COURSE_C%.html', 'label' => 'Eclectic Combined'],
@@ -79,6 +80,7 @@ class SnapshotExportService
             '10_Results.html' => $this->renderResults($context),
             '20_Movements.html' => $this->renderMovements($context),
             '31_Best_5_Scores.html' => $this->renderBest5($context),
+            '33_Best_5_Haggle.html' => $this->renderBest5Haggle($context),
         ];
 
         $courseFiles = $this->resolveCourseEclecticFilenames($roundEclecticContext, $courseAFileSlug);
@@ -135,16 +137,13 @@ class SnapshotExportService
 
     private function normalizeFilesystemPermissions(string $path, bool $isDirectory): void
     {
-        // Keep report artifacts writable by the web process across mixed execution paths
-        // (web request, CLI inside container, and occasional root-triggered maintenance commands).
+        // Keep report artifacts readable by Apache regardless of which user generated them.
+        // Use world-readable defaults to avoid 403 when ownership/groups differ.
         if ($isDirectory) {
-            @chmod($path, 0775);
+            @chmod($path, 0755);
         } else {
-            @chmod($path, 0664);
+            @chmod($path, 0644);
         }
-
-        @chgrp($path, 'www-data');
-        @chown($path, 'www-data');
     }
 
     private function loadContext(string $seasonYear, int $roundNumber): array
@@ -221,6 +220,8 @@ class SnapshotExportService
         );
 
         $bestFiveSnapshot = [];
+        $bestFiveHaggleTeams = [];
+        $bestFiveHaggleMembersByTeam = [];
         $eclecticPlayedSnapshot = [];
         $eclecticOtherSnapshot = [];
         $eclecticCombinedSnapshot = [];
@@ -264,8 +265,34 @@ class SnapshotExportService
                           COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", bf.row_id_player)) ASC',
                                 [$seasonYear, $roundNumber, $seasonYear]
             );
+
+            $bestFiveHaggleTeams = $this->db->fetchAll(
+                'SELECT team_number, team_name, team_points_total
+                 FROM TW4_live.best_five_team
+                 ORDER BY team_points_total DESC, team_name ASC'
+            );
+
+            $bestFiveHaggleMembers = $this->db->fetchAll(
+                'SELECT team_number, player_identifier, player_points_total
+                 FROM TW4_live.best_five_team_member
+                 ORDER BY team_number ASC, player_points_total DESC, player_identifier ASC'
+            );
+
+            foreach ($bestFiveHaggleMembers as $member) {
+                $teamNo = (int) ($member['team_number'] ?? 0);
+                if ($teamNo < 1) {
+                    continue;
+                }
+
+                $bestFiveHaggleMembersByTeam[$teamNo][] = [
+                    'player_identifier' => (string) ($member['player_identifier'] ?? ''),
+                    'player_points_total' => (int) ($member['player_points_total'] ?? 0),
+                ];
+            }
         } catch (\Throwable $e) {
             $bestFiveSnapshot = [];
+            $bestFiveHaggleTeams = [];
+            $bestFiveHaggleMembersByTeam = [];
         }
 
         $courseName = trim((string) ($round['name_course'] ?? ''));
@@ -437,6 +464,8 @@ class SnapshotExportService
             'round_stats' => $roundStats,
             'handicap_snapshot' => $handicapSnapshot,
             'best_five_scores_snapshot' => $bestFiveSnapshot,
+            'best_five_haggle_teams' => $bestFiveHaggleTeams,
+            'best_five_haggle_members_by_team' => $bestFiveHaggleMembersByTeam,
             'eclectic_played_snapshot' => $eclecticPlayedSnapshot,
             'eclectic_other_snapshot' => $eclecticOtherSnapshot,
             'eclectic_combined_snapshot' => $eclecticCombinedSnapshot,
@@ -713,6 +742,67 @@ class SnapshotExportService
             . '<table><tr><th>Standing</th><th>Player</th><th>Total Points</th><th>Best 1</th><th>Best 2</th><th>Best 3</th><th>Best 4</th><th>Best 5</th><th>Last Change</th><th>Round</th></tr>'
             . $bodyRows
             . '</table>'
+        );
+    }
+
+    private function renderBest5Haggle(array $ctx): string
+    {
+        $teams = $ctx['best_five_haggle_teams'] ?? [];
+        $membersByTeam = $ctx['best_five_haggle_members_by_team'] ?? [];
+
+        if (empty($teams)) {
+            return $this->wrap(
+                $ctx,
+                'Best 5 Haggle Teams',
+                '<h2>Haggle: Best 5 Team Standings</h2>'
+                . '<h3>Date: ' . $this->e((string) ($ctx['round_date'] ?? 'n/a')) . '</h3>'
+                . '<h3>Course: ' . $this->e((string) ($ctx['name_course'] ?? 'n/a')) . '</h3>'
+                . '<table><tr><td>No team haggle data available.</td></tr></table>'
+            );
+        }
+
+        $teamRows = '';
+        $memberBlocks = '';
+
+        foreach ($teams as $idx => $team) {
+            $teamNumber = (int) ($team['team_number'] ?? 0);
+            $teamName = (string) ($team['team_name'] ?? ('Team ' . $teamNumber));
+            $teamPoints = (int) ($team['team_points_total'] ?? 0);
+
+            $teamRows .= '<tr>'
+                . '<td>' . ($idx + 1) . '</td>'
+                . '<td>' . $this->e($teamName) . '</td>'
+                . '<td>' . $teamPoints . '</td>'
+                . '</tr>';
+
+            $memberRows = '';
+            foreach (($membersByTeam[$teamNumber] ?? []) as $member) {
+                $memberRows .= '<tr>'
+                    . '<td>' . $this->e((string) ($member['player_identifier'] ?? '')) . '</td>'
+                    . '<td>' . (int) ($member['player_points_total'] ?? 0) . '</td>'
+                    . '</tr>';
+            }
+
+            if ($memberRows === '') {
+                $memberRows = '<tr><td colspan="2">No team members available.</td></tr>';
+            }
+
+            $memberBlocks .= '<h4>' . $this->e($teamName) . '</h4>'
+                . '<table><tr><th>Player</th><th>Points</th></tr>'
+                . $memberRows
+                . '</table>';
+        }
+
+        return $this->wrap(
+            $ctx,
+            'Best 5 Haggle Teams',
+            '<h2>Haggle: Best 5 Team Standings</h2>'
+            . '<h3>Date: ' . $this->e((string) ($ctx['round_date'] ?? 'n/a')) . '</h3>'
+            . '<h3>Course: ' . $this->e((string) ($ctx['name_course'] ?? 'n/a')) . '</h3>'
+            . '<table><tr><th>Standing</th><th>Team</th><th>Total Points</th></tr>'
+            . $teamRows
+            . '</table>'
+            . $memberBlocks
         );
     }
 

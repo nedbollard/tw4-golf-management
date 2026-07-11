@@ -25,6 +25,9 @@ class ConfigController extends BaseController
     {
         $this->requireRole('admin');
 
+        // Keep newly introduced config keys visible on already-initialized installs.
+        $this->configService->initializeDefaultConfig();
+
         $roundState = $this->app->getDatabase()->fetchOne(
             'SELECT workflow_step FROM TW4_live.round ORDER BY row_id ASC LIMIT 1'
         );
@@ -206,6 +209,45 @@ class ConfigController extends BaseController
                     return [
                         'valid' => false,
                         'message' => 'Handicap method must be modern, legacy, or none',
+                        'value' => $value,
+                    ];
+                }
+
+                return ['valid' => true, 'value' => $allowed[$normalized]];
+            }
+
+            if ($name === 'team_haggle_state') {
+                $normalized = strtolower(trim($value));
+                $allowed = [
+                    'floating' => 'floating',
+                    'serious' => 'serious',
+                    'f' => 'floating',
+                    'l' => 'serious',
+                    's' => 'serious',
+                ];
+
+                if (!isset($allowed[$normalized])) {
+                    return [
+                        'valid' => false,
+                        'message' => 'team_haggle_state must be floating or serious',
+                        'value' => $value,
+                    ];
+                }
+
+                return ['valid' => true, 'value' => $allowed[$normalized]];
+            }
+
+            if ($name === 'team_haggle_makeup_method') {
+                $normalized = strtolower(trim($value));
+                $allowed = [
+                    'average' => 'average',
+                    'lowest' => 'lowest',
+                ];
+
+                if (!isset($allowed[$normalized])) {
+                    return [
+                        'valid' => false,
+                        'message' => 'team_haggle_makeup_method must be average or lowest',
                         'value' => $value,
                     ];
                 }

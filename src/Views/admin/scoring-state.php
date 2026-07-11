@@ -43,13 +43,21 @@
 
                     <?php if (!empty($success)): ?>
                         <div class="scoring-state-alert scoring-state-alert-success" role="status">
-                            <?php echo htmlspecialchars((string) $success); ?>
+                            <?php
+                            $successMessages = is_array($success) ? $success : [$success];
+                            foreach ($successMessages as $message):
+                            ?>
+                                <div><?php echo htmlspecialchars((string) $message); ?></div>
+                            <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
 
                     <?php if (!empty($errors)): ?>
                         <div class="scoring-state-alert scoring-state-alert-error" role="alert">
-                            <?php foreach ($errors as $error): ?>
+                            <?php
+                            $errorMessages = is_array($errors) ? $errors : [$errors];
+                            foreach ($errorMessages as $error):
+                            ?>
                                 <div><?php echo htmlspecialchars((string) $error); ?></div>
                             <?php endforeach; ?>
                         </div>

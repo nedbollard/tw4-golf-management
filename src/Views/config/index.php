@@ -80,8 +80,17 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                                     $nameB = (string) ($b['config_name'] ?? '');
 
                                     $weights = [
-                                        'team_haggle_state' => 100,
-                                        'ident_eclectic' => 101,
+                                        'club_name' => 10,
+                                        'club_number' => 20,
+                                        'season_year' => 21,
+                                        'competition_name' => 30,
+                                        'entry_fee' => 40,
+                                        'handicap_method' => 50,
+                                        'max_handicap' => 60,
+                                        'ident_eclectic' => 900,
+                                        'team_haggle_state' => 997,
+                                        'team_haggle_team_size' => 998,
+                                        'team_haggle_makeup_method' => 999,
                                     ];
 
                                     $weightA = $weights[$nameA] ?? 1000;
@@ -137,9 +146,31 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                                                     <option value="none" <?php echo $handicapMethod === 'none' ? 'selected' : ''; ?>>none</option>
                                                 </select>
                                             <?php elseif ($rawName === 'team_haggle_state'): ?>
+                                                <?php
+                                                $haggleState = strtolower(trim((string) ($config['config_value_string'] ?? 'floating')));
+                                                if ($haggleState === 'f') {
+                                                    $haggleState = 'floating';
+                                                } elseif ($haggleState === 'l' || $haggleState === 's') {
+                                                    $haggleState = 'serious';
+                                                }
+                                                if (!in_array($haggleState, ['floating', 'serious'], true)) {
+                                                    $haggleState = 'floating';
+                                                }
+                                                ?>
                                                 <select class="config-input" name="config_<?php echo $config['row_id']; ?>">
-                                                    <option value="F" <?php echo $config['config_value_string'] === 'F' ? 'selected' : ''; ?>>F - Floating</option>
-                                                    <option value="L" <?php echo $config['config_value_string'] === 'L' ? 'selected' : ''; ?>>L - Locked</option>
+                                                    <option value="floating" <?php echo $haggleState === 'floating' ? 'selected' : ''; ?>>floating</option>
+                                                    <option value="serious" <?php echo $haggleState === 'serious' ? 'selected' : ''; ?>>serious</option>
+                                                </select>
+                                            <?php elseif ($rawName === 'team_haggle_makeup_method'): ?>
+                                                <?php
+                                                $makeupMethod = strtolower(trim((string) ($config['config_value_string'] ?? 'average')));
+                                                if (!in_array($makeupMethod, ['average', 'lowest'], true)) {
+                                                    $makeupMethod = 'average';
+                                                }
+                                                ?>
+                                                <select class="config-input" name="config_<?php echo $config['row_id']; ?>">
+                                                    <option value="average" <?php echo $makeupMethod === 'average' ? 'selected' : ''; ?>>average</option>
+                                                    <option value="lowest" <?php echo $makeupMethod === 'lowest' ? 'selected' : ''; ?>>lowest</option>
                                                 </select>
                                             <?php else: ?>
                                                 <input
@@ -179,6 +210,8 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                         <li>Integer values must be whole numbers.</li>
                         <li>Season year uses the format NN_NN, for example 25_26.</li>
                         <li>handicap_method supports modern, legacy, and none.</li>
+                        <li>team_haggle_state supports floating and serious.</li>
+                        <li>team_haggle_makeup_method supports average and lowest.</li>
                         <li>All changes are logged with user attribution.</li>
                     </ul>
                 </div>

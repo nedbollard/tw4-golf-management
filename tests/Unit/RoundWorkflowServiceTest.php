@@ -48,6 +48,10 @@ class RoundWorkflowServiceTest extends TestCase
                     ];
                 }
 
+                if (str_contains($sql, 'FROM information_schema.tables')) {
+                    return ['table_count' => 1];
+                }
+
                 return null;
             });
 
@@ -120,6 +124,8 @@ class RoundWorkflowServiceTest extends TestCase
         $this->assertTrue($this->containsSql($executedSql, 'INSERT INTO TW4_history.eclectic_scores'));
         $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_live.best_five_scores'));
         $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_live.eclectic_scores'));
+        $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_live.best_five_team_member'));
+        $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_live.best_five_team'));
         $this->assertTrue($this->containsSql($executedSql, 'CREATE TABLE IF NOT EXISTS TW4_live.best_five_scores'));
         $this->assertTrue($this->containsSql($executedSql, 'CREATE TABLE IF NOT EXISTS TW4_live.eclectic_scores'));
         $this->assertTrue($this->containsSql($executedSql, 'UPDATE TW4_base.roster'));
@@ -251,7 +257,7 @@ class RoundWorkflowServiceTest extends TestCase
         $db->expects($this->never())
             ->method('rollback');
 
-        $db->expects($this->exactly(4))
+        $db->expects($this->atLeast(4))
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
                 if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
@@ -273,6 +279,10 @@ class RoundWorkflowServiceTest extends TestCase
 
                 if (str_contains($sql, 'FROM TW4_history.round') && str_contains($sql, 'round_date')) {
                     return ['round_date' => '2026-01-01', 'course_played_id' => 3];
+                }
+
+                if (str_contains($sql, 'FROM information_schema.tables')) {
+                    return ['table_count' => 1];
                 }
 
                 return null;
@@ -300,6 +310,8 @@ class RoundWorkflowServiceTest extends TestCase
         $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_live.results'));
         $this->assertTrue($this->containsSql($executedSql, 'UPDATE TW4_live.round'));
         $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_live.best_five_scores'));
+        $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_live.best_five_team_member'));
+        $this->assertTrue($this->containsSql($executedSql, 'DELETE FROM TW4_live.best_five_team'));
         $this->assertTrue($this->containsSqlAndParams($executedSql, 'DELETE FROM TW4_history.best_five_scores', ['25_26', 42]));
     }
 
@@ -317,7 +329,7 @@ class RoundWorkflowServiceTest extends TestCase
         $db->expects($this->never())
             ->method('rollback');
 
-        $db->expects($this->exactly(4))
+        $db->expects($this->atLeast(4))
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
                 if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
@@ -339,6 +351,10 @@ class RoundWorkflowServiceTest extends TestCase
 
                 if (str_contains($sql, 'FROM TW4_history.round') && str_contains($sql, 'round_date')) {
                     return ['round_date' => '2026-01-01', 'course_played_id' => 3];
+                }
+
+                if (str_contains($sql, 'FROM information_schema.tables')) {
+                    return ['table_count' => 1];
                 }
 
                 return null;
@@ -387,7 +403,7 @@ class RoundWorkflowServiceTest extends TestCase
         $service = new RoundWorkflowService($db);
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Reset is only allowed when workflow_step is not_started or results_presented.');
+        $this->expectExceptionMessage('Reset is only allowed when workflow_step is between_rounds or results_presented.');
 
         $service->adminResetResultsToCardEntry('admin_user');
     }
@@ -406,7 +422,7 @@ class RoundWorkflowServiceTest extends TestCase
         $db->expects($this->once())
             ->method('rollback');
 
-        $db->expects($this->exactly(4))
+        $db->expects($this->atLeast(4))
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
                 if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
@@ -428,6 +444,10 @@ class RoundWorkflowServiceTest extends TestCase
 
                 if (str_contains($sql, 'FROM TW4_history.round') && str_contains($sql, 'round_date')) {
                     return ['round_date' => '2026-01-01', 'course_played_id' => 3];
+                }
+
+                if (str_contains($sql, 'FROM information_schema.tables')) {
+                    return ['table_count' => 1];
                 }
 
                 return null;

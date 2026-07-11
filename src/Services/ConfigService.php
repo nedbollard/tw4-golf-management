@@ -83,16 +83,6 @@ class ConfigService
 
     public function initializeDefaultConfig(): void
     {
-        // Check if configuration is already initialized
-        $existingConfig = $this->db->fetchOne(
-            'SELECT config_value_string FROM config_application WHERE config_name = ?',
-            ['config_status']
-        );
-        
-        if ($existingConfig && $existingConfig['config_value_string'] === 'ready') {
-            return; // Already initialized, skip
-        }
-
         $currentYear = (int) date('y');
         $nextYear = ($currentYear + 1) % 100;
         $defaultConfigs = [
@@ -102,7 +92,9 @@ class ConfigService
             'season_year' => ['value' => sprintf('%02d_%02d', $currentYear, $nextYear), 'type' => 'string'],
             'handicap_method' => ['value' => 'modern', 'type' => 'string'],
             'max_handicap' => ['value' => 54, 'type' => 'int'],
-            'team_haggle_state' => ['value' => 'F', 'type' => 'string'],
+            'team_haggle_state' => ['value' => 'floating', 'type' => 'string'],
+            'team_haggle_team_size' => ['value' => 4, 'type' => 'int'],
+            'team_haggle_makeup_method' => ['value' => 'average', 'type' => 'string'],
             'club_number' => ['value' => 294, 'type' => 'int'],
             'entry_fee' => ['value' => 0, 'type' => 'int'],
         ];
