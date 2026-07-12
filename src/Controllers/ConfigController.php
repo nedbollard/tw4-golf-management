@@ -188,11 +188,14 @@ class ConfigController extends BaseController
     private function validateConfigValue(string $value, string $type, string $name): array
     {
         if ($type === 'int') {
-            // Check if it's a valid integer
-            if (!is_numeric($value) || (string)(int)$value !== $value) {
+            $normalized = trim($value);
+
+            // Check if it's a valid integer (no decimals, no non-digit suffixes)
+            if ($normalized === '' || preg_match('/^-?\d+$/', $normalized) !== 1) {
                 return ['valid' => false, 'message' => 'Value must be an integer', 'value' => $value];
             }
-            return ['valid' => true, 'value' => (int)$value];
+
+            return ['valid' => true, 'value' => (int) $normalized];
         } elseif ($type === 'string') {
             if (in_array($name, ['handicap_method', 'handicap_system', 'handicap_sytem'], true)) {
                 $normalized = strtolower(trim($value));
