@@ -908,7 +908,11 @@ class RoundWorkflowService
         $makeupRequired = $targetSlots - $countPlayers;
         if ($makeupRequired > 0) {
             $makeupPoints = $this->calculateMakeupPoints($players, $makeupMethod);
-            $makeupIdentifier = $makeupMethod === 'lowest' ? 'TailEndCharlie' : 'AverageJoe';
+            $makeupIdentifier = match ($makeupMethod) {
+                'lowest' => 'TailEndCharlie',
+                'median' => 'MedianMick',
+                default => 'AverageJoe',
+            };
             for ($i = 0; $i < $makeupRequired; $i++) {
                 $players[] = [
                     'row_id_player' => null,
@@ -980,6 +984,19 @@ class RoundWorkflowService
         $points = array_map(static fn(array $row): int => (int) ($row['points_total'] ?? 0), $players);
         if ($makeupMethod === 'lowest') {
             return min($points);
+        }
+
+        if ($makeupMethod === 'median') {
+            sort($points);
+            $count = count($points);
+            $middle = intdiv($count, 2);
+
+            if (($count % 2) === 1) {
+                return (int) $points[$middle];
+            }
+
+            $median = ($points[$middle - 1] + $points[$middle]) / 2;
+            return (int) round($median, 0, PHP_ROUND_HALF_UP);
         }
 
         $average = array_sum($points) / count($points);
@@ -1513,7 +1530,11 @@ class RoundWorkflowService
             ['team_haggle_makeup_method']
         );
 
-        return ((string) ($row['makeup_method'] ?? 'average')) === 'lowest' ? 'lowest' : 'average';
+        return match ((string) ($row['makeup_method'] ?? 'average')) {
+            'lowest' => 'lowest',
+            'median' => 'median',
+            default => 'average',
+        };
     }
 
     public function validateCanPresentResults(int $roundId): bool

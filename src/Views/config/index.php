@@ -164,12 +164,13 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                                             <?php elseif ($rawName === 'team_haggle_makeup_method'): ?>
                                                 <?php
                                                 $makeupMethod = strtolower(trim((string) ($config['config_value_string'] ?? 'average')));
-                                                if (!in_array($makeupMethod, ['average', 'lowest'], true)) {
+                                                if (!in_array($makeupMethod, ['average', 'median', 'lowest'], true)) {
                                                     $makeupMethod = 'average';
                                                 }
                                                 ?>
                                                 <select class="config-input" name="config_<?php echo $config['row_id']; ?>">
                                                     <option value="average" <?php echo $makeupMethod === 'average' ? 'selected' : ''; ?>>average</option>
+                                                    <option value="median" <?php echo $makeupMethod === 'median' ? 'selected' : ''; ?>>median</option>
                                                     <option value="lowest" <?php echo $makeupMethod === 'lowest' ? 'selected' : ''; ?>>lowest</option>
                                                 </select>
                                             <?php else: ?>
@@ -211,7 +212,7 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                         <li>Season year uses the format NN_NN, for example 25_26.</li>
                         <li>handicap_method supports modern, legacy, and none.</li>
                         <li>team_haggle_state supports floating and serious.</li>
-                        <li>team_haggle_makeup_method supports average and lowest.</li>
+                        <li>team_haggle_makeup_method supports average, median, and lowest.</li>
                         <li>All changes are logged with user attribution.</li>
                     </ul>
                 </div>

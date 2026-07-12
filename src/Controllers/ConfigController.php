@@ -244,13 +244,14 @@ class ConfigController extends BaseController
                 $normalized = strtolower(trim($value));
                 $allowed = [
                     'average' => 'average',
+                    'median' => 'median',
                     'lowest' => 'lowest',
                 ];
 
                 if (!isset($allowed[$normalized])) {
                     return [
                         'valid' => false,
-                        'message' => 'team_haggle_makeup_method must be average or lowest',
+                        'message' => 'team_haggle_makeup_method must be average, median, or lowest',
                         'value' => $value,
                     ];
                 }
