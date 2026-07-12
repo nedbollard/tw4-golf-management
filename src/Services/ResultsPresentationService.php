@@ -46,7 +46,10 @@ class ResultsPresentationService
         foreach ($cards as $card) {
             $cardId = (int) $card['row_id_card'];
             $identifier = (string) ($card['player_identifier'] ?? '');
-            $displayName = trim((string) (($card['first_name'] ?? '') . ' ' . ($card['last_name'] ?? '')));
+            $displayName = trim((string) ($card['alias'] ?? ''));
+            if ($displayName === '') {
+                $displayName = trim((string) (($card['first_name'] ?? '') . ' ' . ($card['last_name'] ?? '')));
+            }
             if ($displayName === '') {
                 $displayName = $identifier;
             }

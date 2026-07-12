@@ -286,6 +286,7 @@ class SnapshotExportService
 
                 $bestFiveHaggleMembersByTeam[$teamNo][] = [
                     'player_identifier' => (string) ($member['player_identifier'] ?? ''),
+                    'display_player' => (string) ($member['player_identifier'] ?? ''),
                     'player_points_total' => (int) ($member['player_points_total'] ?? 0),
                 ];
             }
@@ -343,6 +344,22 @@ class SnapshotExportService
                 $aliasByIdentifier[$identifier] = $alias;
             }
         }
+
+        foreach ($bestFiveHaggleMembersByTeam as &$teamMembers) {
+            foreach ($teamMembers as &$member) {
+                $identifier = (string) ($member['player_identifier'] ?? '');
+                $member['display_player'] = $aliasByIdentifier[$identifier] ?? $identifier;
+            }
+            unset($member);
+
+            usort(
+                $teamMembers,
+                static fn(array $a, array $b): int =>
+                    ((int) ($b['player_points_total'] ?? 0) <=> (int) ($a['player_points_total'] ?? 0))
+                    ?: strcmp((string) ($a['display_player'] ?? ''), (string) ($b['display_player'] ?? ''))
+            );
+        }
+        unset($teamMembers);
 
         $leaderboard = [];
         $scores = [];
@@ -778,7 +795,7 @@ class SnapshotExportService
             $memberRows = '';
             foreach (($membersByTeam[$teamNumber] ?? []) as $member) {
                 $memberRows .= '<tr>'
-                    . '<td>' . $this->e((string) ($member['player_identifier'] ?? '')) . '</td>'
+                    . '<td>' . $this->e((string) ($member['display_player'] ?? $member['player_identifier'] ?? '')) . '</td>'
                     . '<td>' . (int) ($member['player_points_total'] ?? 0) . '</td>'
                     . '</tr>';
             }
