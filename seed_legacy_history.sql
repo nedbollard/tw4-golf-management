@@ -2,6 +2,42 @@
 START TRANSACTION;
 INSERT INTO TW4_history.round
     (season_year, number_round, round_date, card_count, updated_by, updated_ts, hist_updated_by, hist_updated_ts)
+VALUES ('22_23', 1, '2022-09-28', 0, 'legacy_import', NOW(), 'legacy_import', NOW())
+ON DUPLICATE KEY UPDATE round_date = VALUES(round_date);
+
+INSERT INTO TW4_history.round_eclectic_context
+    (season_year, number_round, include_eclectic, combined_name, course_report_files_json, updated_by, updated_ts, hist_updated_by, hist_updated_ts)
+VALUES ('22_23', 1, 0, 'none', '["41_Eclectic_Legacy.html"]', 'legacy_import', NOW(), 'legacy_import', NOW())
+ON DUPLICATE KEY UPDATE combined_name = VALUES(combined_name), course_report_files_json = VALUES(course_report_files_json);
+INSERT INTO TW4_history.round
+    (season_year, number_round, round_date, card_count, updated_by, updated_ts, hist_updated_by, hist_updated_ts)
+VALUES ('22_23', 2, '2022-10-12', 0, 'legacy_import', NOW(), 'legacy_import', NOW())
+ON DUPLICATE KEY UPDATE round_date = VALUES(round_date);
+
+INSERT INTO TW4_history.round_eclectic_context
+    (season_year, number_round, include_eclectic, combined_name, course_report_files_json, updated_by, updated_ts, hist_updated_by, hist_updated_ts)
+VALUES ('22_23', 2, 0, 'none', '["41_Eclectic_Legacy.html"]', 'legacy_import', NOW(), 'legacy_import', NOW())
+ON DUPLICATE KEY UPDATE combined_name = VALUES(combined_name), course_report_files_json = VALUES(course_report_files_json);
+INSERT INTO TW4_history.round
+    (season_year, number_round, round_date, card_count, updated_by, updated_ts, hist_updated_by, hist_updated_ts)
+VALUES ('22_23', 3, '2022-10-20', 0, 'legacy_import', NOW(), 'legacy_import', NOW())
+ON DUPLICATE KEY UPDATE round_date = VALUES(round_date);
+
+INSERT INTO TW4_history.round_eclectic_context
+    (season_year, number_round, include_eclectic, combined_name, course_report_files_json, updated_by, updated_ts, hist_updated_by, hist_updated_ts)
+VALUES ('22_23', 3, 0, 'none', '["41_Eclectic_Legacy.html"]', 'legacy_import', NOW(), 'legacy_import', NOW())
+ON DUPLICATE KEY UPDATE combined_name = VALUES(combined_name), course_report_files_json = VALUES(course_report_files_json);
+INSERT INTO TW4_history.round
+    (season_year, number_round, round_date, card_count, updated_by, updated_ts, hist_updated_by, hist_updated_ts)
+VALUES ('22_23', 4, '2022-11-02', 0, 'legacy_import', NOW(), 'legacy_import', NOW())
+ON DUPLICATE KEY UPDATE round_date = VALUES(round_date);
+
+INSERT INTO TW4_history.round_eclectic_context
+    (season_year, number_round, include_eclectic, combined_name, course_report_files_json, updated_by, updated_ts, hist_updated_by, hist_updated_ts)
+VALUES ('22_23', 4, 0, 'none', '["41_Eclectic_Legacy.html"]', 'legacy_import', NOW(), 'legacy_import', NOW())
+ON DUPLICATE KEY UPDATE combined_name = VALUES(combined_name), course_report_files_json = VALUES(course_report_files_json);
+INSERT INTO TW4_history.round
+    (season_year, number_round, round_date, card_count, updated_by, updated_ts, hist_updated_by, hist_updated_ts)
 VALUES ('22_23', 5, '2022-11-09', 0, 'legacy_import', NOW(), 'legacy_import', NOW())
 ON DUPLICATE KEY UPDATE round_date = VALUES(round_date);
 

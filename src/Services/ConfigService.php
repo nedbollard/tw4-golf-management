@@ -93,6 +93,7 @@ class ConfigService
             'handicap_method' => ['value' => 'modern', 'type' => 'string'],
             'max_handicap' => ['value' => 54, 'type' => 'int'],
             'team_haggle_state' => ['value' => 'floating', 'type' => 'string'],
+            'team_haggle_serious_revision' => ['value' => 0, 'type' => 'int'],
             'team_haggle_team_size' => ['value' => 4, 'type' => 'int'],
             'team_haggle_makeup_method' => ['value' => 'average', 'type' => 'string'],
             'club_number' => ['value' => 294, 'type' => 'int'],

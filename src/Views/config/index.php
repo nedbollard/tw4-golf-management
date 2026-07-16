@@ -91,6 +91,7 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                                         'team_haggle_state' => 997,
                                         'team_haggle_team_size' => 998,
                                         'team_haggle_makeup_method' => 999,
+                                        'team_haggle_serious_revision' => 1001,
                                     ];
 
                                     $weightA = $weights[$nameA] ?? 1000;
@@ -105,6 +106,7 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                                 ?>
                                 <?php foreach ($sortedConfigs as $config): ?>
                                     <?php if ($config['config_name'] === 'config_status') continue; ?>
+                                    <?php if ($config['config_name'] === 'team_haggle_serious_revision') continue; ?>
                                     <?php
                                     $rawName = (string) $config['config_name'];
                                     $displayName = in_array($rawName, ['handicap_sytem', 'handicap_system'], true)

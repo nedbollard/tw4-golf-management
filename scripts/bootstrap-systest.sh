@@ -37,6 +37,8 @@ POST_BOOTSTRAP_MIGRATIONS=(
     "src/migrations/018_seed_live_round.sql"
     "src/migrations/037_between_rounds_workflow_state.sql"
     "src/migrations/038_eclectic_config_and_round_context.sql"
+    "src/migrations/039_team_haggle_floating_setup.sql"
+    "src/migrations/040_team_haggle_serious_audit.sql"
 )
 
 ensure_application_log_table() {

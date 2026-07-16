@@ -7,6 +7,7 @@ use App\Core\Application;
 use App\Services\Logger;
 use App\Services\RoundLockService;
 use App\Services\RoundWorkflowService;
+use App\Services\TeamHaggleSeriousService;
 
 /**
  * Admin Controller - Admin-only functions
@@ -145,5 +146,116 @@ class AdminController extends BaseController
         }
 
         $this->redirect('/admin/scoring-state');
+    }
+
+    public function teamHaggleSerious(): void
+    {
+        $this->requireRole('admin');
+
+        $service = new TeamHaggleSeriousService($this->app->getDatabase());
+        if (!$service->isSeriousMode()) {
+            $this->flash->error('team_haggle_state must be set to serious before editing fixed teams.');
+            $this->redirect('/admin/menu');
+            return;
+        }
+
+        $state = $service->buildEditorState();
+        $workflowStep = (string) ($state['round']['workflow_step'] ?? 'between_rounds');
+        if (!in_array($workflowStep, ['between_rounds', 'not_started'], true)) {
+            $this->flash->error('Serious team-haggle membership can only be changed between rounds.');
+            $this->redirect('/admin/menu');
+            return;
+        }
+
+        $this->render('admin/team-haggle-serious', [
+            'state' => $state,
+        ]);
+    }
+
+    public function teamHaggleSeriousSave(): void
+    {
+        $this->requireRole('admin');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/admin/team-haggle');
+            return;
+        }
+
+        if (!$this->validateCsrf()) {
+            $this->flash->error('Invalid CSRF token');
+            $this->redirect('/admin/team-haggle');
+            return;
+        }
+
+        $service = new TeamHaggleSeriousService($this->app->getDatabase());
+        if (!$service->isSeriousMode()) {
+            $this->flash->error('team_haggle_state must be set to serious before editing fixed teams.');
+            $this->redirect('/admin/menu');
+            return;
+        }
+
+        $data = $this->getPostData();
+        $draft = $this->parseDraftFromRequest($data['draft'] ?? []);
+        $action = (string) ($data['action'] ?? 'apply');
+
+        if ($action === 'save') {
+            try {
+                $user = $this->authService->getUser();
+                $updatedBy = (string) ($user['username'] ?? 'system');
+                $postedRevision = max(0, (int) ($data['revision'] ?? 0));
+
+                $result = $service->saveTeams($draft, $postedRevision, $updatedBy);
+                $this->logger->info('Serious team-haggle teams saved', [
+                    'teams_saved' => (int) ($result['teams_saved'] ?? 0),
+                    'new_revision' => (int) ($result['revision'] ?? 0),
+                ], $updatedBy);
+
+                $this->flash->success('Team-haggle membership saved.');
+                $this->redirect('/admin/team-haggle');
+                return;
+            } catch (\RuntimeException $e) {
+                $state = $service->buildEditorState($draft);
+                $this->render('admin/team-haggle-serious', [
+                    'state' => $state,
+                    'errors' => [$e->getMessage()],
+                ]);
+                return;
+            }
+        }
+
+        $removedOrderRaw = trim((string) ($data['removed_order'] ?? ''));
+        $removedOrder = $removedOrderRaw === '' ? [] : array_filter(array_map('trim', explode(',', $removedOrderRaw)));
+        $replacementIds = array_values(array_map('strval', (array) ($data['replacement_ids'] ?? [])));
+
+        $applied = $service->applyReplacements($draft, $removedOrder, $replacementIds);
+        $state = $service->buildEditorState((array) ($applied['teams'] ?? []), (array) ($applied['messages'] ?? []));
+
+        $this->render('admin/team-haggle-serious', [
+            'state' => $state,
+        ]);
+    }
+
+    private function parseDraftFromRequest(array $draft): array
+    {
+        $normalized = [];
+        foreach ($draft as $team => $slots) {
+            $teamNumber = (int) $team;
+            if ($teamNumber < 1 || !is_array($slots)) {
+                continue;
+            }
+
+            foreach ($slots as $slot => $identifier) {
+                $slotNumber = (int) $slot;
+                if ($slotNumber < 1) {
+                    continue;
+                }
+
+                $normalized[$teamNumber][$slotNumber] = [
+                    'player_identifier' => trim((string) $identifier),
+                ];
+            }
+        }
+
+        return $normalized;
     }
 }

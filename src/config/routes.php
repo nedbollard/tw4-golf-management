@@ -93,6 +93,11 @@ return [
             'controller' => 'App\\Controllers\\AdminController',
             'method' => 'scoringState'
         ],
+        '/admin/team-haggle' => [
+            'path' => '/admin/team-haggle',
+            'controller' => 'App\\Controllers\\AdminController',
+            'method' => 'teamHaggleSerious'
+        ],
         '/scorer/menu' => [
             'path' => '/scorer/menu',
             'controller' => 'App\\Controllers\\ScorerController',
@@ -360,6 +365,11 @@ return [
             'path' => '/admin/scoring-state/reset-results',
             'controller' => 'App\\Controllers\\AdminController',
             'method' => 'resetResultsToCardEntry'
+        ],
+        '/admin/team-haggle' => [
+            'path' => '/admin/team-haggle',
+            'controller' => 'App\\Controllers\\AdminController',
+            'method' => 'teamHaggleSeriousSave'
         ],
     ],
 ];

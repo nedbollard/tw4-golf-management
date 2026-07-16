@@ -58,39 +58,38 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
 
                 <div class="admin-grid" role="list" aria-label="Admin actions">
                     <div class="admin-panel" role="listitem">
-                        <h3>Configure System</h3>
-                        <p>Manage system settings and configuration.</p>
-                        <a href="/config" class="btn-admin-config">Configure System</a>
-                    </div>
-
-                    <div class="admin-panel" role="listitem">
-                        <h3>Scoring State Management</h3>
                         <p>Admin-only controls for workflow and lock state.</p>
                         <a href="/admin/scoring-state" class="btn-admin-scoring">Manage Scoring State</a>
                     </div>
 
                     <div class="admin-panel" role="listitem">
-                        <h3>View Logs</h3>
                         <p>View system logs and key audit events.</p>
                         <a href="/logs" class="btn-admin-logs">View Logs</a>
                     </div>
 
                     <div class="admin-panel" role="listitem">
-                        <h3>Staff Management</h3>
                         <p>Add, update, and manage staff accounts.</p>
-                        <a href="/staff" class="btn-admin-staff">Manage Staff</a>
+                        <a href="/staff" class="btn-admin-staff">Staff Management</a>
                     </div>
 
                     <div class="admin-panel" role="listitem">
-                        <h3>Course Club Management</h3>
+                        <p>Manage system settings and configuration.</p>
+                        <a href="/config" class="btn-admin-config">Configure System</a>
+                    </div>
+
+                    <div class="admin-panel" role="listitem">
                         <p>Manage course holes and club configuration.</p>
-                        <a href="/course-club" class="btn-admin-course">Manage Course</a>
+                        <a href="/course-club" class="btn-admin-course">Course Club Management</a>
                     </div>
 
                     <div class="admin-panel" role="listitem">
-                        <h3>Course Played Management</h3>
                         <p>Create and maintain played 9-hole course definitions.</p>
-                        <a href="/course-played" class="btn-admin-played">Manage Course Played</a>
+                        <a href="/course-played" class="btn-admin-played">Course Played Management</a>
+                    </div>
+
+                    <div class="admin-panel" role="listitem">
+                        <p>Set and maintain fixed team membership with replacement controls.</p>
+                        <a href="/admin/team-haggle" class="btn-admin-scoring">Team Haggle (Serious)</a>
                     </div>
                 </div>
 

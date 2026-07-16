@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Core\Database;
+use App\Services\TeamHaggleSeriousService;
 
 class RoundWorkflowService
 {
@@ -857,6 +858,20 @@ class RoundWorkflowService
 
     private function refreshTeamHaggleForFinish(string $seasonYear, string $updatedBy): void
     {
+        if ($this->getConfiguredTeamHaggleState() === 'serious') {
+            $round = $this->db->fetchOne(
+                'SELECT number_round
+                 FROM TW4_live.round
+                 ORDER BY row_id ASC
+                 LIMIT 1'
+            );
+            $numberRound = (int) ($round['number_round'] ?? 0);
+
+            $service = new TeamHaggleSeriousService($this->db);
+            $service->refreshSeriousTeamPointsForFinish($seasonYear, $numberRound, $updatedBy);
+            return;
+        }
+
         if ($this->getConfiguredTeamHaggleState() !== 'floating') {
             return;
         }

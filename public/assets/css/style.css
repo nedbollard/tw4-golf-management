@@ -1477,7 +1477,7 @@ body.page-admin-menu {
     font-family: var(--font-primary);
     margin: 0;
     min-height: 100vh;
-    padding: 16px;
+    padding: 12px;
     line-height: 1.5;
 }
 
@@ -1487,7 +1487,7 @@ body.page-admin-menu {
 }
 
 .admin-header {
-    margin: 0 auto 24px auto;
+    margin: 0 auto 16px auto;
     text-align: center;
 }
 
@@ -1509,18 +1509,18 @@ body.page-admin-menu {
     background: var(--color-text-primary);
     color: #ffffff;
     margin: 0;
-    padding: 14px 18px;
+    padding: 11px 16px;
     font-size: 1.05rem;
     font-weight: 700;
 }
 
 .admin-card-body {
-    padding: 22px;
+    padding: 16px;
 }
 
 .admin-intro {
     color: var(--color-muted);
-    margin-bottom: 14px;
+    margin-bottom: 10px;
     text-align: center;
 }
 
@@ -1534,16 +1534,16 @@ body.page-admin-menu {
     flex-wrap: wrap;
     gap: 8px;
     justify-content: center;
-    margin-bottom: 18px;
-    padding: 10px 14px;
+    margin-bottom: 12px;
+    padding: 8px 12px;
     text-align: center;
 }
 
 .admin-alert {
     border-radius: 12px;
     font-weight: 700;
-    margin-bottom: 16px;
-    padding: 10px 14px;
+    margin-bottom: 12px;
+    padding: 8px 12px;
 }
 
 .admin-alert-success {
@@ -1560,14 +1560,14 @@ body.page-admin-menu {
 
 .admin-grid {
     display: grid;
-    gap: 14px;
+    gap: 10px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .admin-panel {
     border: 1px solid #bbf7d0;
     border-radius: var(--radius-card);
-    padding: 16px;
+    padding: 12px;
     text-align: center;
 }
 
@@ -1578,7 +1578,7 @@ body.page-admin-menu {
 
 .admin-panel p {
     color: var(--color-muted);
-    margin: 0 0 12px 0;
+    margin: 0 0 8px 0;
 }
 
 .btn-admin-config,
@@ -1593,7 +1593,7 @@ body.page-admin-menu {
     display: inline-block;
     font-family: inherit;
     font-weight: 700;
-    padding: 10px 18px;
+    padding: 8px 14px;
     text-decoration: none;
     transition: background 0.2s ease;
 }
