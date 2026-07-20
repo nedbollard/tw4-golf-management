@@ -19,7 +19,7 @@ class SnapshotExportService
             ['filename' => '10_Results.html', 'label' => 'Results'],
             ['filename' => '20_Movements.html', 'label' => 'Movements'],
             ['filename' => '31_Best_5_Scores.html', 'label' => 'Best 5 Scores'],
-            ['filename' => '33_Best_5_Haggle.html', 'label' => 'Best 5 Haggle Teams'],
+            ['filename' => '33_Best_5_Teams.html', 'label' => 'Best 5 Haggle Teams'],
             ['filename' => '41_Eclectic_%COURSE_A%.html', 'label' => 'Eclectic Course 1'],
             ['filename' => '42_Eclectic_%COURSE_B%.html', 'label' => 'Eclectic Course 2'],
             ['filename' => '49_Eclectic_%COURSE_C%.html', 'label' => 'Eclectic Combined'],
@@ -80,7 +80,7 @@ class SnapshotExportService
             '10_Results.html' => $this->renderResults($context),
             '20_Movements.html' => $this->renderMovements($context),
             '31_Best_5_Scores.html' => $this->renderBest5($context),
-            '33_Best_5_Haggle.html' => $this->renderBest5Haggle($context),
+            '33_Best_5_Teams.html' => $this->renderBest5Haggle($context),
         ];
 
         $courseFiles = $this->resolveCourseEclecticFilenames($roundEclecticContext, $courseAFileSlug);
@@ -483,6 +483,10 @@ class SnapshotExportService
             'best_five_scores_snapshot' => $bestFiveSnapshot,
             'best_five_haggle_teams' => $bestFiveHaggleTeams,
             'best_five_haggle_members_by_team' => $bestFiveHaggleMembersByTeam,
+            'team_haggle_state' => strtolower(trim((string) ($this->db->fetchOne(
+                'SELECT config_value_string FROM config_application WHERE config_name = ? LIMIT 1',
+                ['team_haggle_state']
+            )['config_value_string'] ?? 'floating'))),
             'eclectic_played_snapshot' => $eclecticPlayedSnapshot,
             'eclectic_other_snapshot' => $eclecticOtherSnapshot,
             'eclectic_combined_snapshot' => $eclecticCombinedSnapshot,
@@ -767,11 +771,15 @@ class SnapshotExportService
         $teams = $ctx['best_five_haggle_teams'] ?? [];
         $membersByTeam = $ctx['best_five_haggle_members_by_team'] ?? [];
 
+        $haggleMode = in_array((string) ($ctx['team_haggle_state'] ?? 'floating'), ['serious', 's', 'l'], true)
+            ? 'Serious'
+            : 'Floating';
+
         if (empty($teams)) {
             return $this->wrap(
                 $ctx,
                 'Best 5 Haggle Teams',
-                '<h2>Haggle: Best 5 Team Standings</h2>'
+                '<h2>Haggle: Best 5 Team Standings (' . $haggleMode . ')</h2>'
                 . '<h3>Date: ' . $this->e((string) ($ctx['round_date'] ?? 'n/a')) . '</h3>'
                 . '<h3>Course: ' . $this->e((string) ($ctx['name_course'] ?? 'n/a')) . '</h3>'
                 . '<table><tr><td>No team haggle data available.</td></tr></table>'
@@ -813,7 +821,7 @@ class SnapshotExportService
         return $this->wrap(
             $ctx,
             'Best 5 Haggle Teams',
-            '<h2>Haggle: Best 5 Team Standings</h2>'
+            '<h2>Haggle: Best 5 Team Standings (' . $haggleMode . ')</h2>'
             . '<h3>Date: ' . $this->e((string) ($ctx['round_date'] ?? 'n/a')) . '</h3>'
             . '<h3>Course: ' . $this->e((string) ($ctx['name_course'] ?? 'n/a')) . '</h3>'
             . '<table><tr><th>Standing</th><th>Team</th><th>Total Points</th></tr>'

@@ -131,7 +131,20 @@ class ConfigController extends BaseController
                 $successCount++;
             }
         }
-        
+
+        // When team_haggle_state is set to floating, reset the serious revision counter to 0.
+        if (isset($changes['team_haggle_state']) && $changes['team_haggle_state']['new_value'] === 'floating') {
+            $this->app->getDatabase()->query(
+                'UPDATE config_application
+                 SET config_value_int = 0, config_value_string = \'0\', updated_by = ?
+                 WHERE config_name = ?',
+                [$username, 'team_haggle_serious_revision']
+            );
+            $this->logger->info('team_haggle_serious_revision reset to 0 (team_haggle_state set to floating)', [
+                'updated_by' => $username,
+            ], $username);
+        }
+
         // Auto-set config_status to "ready" after a valid save, even if no field values changed.
         if ($currentStatus !== 'ready') {
             $statusPromotedToReady = $this->configService->setConfigStatus('ready');

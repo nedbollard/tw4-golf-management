@@ -229,7 +229,8 @@ class SnapshotExportServiceTest extends TestCase
         $filenames = array_map(static fn(array $row): string => (string) ($row['filename'] ?? ''), $definitions);
 
         $this->assertNotContains('35_Eclectic_Haggle.html', $filenames);
-        $this->assertContains('33_Best_5_Haggle.html', $filenames);
+        $this->assertNotContains('33_Best_5_Haggle.html', $filenames);
+        $this->assertContains('33_Best_5_Teams.html', $filenames);
         $this->assertContains('41_Eclectic_%COURSE_A%.html', $filenames);
         $this->assertContains('42_Eclectic_%COURSE_B%.html', $filenames);
         $this->assertContains('49_Eclectic_%COURSE_C%.html', $filenames);
