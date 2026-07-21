@@ -13,7 +13,7 @@ Minimum practical stack:
 3. TW4 app container built from [Dockerfile](Dockerfile)
 4. MySQL 8.0 container
 5. Caddy or Nginx as the HTTPS reverse proxy
-6. Persistent volumes for MySQL data and PHP sessions
+6. Persistent volumes for MySQL data, report snapshots, and PHP sessions
 
 ## Free Hosting Recommendation
 
@@ -29,7 +29,7 @@ What to use there:
 
 1. One Ubuntu VM instance.
 2. Docker Engine and Docker Compose plugin.
-3. The system-test stack in [docker-compose.prod.yml](docker-compose.prod.yml).
+3. The system-test stack in [docker-compose.systest.yml](docker-compose.systest.yml).
 4. [Caddyfile](Caddyfile) for HTTPS termination.
 
 Oracle Cloud is the best free option here because TW4 is stateful and container-friendly, but not a good fit for shared free PHP hosting.
@@ -45,7 +45,7 @@ Use this path if you want the free option with the least friction:
 5. Copy `.env.example` to `.env`.
 6. Set `DB_PASSWORD`, `CADDY_DOMAIN`, and `CADDY_EMAIL` in `.env`.
 7. Run `./scripts/bootstrap-systest.sh`.
-8. Start the system-test stack with `docker compose -f docker-compose.prod.yml up -d --build`.
+8. Start the system-test stack with `docker compose -f docker-compose.systest.yml up -d --build`.
 9. Visit the HTTPS domain and verify the scorer menu loads.
 10. Run a smoke test as scorer and admin before sharing the URL.
 
@@ -64,7 +64,7 @@ Use this while you are actually creating the Oracle instance:
 9. Clone this TW4 repository onto the VM.
 10. Copy `.env.example` to `.env` and set `DB_PASSWORD`, `CADDY_DOMAIN`, and `CADDY_EMAIL`.
 11. Run `./scripts/bootstrap-systest.sh`.
-12. Start the stack with `docker compose -f docker-compose.prod.yml up -d --build`.
+12. Start the stack with `docker compose -f docker-compose.systest.yml up -d --build`.
 13. Wait for Caddy to obtain TLS certificates.
 14. Open the HTTPS URL in a browser and confirm the scorer menu loads.
 15. Log in as scorer and admin and run a quick smoke test.
@@ -105,7 +105,7 @@ The current Docker setup already models most of this, so the smallest environmen
 4. Copy the repository to the server.
 5. Create a system-test `.env` with real values for `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, and `DEBUG=false`.
 6. Set `CADDY_DOMAIN` and `CADDY_EMAIL` in `.env`.
-7. Bring up the system-test stack with `docker compose -f docker-compose.prod.yml up -d --build`.
+7. Bring up the system-test stack with `docker compose -f docker-compose.systest.yml up -d --build`.
 8. Let Caddy issue TLS certificates and serve the public domain.
 9. Keep MySQL private to the Docker network and do not expose it publicly.
 10. phpMyAdmin in system testing is bound to `127.0.0.1:8085` only. Reach it through an SSH tunnel such as `ssh -L 18085:127.0.0.1:8085 tw4-oracle`, then open `http://127.0.0.1:18085` locally.
@@ -142,13 +142,13 @@ Typical launch sequence:
 cp .env.example .env
 # edit .env with real DB_PASSWORD, CADDY_DOMAIN, and CADDY_EMAIL
 ./scripts/bootstrap-systest.sh
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.systest.yml up -d --build
 ```
 
 To follow the logs:
 
 ```bash
-docker compose -f docker-compose.prod.yml logs -f
+docker compose -f docker-compose.systest.yml logs -f
 ```
 
 The bootstrap script will start the database container, rebuild the `TW4_base`,
@@ -164,7 +164,7 @@ If you are setting this up on a fresh VPS, follow this sequence:
 3. Create `.env` from `.env.example`.
 4. Set `DB_PASSWORD`, `CADDY_DOMAIN`, and `CADDY_EMAIL` in `.env`.
 5. Run `./scripts/bootstrap-systest.sh`.
-6. Start the stack with `docker compose -f docker-compose.prod.yml up -d --build`.
+6. Start the stack with `docker compose -f docker-compose.systest.yml up -d --build`.
 7. Open the site in a browser and confirm the scorer menu loads.
 8. Log in as scorer and admin and run a short smoke test.
 9. Share the HTTPS URL with your tester.
@@ -172,7 +172,7 @@ If you are setting this up on a fresh VPS, follow this sequence:
 If anything fails during step 5 or 6, check the logs with:
 
 ```bash
-docker compose -f docker-compose.prod.yml logs -f
+docker compose -f docker-compose.systest.yml logs -f
 ```
 
 ## Post-Bootstrap Smoke Checklist
@@ -182,7 +182,7 @@ After a system-test deploy or rebuild, run these checks in order:
 1. Confirm the system-test containers are the ones serving traffic:
 
 ```bash
-docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.systest.yml ps
 ```
 
 2. Confirm the public site responds to real GET requests. Do not use `curl -I` for router verification, because the application only defines `GET` and `POST` routes and may return 404 for `HEAD`.
@@ -196,7 +196,7 @@ curl -k -s -o /dev/null -w "LOGIN %{http_code}\n" https://your-domain/login
 
 ```bash
 DB_PASSWORD=$(awk -F= '/^DB_PASSWORD=/{print substr($0, index($0,"=")+1); exit}' .env)
-docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+docker compose -f docker-compose.systest.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
 	mysql -u root -N -s -e "SHOW DATABASES LIKE 'TW4_base'; SHOW DATABASES LIKE 'TW4_live'; SHOW DATABASES LIKE 'TW4_history';"
 ```
 
@@ -205,7 +205,7 @@ docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db
 ## Deployment Notes
 
 1. `CADDY_EMAIL` must be a real email address you control. Placeholder addresses such as `you@example.com` will cause ACME registration to fail and HTTPS will not come up.
-2. If `docker compose -f docker-compose.prod.yml up` reports port 80 or 443 already in use, check for a host-level `caddy` service before assuming Docker is at fault.
+2. If `docker compose -f docker-compose.systest.yml up` reports port 80 or 443 already in use, check for a host-level `caddy` service before assuming Docker is at fault.
 3. If the compose run warns about orphan containers, inspect them before removing them. A leftover phpMyAdmin container may be harmless, but an old frontend container on 80 or 443 will block the intended stack.
 
 ## What Not To Use

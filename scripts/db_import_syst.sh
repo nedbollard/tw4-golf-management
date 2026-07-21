@@ -1,26 +1,40 @@
-   #!/usr/bin/env bash
-    set -euo pipefail
+#!/usr/bin/env bash
+set -euo pipefail
 
-    COMPOSE_FILE="docker-compose.prod.yml"
-    DB_NAMES=(TW4_base TW4_live TW4_history TW4_holding)
+PREFERRED_COMPOSE_FILE="docker-compose.systest.yml"
+LEGACY_COMPOSE_FILE="docker-compose.prod.yml"
+COMPOSE_FILE="${COMPOSE_FILE-}"
+DB_NAMES=(TW4_base TW4_live TW4_history TW4_holding)
 
-    if [ $# -ne 1 ]; then
-      echo "Usage: $0 /path/to/dev_to_oracle_all_tw4_dbs_YYYYmmdd_HHMMSS.sql.gz"
-      exit 1
-    fi
+if [ $# -ne 1 ]; then
+  echo "Usage: $0 /path/to/dev_to_oracle_all_tw4_dbs_YYYYmmdd_HHMMSS.sql.gz"
+  exit 1
+fi
 
-    DUMP_GZ="$1"
-    SUM_FILE="${DUMP_GZ}.sha256"
+  DUMP_GZ="$1"
+  SUM_FILE="${DUMP_GZ}.sha256"
 
-    [ -f "$DUMP_GZ" ] || { echo "[ERROR] Dump file not found: $DUMP_GZ"; exit 1; }
+  [ -f "$DUMP_GZ" ] || { echo "[ERROR] Dump file not found: $DUMP_GZ"; exit 1; }
 
-    cd "$(dirname "$0")/.."
-    [ -f "$COMPOSE_FILE" ] || { echo "[ERROR] ${COMPOSE_FILE} not found"; exit 1; }
+cd "$(dirname "$0")/.."
 
-    if [ -z "${DB_PASSWORD-}" ]; then
-      DB_PASSWORD="$(awk -F= '/^DB_PASSWORD=/{print substr($0, index($0,"=")+1); exit}' .env)"
-    fi
-    : "${DB_PASSWORD:?DB_PASSWORD is required}"
+if [ -z "$COMPOSE_FILE" ]; then
+  if [ -f "$PREFERRED_COMPOSE_FILE" ]; then
+    COMPOSE_FILE="$PREFERRED_COMPOSE_FILE"
+  elif [ -f "$LEGACY_COMPOSE_FILE" ]; then
+    COMPOSE_FILE="$LEGACY_COMPOSE_FILE"
+    echo "[WARN] Using legacy compose file '$LEGACY_COMPOSE_FILE'."
+  else
+    COMPOSE_FILE="$PREFERRED_COMPOSE_FILE"
+  fi
+fi
+
+[ -f "$COMPOSE_FILE" ] || { echo "[ERROR] ${PREFERRED_COMPOSE_FILE} (or legacy ${LEGACY_COMPOSE_FILE}) not found"; exit 1; }
+
+if [ -z "${DB_PASSWORD-}" ]; then
+  DB_PASSWORD="$(awk -F= '/^DB_PASSWORD=/{print substr($0, index($0,"=")+1); exit}' .env)"
+fi
+: "${DB_PASSWORD:?DB_PASSWORD is required}"
 
     echo "[INFO] Ensuring systest db container is up..."
     docker compose -f "$COMPOSE_FILE" up -d db

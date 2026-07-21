@@ -18,14 +18,36 @@ print_status() {
     echo -e "${GREEN}[INFO]${NC} $1"
 }
 
+print_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
 print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-if [ ! -f "docker-compose.prod.yml" ]; then
-    print_error "docker-compose.prod.yml not found. Run from the TW4 project root."
+PREFERRED_COMPOSE_FILE="docker-compose.systest.yml"
+LEGACY_COMPOSE_FILE="docker-compose.prod.yml"
+
+if [ -n "${COMPOSE_FILE-}" ]; then
+    SELECTED_COMPOSE_FILE="$COMPOSE_FILE"
+elif [ -f "$PREFERRED_COMPOSE_FILE" ]; then
+    SELECTED_COMPOSE_FILE="$PREFERRED_COMPOSE_FILE"
+elif [ -f "$LEGACY_COMPOSE_FILE" ]; then
+    SELECTED_COMPOSE_FILE="$LEGACY_COMPOSE_FILE"
+    print_warn "Using legacy compose file '$LEGACY_COMPOSE_FILE'. Rename path to '$PREFERRED_COMPOSE_FILE' when convenient."
+else
+    SELECTED_COMPOSE_FILE="$PREFERRED_COMPOSE_FILE"
+fi
+
+COMPOSE_FILE="$SELECTED_COMPOSE_FILE"
+
+if [ ! -f "$COMPOSE_FILE" ]; then
+    print_error "$PREFERRED_COMPOSE_FILE (or legacy $LEGACY_COMPOSE_FILE) not found. Run from the TW4 project root."
     exit 1
 fi
+
+print_status "Using compose file: $COMPOSE_FILE"
 
 BASE_SCHEMA_FILE="database/baseline/TW4_base_schema.sql"
 LIVE_SCHEMA_FILE="database/baseline/TW4_live_schema.sql"
@@ -43,7 +65,7 @@ POST_BOOTSTRAP_MIGRATIONS=(
 
 ensure_application_log_table() {
     print_status "Ensuring TW4_base.application_log exists..."
-    docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
         mysql -u root TW4_base <<'SQL'
 CREATE TABLE IF NOT EXISTS application_log (
     row_id INT NOT NULL AUTO_INCREMENT,
@@ -87,92 +109,92 @@ fi
 : "${DB_PASSWORD:?DB_PASSWORD is required (set it in .env or export it)}"
 
 print_status "Ensuring the database container is running..."
-docker compose -f docker-compose.prod.yml up -d db
+docker compose -f "$COMPOSE_FILE" up -d db
 
 print_status "Waiting for MySQL readiness..."
-until docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+until docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -u root -e "SELECT 1" >/dev/null 2>&1; do
     echo "Waiting for MySQL..."
 done
 
 print_status "Dropping and recreating TW4_base, TW4_live, TW4_history, and TW4_holding..."
-docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -u root -e "DROP DATABASE IF EXISTS TW4_base; DROP DATABASE IF EXISTS TW4_live; DROP DATABASE IF EXISTS TW4_history; DROP DATABASE IF EXISTS TW4_holding; CREATE DATABASE TW4_base; CREATE DATABASE TW4_live; CREATE DATABASE TW4_history; CREATE DATABASE TW4_holding;"
 
 print_status "Importing TW4_base schema..."
-docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -u root < "$BASE_SCHEMA_FILE"
 
 print_status "Importing TW4_live schema..."
-docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -u root < "$LIVE_SCHEMA_FILE"
 
 print_status "Importing TW4_history schema..."
-docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -u root < "$HISTORY_SCHEMA_FILE"
 
 print_status "Importing TW4_holding schema..."
-docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -u root < "$HOLDING_SCHEMA_FILE"
 
 print_status "Applying controlled TW4_base seed data..."
-docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -u root TW4_base < "$BASE_SEED_FILE"
 
 print_status "Applying post-bootstrap compatibility migrations..."
 for migration_file in "${POST_BOOTSTRAP_MIGRATIONS[@]}"; do
     print_status "Applying ${migration_file}..."
-    docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
         mysql -u root TW4_base < "$migration_file"
 done
 
 ensure_application_log_table
 
 print_status "Ensuring TW4_live.round has a baseline between_rounds row..."
-docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "INSERT INTO TW4_live.round (number_round, workflow_step, updated_by) SELECT 0, 'between_rounds', 'system' WHERE NOT EXISTS (SELECT 1 FROM TW4_live.round); UPDATE TW4_live.round SET workflow_step='between_rounds' WHERE workflow_step='not_started';"
 
 print_status "Verifying required databases and tables..."
-docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SHOW DATABASES LIKE 'TW4_base'; SHOW DATABASES LIKE 'TW4_live'; SHOW DATABASES LIKE 'TW4_history'; SHOW DATABASES LIKE 'TW4_holding'; SHOW TABLES IN TW4_base LIKE 'staff'; SHOW TABLES IN TW4_base LIKE 'config_application'; SHOW TABLES IN TW4_base LIKE 'application_log'; SHOW TABLES IN TW4_base LIKE 'handicap_audit'; SHOW TABLES IN TW4_live LIKE 'round'; SHOW TABLES IN TW4_live LIKE 'card'; SHOW TABLES IN TW4_live LIKE 'card_by_hole'; SHOW TABLES IN TW4_live LIKE 'results'; SHOW TABLES IN TW4_live LIKE 'best_five_scores'; SHOW TABLES IN TW4_history LIKE 'round'; SHOW TABLES IN TW4_history LIKE 'card'; SHOW TABLES IN TW4_history LIKE 'card_by_hole'; SHOW TABLES IN TW4_history LIKE 'results'; SHOW TABLES IN TW4_history LIKE 'best_five_scores'; SHOW TABLES IN TW4_history LIKE 'round_eclectic_context'; SHOW TABLES IN TW4_holding LIKE 'best_five_scores';"
 
-ADMIN_ROW="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+ADMIN_ROW="$(docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SELECT username, role, is_active FROM TW4_base.staff WHERE username='admin' LIMIT 1;")"
 
-STAFF_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+STAFF_COUNT="$(docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SELECT COUNT(*) FROM TW4_base.staff;")"
 
-CONFIG_STATUS="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+CONFIG_STATUS="$(docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SELECT config_value_string FROM TW4_base.config_application WHERE config_name='config_status' LIMIT 1;")"
 
-ROUND_ECLECTIC_CONTEXT_TABLE="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+ROUND_ECLECTIC_CONTEXT_TABLE="$(docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SHOW TABLES IN TW4_history LIKE 'round_eclectic_context';")"
 
-BETWEEN_ROUNDS_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+BETWEEN_ROUNDS_COUNT="$(docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SELECT COUNT(*) FROM TW4_live.round WHERE workflow_step='between_rounds';")"
 
-ROUND_WORKFLOW_ENUM_HAS_BETWEEN_ROUNDS="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+ROUND_WORKFLOW_ENUM_HAS_BETWEEN_ROUNDS="$(docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SELECT CASE WHEN COLUMN_TYPE LIKE '%between_rounds%' THEN 1 ELSE 0 END FROM information_schema.columns WHERE table_schema='TW4_live' AND table_name='round' AND column_name='workflow_step' LIMIT 1;")"
 
-APPLICATION_LOG_TABLE="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+APPLICATION_LOG_TABLE="$(docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SHOW TABLES IN TW4_base LIKE 'application_log';")"
 
-HANDICAP_POINTS_SCORED_COLUMN_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+HANDICAP_POINTS_SCORED_COLUMN_COUNT="$(docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='TW4_base' AND table_name='handicap_audit' AND column_name='points_scored';")"
 
-HANDICAP_POINTS_EFFECTIVE_COLUMN_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+HANDICAP_POINTS_EFFECTIVE_COLUMN_COUNT="$(docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='TW4_base' AND table_name='handicap_audit' AND column_name='points_effective';")"
 
-HANDICAP_CHANGED_BY_COLUMN_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+HANDICAP_CHANGED_BY_COLUMN_COUNT="$(docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='TW4_base' AND table_name='handicap_audit' AND column_name='changed_by';")"
 
-HANDICAP_CHANGED_AT_COLUMN_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+HANDICAP_CHANGED_AT_COLUMN_COUNT="$(docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='TW4_base' AND table_name='handicap_audit' AND column_name='changed_at';")"
 
-HANDICAP_UPDATED_TS_INDEX_COUNT="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+HANDICAP_UPDATED_TS_INDEX_COUNT="$(docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema='TW4_base' AND table_name='handicap_audit' AND index_name='idx_updated_ts';")"
 
-HANDICAP_PLAYER_BEFORE_POINTS="$(docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+HANDICAP_PLAYER_BEFORE_POINTS="$(docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -N -s -u root -e "SELECT CASE WHEN \
         (SELECT ordinal_position FROM information_schema.columns WHERE table_schema='TW4_base' AND table_name='handicap_audit' AND column_name='row_id_player') \
         < (SELECT ordinal_position FROM information_schema.columns WHERE table_schema='TW4_base' AND table_name='handicap_audit' AND column_name='points_scored') \
@@ -242,9 +264,9 @@ print_status "handicap_audit verification passed: points columns present, change
 
 # Clean up report files and sessions to start fresh
 print_status "Cleaning up report files and session data..."
-docker compose -f docker-compose.prod.yml exec -T app bash -c 'rm -rf /var/www/html/public/reports/* && echo "Reports directory cleared"' || true
-docker compose -f docker-compose.prod.yml exec -T app bash -c 'rm -rf /var/www/html/logs/*.log && echo "Old logs cleared"' || true
-docker compose -f docker-compose.prod.yml exec -T app bash -c 'rm -f /tmp/sess_* && echo "Session files cleared"' || true
+docker compose -f "$COMPOSE_FILE" exec -T app bash -c 'rm -rf /var/www/html/public/reports/* && echo "Reports directory cleared"' || true
+docker compose -f "$COMPOSE_FILE" exec -T app bash -c 'rm -rf /var/www/html/logs/*.log && echo "Old logs cleared"' || true
+docker compose -f "$COMPOSE_FILE" exec -T app bash -c 'rm -f /tmp/sess_* && echo "Session files cleared"' || true
 
 print_status "System test bootstrap completed successfully (virgin baseline state)."
 print_status ""
