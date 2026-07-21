@@ -132,7 +132,7 @@ echo "  HTML files in container: ${COUNT}"
 
 if [ -n "$SAMPLE_REL" ]; then
   SAMPLE_PATH="${DEST}/${SAMPLE_REL}"
-  CONTAINER_HASH="$(docker exec "$CID" sh -c "sha256sum '${SAMPLE_PATH}' 2>/dev/null | awk '{print \\\$1}'")"
+  CONTAINER_HASH="$(docker exec "$CID" sh -c "sha256sum '${SAMPLE_PATH}' 2>/dev/null | cut -d' ' -f1")"
   if [ -z "$CONTAINER_HASH" ]; then
     echo "[ERROR] Verification sample not found in container: ${SAMPLE_PATH}" >&2
     exit 1
