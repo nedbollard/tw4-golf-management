@@ -42,6 +42,7 @@ $isBetweenRounds = in_array($activeStep, ['between_rounds', 'not_started'], true
 $displayRound = $activeRound && (((int) ($activeRound['round_number'] ?? 0)) > 0 || !$isBetweenRounds)
     ? $activeRound
     : null;
+$showDeleteCards = $displayRound && $activeStep === 'card_entry_open' && $cardCount > 0;
 ?>
 
 <div class="scorer-layout">
@@ -64,6 +65,9 @@ $displayRound = $activeRound && (((int) ($activeRound['round_number'] ?? 0)) > 0
                     <a href="/leaderboard" class="btn-toolbar-leader">Leaderboard</a>
                     <?php if ($displayRound): ?>
                         <a href="/results" class="btn-toolbar-results">View Results</a>
+                        <?php if ($showDeleteCards): ?>
+                            <a href="/scores/delete-cards" class="btn-toolbar-results">Delete Cards</a>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
 
@@ -178,22 +182,6 @@ $displayRound = $activeRound && (((int) ($activeRound['round_number'] ?? 0)) > 0
                 </div>
             </div>
         </div>
-
-        <?php if (!empty($success)): ?>
-            <div class="scorer-alert scorer-alert-success" role="status">
-                <?php foreach ((array) $success as $message): ?>
-                    <div><?php echo htmlspecialchars((string) $message); ?></div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
-
-        <?php if (!empty($errors)): ?>
-            <div class="scorer-alert scorer-alert-error" role="alert">
-                <?php foreach ($errors as $error): ?>
-                    <div><?php echo htmlspecialchars((string) $error); ?></div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
 
         <footer class="scorer-footer">
             <p class="mb-0">&copy; <?php echo date('Y'); ?> Twilight Golf Scoring &bull; 2nd Wind Software</p>

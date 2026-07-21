@@ -243,6 +243,11 @@ return [
             'controller' => 'App\\Controllers\\ScoreController',
             'method' => 'presentResults'
         ],
+        '/scores/delete-cards' => [
+            'path' => '/scores/delete-cards',
+            'controller' => 'App\\Controllers\\ScorerController',
+            'method' => 'deleteCards'
+        ],
     ],
     
     'POST' => [
@@ -310,6 +315,11 @@ return [
             'path' => '/scores/present-results',
             'controller' => 'App\\Controllers\\ScoreController',
             'method' => 'finalizeResults'
+        ],
+        '/scores/delete-cards' => [
+            'path' => '/scores/delete-cards',
+            'controller' => 'App\\Controllers\\ScorerController',
+            'method' => 'deleteCardsSelected'
         ],
         '/course-club/store' => [
             'path' => '/course-club/store',
