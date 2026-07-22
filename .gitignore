@@ -11,6 +11,6 @@ private/logs/
 .phpunit.cache/
 cookies.txt
 # Generated finish-round snapshot/report output (runtime data)
-#public/reports/
+public/reports/
 # Database backups and exports (temporary working files)
 backup/
