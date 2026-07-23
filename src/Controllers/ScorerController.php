@@ -196,10 +196,17 @@ class ScorerController extends BaseController
             (string) ($user['username'] ?? 'system')
         );
 
+        $remainingCardCount = (int) ($result['remaining_card_count'] ?? 0);
+
         $this->flash->success(sprintf(
             'Deleted %d card(s) successfully.',
             count($deletedCards)
         ));
+
+        if ($remainingCardCount > 0) {
+            $this->redirect('/scores/delete-cards');
+            return;
+        }
 
         $this->redirect('/scorer/menu');
     }

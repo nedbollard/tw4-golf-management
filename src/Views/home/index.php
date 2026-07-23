@@ -63,9 +63,9 @@
                         </div>
 
                         <div class="welcome-panel">
-                            <h3>Watch This Space</h3>
-                            <p>Reserved for the next phase of scoring features.</p>
-                            <span class="btn-disabled-pill">Coming Soon</span>
+                            <h3>Player Progress</h3>
+                            <p>Season-by-season handicap movement and scoring trends for one player.</p>
+                            <a href="/player-progress" class="btn-accent-pill">View Progress</a>
                         </div>
                     </div>
                 </div>

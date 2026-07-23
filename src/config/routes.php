@@ -203,6 +203,16 @@ return [
             'controller' => 'App\\Controllers\\ScoreController',
             'method' => 'leaderboard'
         ],
+        '/player-progress' => [
+            'path' => '/player-progress',
+            'controller' => 'App\\Controllers\\PlayerProgressController',
+            'method' => 'index'
+        ],
+        '/player-progress/chart' => [
+            'path' => '/player-progress/chart',
+            'controller' => 'App\\Controllers\\PlayerProgressController',
+            'method' => 'chart'
+        ],
         '/rounds' => [
             'path' => '/rounds',
             'controller' => 'App\\Controllers\\RoundController',

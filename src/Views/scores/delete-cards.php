@@ -71,7 +71,7 @@ $confirmMessage = count($cards) === 1
                     </div>
 
                     <div class="present-results-actions">
-                        <button type="submit" class="btn-action-destructive" id="delete-selected-button">Delete Selected</button>
+                        <button type="submit" class="btn-action-destructive" id="delete-selected-button" data-original-label="Delete Selected">Delete Selected</button>
                         <a href="/scorer/menu" class="btn-secondary-pill">Cancel</a>
                     </div>
                 </form>
@@ -88,10 +88,31 @@ $confirmMessage = count($cards) === 1
 (() => {
     const form = document.getElementById('delete-cards-form');
     const confirmField = document.getElementById('confirm-delete');
+    const deleteButton = document.getElementById('delete-selected-button');
 
-    if (!form || !confirmField) {
+    if (!form || !confirmField || !deleteButton) {
         return;
     }
+
+    const originalLabel = deleteButton.dataset.originalLabel || 'Delete Selected';
+
+    const setBusy = () => {
+        deleteButton.textContent = 'Deleting ...';
+        deleteButton.disabled = true;
+        deleteButton.style.pointerEvents = 'none';
+        deleteButton.style.opacity = '1';
+        deleteButton.setAttribute('aria-disabled', 'true');
+    };
+
+    const resetBusy = () => {
+        deleteButton.textContent = originalLabel;
+        deleteButton.disabled = false;
+        deleteButton.style.pointerEvents = '';
+        deleteButton.style.opacity = '';
+        deleteButton.removeAttribute('aria-disabled');
+    };
+
+    window.addEventListener('pageshow', resetBusy);
 
     form.addEventListener('submit', (event) => {
         if (confirmField.value === 'yes') {
@@ -111,6 +132,7 @@ $confirmMessage = count($cards) === 1
 
         if (window.confirm(message)) {
             confirmField.value = 'yes';
+            setBusy();
             form.submit();
         }
     });
