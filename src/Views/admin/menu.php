@@ -57,39 +57,53 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                 <?php endif; ?>
 
                 <div class="admin-grid" role="list" aria-label="Admin actions">
-                    <div class="admin-panel" role="listitem">
-                        <p>Admin-only controls for workflow and lock state.</p>
-                        <a href="/admin/scoring-state" class="btn-admin-scoring">Manage Scoring State</a>
+                    <div class="admin-panel admin-panel-action" role="listitem">
+                        <span class="welcome-tooltip-wrap">
+                            <a href="/admin/scoring-state" class="btn-admin-scoring" aria-describedby="scoring-state-tooltip">Manage Scoring State</a>
+                            <span class="welcome-tooltip" id="scoring-state-tooltip" role="tooltip">Admin-only controls for workflow and lock state.</span>
+                        </span>
                     </div>
 
-                    <div class="admin-panel" role="listitem">
-                        <p>View system logs and key audit events.</p>
-                        <a href="/logs" class="btn-admin-logs">View Logs</a>
+                    <div class="admin-panel admin-panel-action" role="listitem">
+                        <span class="welcome-tooltip-wrap">
+                            <a href="/logs" class="btn-admin-logs" aria-describedby="logs-tooltip">View Logs</a>
+                            <span class="welcome-tooltip" id="logs-tooltip" role="tooltip">View system logs and key audit events.</span>
+                        </span>
                     </div>
 
-                    <div class="admin-panel" role="listitem">
-                        <p>Add, update, and manage staff accounts.</p>
-                        <a href="/staff" class="btn-admin-staff">Staff Management</a>
+                    <div class="admin-panel admin-panel-action" role="listitem">
+                        <span class="welcome-tooltip-wrap">
+                            <a href="/staff" class="btn-admin-staff" aria-describedby="staff-tooltip">Staff Management</a>
+                            <span class="welcome-tooltip" id="staff-tooltip" role="tooltip">Add, update, and manage staff accounts.</span>
+                        </span>
                     </div>
 
-                    <div class="admin-panel" role="listitem">
-                        <p>Manage system settings and configuration.</p>
-                        <a href="/config" class="btn-admin-config">Configure System</a>
+                    <div class="admin-panel admin-panel-action" role="listitem">
+                        <span class="welcome-tooltip-wrap">
+                            <a href="/config" class="btn-admin-config" aria-describedby="config-tooltip">Configure System</a>
+                            <span class="welcome-tooltip" id="config-tooltip" role="tooltip">Manage system settings and configuration.</span>
+                        </span>
                     </div>
 
-                    <div class="admin-panel" role="listitem">
-                        <p>Manage course holes and club configuration.</p>
-                        <a href="/course-club" class="btn-admin-course">Course Club Management</a>
+                    <div class="admin-panel admin-panel-action" role="listitem">
+                        <span class="welcome-tooltip-wrap">
+                            <a href="/course-club" class="btn-admin-course" aria-describedby="course-club-tooltip">Course Club Management</a>
+                            <span class="welcome-tooltip" id="course-club-tooltip" role="tooltip">Manage course holes and club configuration.</span>
+                        </span>
                     </div>
 
-                    <div class="admin-panel" role="listitem">
-                        <p>Create and maintain played 9-hole course definitions.</p>
-                        <a href="/course-played" class="btn-admin-played">Course Played Management</a>
+                    <div class="admin-panel admin-panel-action" role="listitem">
+                        <span class="welcome-tooltip-wrap">
+                            <a href="/course-played" class="btn-admin-played" aria-describedby="course-played-tooltip">Course Played Management</a>
+                            <span class="welcome-tooltip" id="course-played-tooltip" role="tooltip">Create and maintain played 9-hole course definitions.</span>
+                        </span>
                     </div>
 
-                    <div class="admin-panel" role="listitem">
-                        <p>Set and maintain fixed team membership with replacement controls.</p>
-                        <a href="/admin/team-haggle" class="btn-admin-scoring">Team Haggle (Serious)</a>
+                    <div class="admin-panel admin-panel-action" role="listitem">
+                        <span class="welcome-tooltip-wrap">
+                            <a href="/admin/team-haggle" class="btn-admin-scoring" aria-describedby="team-haggle-tooltip">Team Haggle (Serious)</a>
+                            <span class="welcome-tooltip" id="team-haggle-tooltip" role="tooltip">Set and maintain fixed team membership with replacement controls.</span>
+                        </span>
                     </div>
                 </div>
 

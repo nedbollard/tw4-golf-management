@@ -50,22 +50,25 @@
                             <?php endif; ?>
                         </div>
 
-                        <div class="welcome-panel">
-                            <h3>Recent Results</h3>
-                            <p>View latest competition results</p>
-                            <a href="/results" class="btn-gold-pill">View Results</a>
+                        <div class="welcome-panel welcome-panel-action">
+                            <span class="welcome-tooltip-wrap">
+                                <a href="/results" class="btn-gold-pill" aria-describedby="results-tooltip">View Results</a>
+                                <span class="welcome-tooltip" id="results-tooltip" role="tooltip">View latest competition results</span>
+                            </span>
                         </div>
 
-                        <div class="welcome-panel">
-                            <h3>Leaderboard</h3>
-                            <p>Live progress for the round currently being scored</p>
-                            <a href="/leaderboard" class="btn-accent-pill">View Leaderboard</a>
+                        <div class="welcome-panel welcome-panel-action">
+                            <span class="welcome-tooltip-wrap">
+                                <a href="/leaderboard" class="btn-accent-pill" aria-describedby="leaderboard-tooltip">View Leaderboard</a>
+                                <span class="welcome-tooltip" id="leaderboard-tooltip" role="tooltip">Live progress for the round currently being scored</span>
+                            </span>
                         </div>
 
-                        <div class="welcome-panel">
-                            <h3>Player Progress</h3>
-                            <p>Season-by-season handicap movement and scoring trends for one player.</p>
-                            <a href="/player-progress" class="btn-accent-pill">View Progress</a>
+                        <div class="welcome-panel welcome-panel-action">
+                            <span class="welcome-tooltip-wrap">
+                                <a href="/player-progress" class="btn-accent-pill" aria-describedby="player-progress-tooltip">View Player Progress</a>
+                                <span class="welcome-tooltip" id="player-progress-tooltip" role="tooltip">Season-by-season handicap movement and scoring trends for one player.</span>
+                            </span>
                         </div>
                     </div>
                 </div>

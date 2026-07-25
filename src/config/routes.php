@@ -108,6 +108,11 @@ return [
             'controller' => 'App\\Controllers\\ScorerController',
             'method' => 'menu'
         ],
+        '/handicap-reference' => [
+            'path' => '/handicap-reference',
+            'controller' => 'App\\Controllers\\HandicapReferenceController',
+            'method' => 'index'
+        ],
         '/error' => [
             'path' => '/error',
             'controller' => 'App\\Controllers\\ErrorController',

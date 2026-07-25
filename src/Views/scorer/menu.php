@@ -62,6 +62,7 @@ $showDeleteCards = $displayRound && $activeStep === 'card_entry_open' && $cardCo
                 <div class="scorer-toolbar" aria-label="Scorer navigation">
                     <a href="/" class="btn-toolbar-main">Main Menu</a>
                     <a href="/roster" class="btn-toolbar-roster">View Roster</a>
+                    <a href="/handicap-reference" class="btn-toolbar-results">Find Handicap</a>
                     <a href="/leaderboard" class="btn-toolbar-leader">Leaderboard</a>
                     <?php if ($displayRound): ?>
                         <a href="/results" class="btn-toolbar-results">View Results</a>

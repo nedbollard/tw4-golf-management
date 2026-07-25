@@ -12,6 +12,7 @@ class Logger
     private Database $db;
     private string $logFile;
     private const DIR_PERMISSIONS = 0755;
+    private const FILTER_COLUMNS = ['level', 'event_type', 'username'];
     
     // Log levels
     const LEVEL_DEBUG = 'DEBUG';
@@ -274,7 +275,9 @@ class Logger
      */
     private function getUniqueValues(string $column): array
     {
-        $this->db->validateColumn($column);
+        if (!in_array($column, self::FILTER_COLUMNS, true)) {
+            throw new \InvalidArgumentException("Unsupported log filter column: {$column}");
+        }
 
         $result = $this->db->fetchAll("SELECT DISTINCT $column FROM application_log WHERE $column IS NOT NULL ORDER BY $column");
         return array_column($result, $column);

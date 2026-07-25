@@ -288,6 +288,54 @@ body.page-welcome {
     margin: 0 0 12px 0;
 }
 
+.welcome-panel-action {
+    padding: 14px 16px;
+}
+
+.welcome-tooltip-wrap {
+    display: inline-block;
+    position: relative;
+}
+
+.welcome-tooltip {
+    background: var(--color-text-primary);
+    border-radius: 6px;
+    bottom: calc(100% + 9px);
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 500;
+    left: 50%;
+    line-height: 1.35;
+    max-width: min(280px, calc(100vw - 48px));
+    opacity: 0;
+    padding: 8px 10px;
+    pointer-events: none;
+    position: absolute;
+    transform: translate(-50%, 4px);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    visibility: hidden;
+    width: max-content;
+    z-index: 5;
+}
+
+.welcome-tooltip::after {
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid var(--color-text-primary);
+    content: '';
+    left: 50%;
+    position: absolute;
+    top: 100%;
+    transform: translateX(-50%);
+}
+
+.welcome-tooltip-wrap:hover .welcome-tooltip,
+.welcome-tooltip-wrap:focus-within .welcome-tooltip {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    visibility: visible;
+}
+
 .welcome-user {
     background: #ecfdf5;
     border: 2px solid #a7f3d0;
@@ -2029,6 +2077,13 @@ body.page-admin-menu {
     margin: 0 0 8px 0;
 }
 
+.admin-panel-action {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    min-height: 62px;
+}
+
 .btn-admin-config,
 .btn-admin-staff,
 .btn-admin-course,
@@ -2547,6 +2602,209 @@ body.page-scorer-menu {
 
     .step-status,
     .step-action {
+        width: 100%;
+    }
+}
+
+/* Handicap reference page (scoped) */
+.handicap-reference-form {
+    display: grid;
+    gap: 14px;
+    margin-top: 22px;
+}
+
+.handicap-reference-field,
+.handicap-reference-action-row {
+    align-items: center;
+    border: 0;
+    column-gap: 18px;
+    display: grid;
+    grid-template-columns: minmax(110px, 150px) minmax(0, 380px);
+    justify-content: center;
+    margin: 0;
+    min-width: 0;
+    padding: 0;
+}
+
+.handicap-reference-field > label,
+.handicap-reference-field legend {
+    color: var(--color-text-primary);
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.25;
+    margin: 0;
+    text-align: right;
+}
+
+.handicap-reference-field input[type="text"],
+.handicap-reference-field input[type="number"],
+.handicap-reference-field select {
+    background: #ffffff;
+    border: 2px solid #d1fae5;
+    border-radius: var(--radius-card);
+    box-sizing: border-box;
+    color: var(--color-text-primary);
+    font-family: inherit;
+    padding: 12px;
+    width: 100%;
+}
+
+.handicap-reference-field input[type="number"]:focus,
+.handicap-reference-field select:focus {
+    border-color: var(--color-accent-mint);
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.2);
+    outline: none;
+}
+
+.handicap-reference-field input[readonly] {
+    background: #f9fafb;
+    color: var(--color-muted);
+}
+
+.handicap-reference-field .handicap-reference-index-input {
+    max-width: 150px;
+}
+
+.handicap-reference-segmented {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.handicap-reference-segmented input {
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+}
+
+.handicap-reference-segmented label {
+    background: #f9fafb;
+    border: 2px solid #d1fae5;
+    cursor: pointer;
+    font-weight: 700;
+    padding: 12px;
+    text-align: center;
+}
+
+.handicap-reference-segmented label:first-of-type {
+    border-radius: var(--radius-card) 0 0 var(--radius-card);
+}
+
+.handicap-reference-segmented label:last-of-type {
+    border-left: 0;
+    border-radius: 0 var(--radius-card) var(--radius-card) 0;
+}
+
+.handicap-reference-segmented input:checked + label {
+    background: var(--color-accent-mint);
+    border-color: var(--color-accent-mint);
+    color: var(--color-text-primary);
+}
+
+.handicap-reference-segmented input:focus-visible + label {
+    outline: 3px solid rgba(52, 211, 153, 0.3);
+    outline-offset: 2px;
+}
+
+.handicap-reference-submit {
+    min-height: 48px;
+    min-width: 240px;
+}
+
+.handicap-reference-action-row {
+    display: flex;
+    justify-content: center;
+}
+
+.handicap-reference-result {
+    border-top: 2px solid #d1fae5;
+    margin-top: 24px;
+    padding-top: 22px;
+}
+
+.handicap-reference-result-value {
+    align-items: baseline;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.handicap-reference-result-value span {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.handicap-reference-result-value strong {
+    color: #047857;
+    font-size: 3rem;
+    line-height: 1;
+}
+
+.handicap-reference-result-value small {
+    background: #d1fae5;
+    border-radius: 999px;
+    color: #065f46;
+    font-weight: 700;
+    padding: 4px 9px;
+}
+
+.handicap-reference-facts {
+    display: grid;
+    gap: 1px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: 0;
+    overflow: hidden;
+}
+
+.handicap-reference-facts div {
+    background: #ecfdf5;
+    padding: 12px 8px;
+    text-align: center;
+}
+
+.handicap-reference-facts dt {
+    color: var(--color-muted);
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+
+.handicap-reference-facts dd {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 3px 0 0;
+}
+
+.handicap-reference-actions {
+    margin-top: 24px;
+    text-align: center;
+}
+
+@media (max-width: 576px) {
+    .handicap-reference-field,
+    .handicap-reference-action-row {
+        column-gap: 10px;
+        grid-template-columns: 116px minmax(0, 1fr);
+    }
+
+    .handicap-reference-facts {
+        grid-template-columns: 1fr;
+    }
+
+    .handicap-reference-submit {
+        min-width: 200px;
+    }
+
+    .handicap-reference-result-value {
+        align-items: center;
+        flex-direction: column;
+    }
+
+    .handicap-reference-actions a {
         width: 100%;
     }
 }

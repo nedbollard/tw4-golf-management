@@ -61,6 +61,7 @@ POST_BOOTSTRAP_MIGRATIONS=(
     "src/migrations/038_eclectic_config_and_round_context.sql"
     "src/migrations/039_team_haggle_floating_setup.sql"
     "src/migrations/040_team_haggle_serious_audit.sql"
+    "src/migrations/041_handicap_reference_tees.sql"
 )
 
 ensure_application_log_table() {
