@@ -5,7 +5,13 @@ namespace Tests\Unit;
 use App\Controllers\AdminController;
 use App\Core\Application;
 use App\Core\Database;
+use App\Services\AuthService;
+use App\Services\ConfigService;
+use App\Services\FlashMessage;
 use App\Services\Logger;
+use App\Services\RoundLockService;
+use App\Services\RoundWorkflowService;
+use App\Services\TeamHaggleSeriousService;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -13,320 +19,152 @@ use PHPUnit\Framework\TestCase;
 #[AllowMockObjectsWithoutExpectations]
 class AdminControllerBehaviorTest extends TestCase
 {
-    public function testResetResultsToCardEntrySuccessLogsAndRedirects(): void
+    private Database|MockObject $database;
+    private Logger|MockObject $logger;
+    private RoundWorkflowService|MockObject $workflow;
+    private RoundLockService|MockObject $roundLock;
+    private TestableAdminController $controller;
+
+    protected function setUp(): void
     {
         $_SESSION = ['config_checked' => true];
 
-        /** @var Application|MockObject $app */
-        $app = $this->createMock(Application::class);
-        /** @var Database|MockObject $db */
-        $db = $this->createMock(Database::class);
-        /** @var Logger|MockObject $logger */
-        $logger = $this->createMock(Logger::class);
+        $application = $this->createMock(Application::class);
+        $this->database = $this->createMock(Database::class);
+        $this->logger = $this->createMock(Logger::class);
+        $this->workflow = $this->createMock(RoundWorkflowService::class);
+        $this->roundLock = $this->createMock(RoundLockService::class);
+        $teamHaggle = $this->createMock(TeamHaggleSeriousService::class);
 
-        $app->method('getDatabase')->willReturn($db);
-        $db->method('getAuth')->willReturn($this->createAuthStub([
+        $application->method('getDatabase')->willReturn($this->database);
+
+        $this->controller = new TestableAdminController(
+            $application,
+            $this->logger,
+            $this->workflow,
+            $this->roundLock,
+            $teamHaggle
+        );
+
+        $config = $this->createMock(ConfigService::class);
+        $auth = $this->createMock(AuthService::class);
+        $auth->method('getUser')->willReturn([
             'user_id' => 17,
             'username' => 'admin_user',
-        ]));
+        ]);
+        $this->controller->initializeServices($config, $auth, new FlashMessage(), $this->logger);
+    }
 
-        $db->expects($this->exactly(5))
+    protected function tearDown(): void
+    {
+        $_SESSION = [];
+    }
+
+    public function testResetResultsToCardEntrySuccessLogsAndRedirects(): void
+    {
+        $this->workflow->expects($this->once())
+            ->method('adminResetResultsToCardEntry')
+            ->with('admin_user')
+            ->willReturn([
+                'round_id' => 7,
+                'from_step' => 'results_presented',
+                'to_step' => 'card_entry_open',
+                'results_rows_cleared' => 5,
+                'card_count' => 9,
+            ]);
+        $this->database->expects($this->once())
             ->method('fetchOne')
-            ->willReturnCallback(static function (string $sql, array $params = []): ?array {
-                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
-                    return [
-                        'round_id' => 7,
-                        'round_number' => 42,
-                        'season_year' => '25_26',
-                        'workflow_step' => 'results_presented',
-                    ];
-                }
-
-                if (str_contains($sql, 'COUNT(*) AS total FROM TW4_live.results')) {
-                    return ['total' => 5];
-                }
-
-                if (str_contains($sql, 'FROM TW4_live.card')) {
-                    return ['total' => 9];
-                }
-
-                if (str_contains($sql, 'FROM TW4_history.round') && str_contains($sql, 'round_date')) {
-                    return ['round_date' => '2026-01-01', 'course_played_id' => 3];
-                }
-
-                if (str_contains($sql, 'workflow_step, card_count, lock_release_reason, locked_by_staff_id')) {
-                    return [
-                        'row_id' => 7,
-                        'workflow_step' => 'card_entry_open',
-                        'card_count' => 9,
-                        'lock_release_reason' => 'admin_forced',
-                        'locked_by_staff_id' => null,
-                    ];
-                }
-
-                return null;
-            });
-
-        $db->expects($this->once())->method('beginTransaction');
-        $db->expects($this->once())->method('commit');
-        $db->expects($this->never())->method('rollback');
-
-        $fakeStatement = $this->createMock(\PDOStatement::class);
-        $fakeStatement->method('rowCount')->willReturn(1);
-
-        $db->expects($this->atLeast(3))
-            ->method('query')
-            ->willReturnCallback(function (string $sql, array $params = []) use ($fakeStatement) {
-                if (str_contains($sql, 'DELETE FROM TW4_live.results')) {
-                    return $fakeStatement;
-                }
-
-                if (str_contains($sql, 'DELETE FROM TW4_history.best_five_scores')) {
-                    return $fakeStatement;
-                }
-
-                if (str_contains($sql, 'DELETE FROM TW4_live.best_five_scores')) {
-                    return $fakeStatement;
-                }
-
-                $this->assertStringContainsString('UPDATE TW4_live.round', $sql);
-                $this->assertSame([9, '2026-01-01', 3, 'admin_user', 7], $params);
-                return $fakeStatement;
-            });
-
-        $logger->expects($this->once())
+            ->willReturn([
+                'workflow_step' => 'card_entry_open',
+                'card_count' => 9,
+                'locked_by_staff_id' => null,
+                'lock_release_reason' => 'admin_forced',
+            ]);
+        $this->logger->expects($this->once())
             ->method('log')
             ->with(
                 Logger::LEVEL_WARNING,
                 Logger::EVENT_SYSTEM,
                 'Admin reset scoring state from results_presented to card_entry_open (state applied)',
-                $this->callback(static function (array $context): bool {
-                    return ($context['round_id'] ?? 0) === 7
-                        && ($context['admin_staff_id'] ?? 0) === 17
-                        && ($context['results_rows_cleared'] ?? 0) === 5
-                        && ($context['card_count'] ?? 0) === 9;
-                }),
+                $this->callback(static fn(array $context): bool =>
+                    $context['round_id'] === 7
+                    && $context['admin_staff_id'] === 17
+                    && $context['results_rows_cleared'] === 5
+                    && $context['card_count'] === 9
+                ),
                 'admin_user'
             );
 
-        $controller = new TestableAdminController($app, $logger);
-        $controller->resetResultsToCardEntry();
+        $this->controller->resetResultsToCardEntry();
 
-        $this->assertSame('admin', $controller->requiredRole);
-        $this->assertSame('/admin/scoring-state', $controller->redirectedTo);
-        $this->assertSame('Scoring state reset to card entry open. Live results were cleared.', $_SESSION['success']);
+        $this->assertSame('admin', $this->controller->requiredRole);
+        $this->assertSame('/admin/scoring-state', $this->controller->redirectedTo);
+        $this->assertSame(
+            ['Scoring state reset to card entry open. Live results were cleared.'],
+            $_SESSION['_flash']['success']
+        );
     }
 
     public function testResetResultsToCardEntryFailureSetsErrorAndRedirects(): void
     {
-        $_SESSION = ['config_checked' => true];
+        $this->workflow->expects($this->once())
+            ->method('adminResetResultsToCardEntry')
+            ->willThrowException(new \RuntimeException('Reset is not allowed from card entry.'));
+        $this->database->expects($this->never())->method('fetchOne');
+        $this->logger->expects($this->never())->method('log');
 
-        /** @var Application|MockObject $app */
-        $app = $this->createMock(Application::class);
-        /** @var Database|MockObject $db */
-        $db = $this->createMock(Database::class);
-        /** @var Logger|MockObject $logger */
-        $logger = $this->createMock(Logger::class);
+        $this->controller->resetResultsToCardEntry();
 
-        $app->method('getDatabase')->willReturn($db);
-        $db->method('getAuth')->willReturn($this->createAuthStub([
-            'user_id' => 17,
-            'username' => 'admin_user',
-        ]));
-
-        $db->expects($this->once())
-            ->method('fetchOne')
-            ->willReturnCallback(static function (string $sql, array $params = []): ?array {
-                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
-                    return [
-                        'round_id' => 7,
-                        'round_number' => 42,
-                        'workflow_step' => 'card_entry_open',
-                    ];
-                }
-
-                return null;
-            });
-
-        $db->expects($this->never())->method('beginTransaction');
-        $db->expects($this->never())->method('query');
-        $logger->expects($this->never())->method('log');
-
-        $controller = new TestableAdminController($app, $logger);
-        $controller->resetResultsToCardEntry();
-
-        $this->assertSame('admin', $controller->requiredRole);
-        $this->assertSame('/admin/scoring-state', $controller->redirectedTo);
-        $this->assertSame('Reset is only allowed when workflow_step is not_started or results_presented.', $_SESSION['errors'][0]);
+        $this->assertSame('/admin/scoring-state', $this->controller->redirectedTo);
+        $this->assertSame(['Reset is not allowed from card entry.'], $_SESSION['_flash']['error']);
     }
 
     public function testUnlockScoringProcessLogsAndRedirects(): void
     {
-        $_SESSION = ['config_checked' => true];
-
-        /** @var Application|MockObject $app */
-        $app = $this->createMock(Application::class);
-        /** @var Database|MockObject $db */
-        $db = $this->createMock(Database::class);
-        /** @var Logger|MockObject $logger */
-        $logger = $this->createMock(Logger::class);
-
-        $app->method('getDatabase')->willReturn($db);
-        $db->method('getAuth')->willReturn($this->createAuthStub([
-            'user_id' => 21,
-            'username' => 'admin_unlock',
-        ]));
-
-        $fetchCount = 0;
-        $db->expects($this->exactly(3))
+        $this->workflow->expects($this->once())
+            ->method('getPermanentRound')
+            ->willReturn(['round_id' => 9]);
+        $this->database->expects($this->exactly(2))
             ->method('fetchOne')
-            ->willReturnCallback(static function (string $sql, array $params = []) use (&$fetchCount): ?array {
-                $fetchCount++;
-                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
-                    return [
-                        'round_id' => 9,
-                        'round_number' => 43,
-                        'workflow_step' => 'card_entry_open',
-                    ];
-                }
-
-                if (str_contains($sql, 'workflow_step, locked_by_staff_id, lock_release_reason')) {
-                    if ($fetchCount === 2) {
-                        return [
-                            'row_id' => 9,
-                            'workflow_step' => 'card_entry_open',
-                            'locked_by_staff_id' => 34,
-                            'lock_release_reason' => null,
-                        ];
-                    }
-
-                    return [
-                        'row_id' => 9,
-                        'workflow_step' => 'card_entry_open',
-                        'locked_by_staff_id' => null,
-                        'lock_release_reason' => 'admin_forced',
-                    ];
-                }
-
-                return null;
-            });
-
-        $fakeStatement = $this->createMock(\PDOStatement::class);
-        $fakeStatement->method('rowCount')->willReturn(1);
-
-        $db->expects($this->once())
-            ->method('query')
-            ->willReturnCallback(function (string $sql, array $params = []) use ($fakeStatement) {
-                $this->assertStringContainsString('UPDATE TW4_live.round', $sql);
-                $this->assertSame(['admin_forced', 9], $params);
-                return $fakeStatement;
-            });
-
-        $logger->expects($this->once())
+            ->willReturnOnConsecutiveCalls(
+                ['workflow_step' => 'card_entry_open', 'locked_by_staff_id' => 34, 'lock_release_reason' => null],
+                ['workflow_step' => 'card_entry_open', 'locked_by_staff_id' => null, 'lock_release_reason' => 'admin_forced']
+            );
+        $this->roundLock->expects($this->once())
+            ->method('forceReleaseLock')
+            ->with(9, 17, 'admin_forced')
+            ->willReturn(1);
+        $this->logger->expects($this->once())
             ->method('log')
             ->with(
                 Logger::LEVEL_WARNING,
                 Logger::EVENT_SYSTEM,
                 'Admin forced release of scoring lock (state applied)',
-                $this->callback(static function (array $context): bool {
-                    return ($context['round_id'] ?? 0) === 9
-                        && ($context['admin_staff_id'] ?? 0) === 21
-                        && ($context['rows_updated'] ?? 0) === 1;
-                }),
-                'admin_unlock'
+                $this->callback(static fn(array $context): bool =>
+                    $context['round_id'] === 9
+                    && $context['admin_staff_id'] === 17
+                    && $context['rows_updated'] === 1
+                ),
+                'admin_user'
             );
 
-        $controller = new TestableAdminController($app, $logger);
-        $controller->unlockScoringProcess();
+        $this->controller->unlockScoringProcess();
 
-        $this->assertSame('admin', $controller->requiredRole);
-        $this->assertSame('/admin/scoring-state', $controller->redirectedTo);
-        $this->assertSame('Scoring lock released.', $_SESSION['success']);
+        $this->assertSame('/admin/scoring-state', $this->controller->redirectedTo);
+        $this->assertSame(['Scoring lock released.'], $_SESSION['_flash']['success']);
     }
 
-    public function testResetResultsToCardEntryDeleteFailureRollsBackSetsErrorAndRedirects(): void
+    public function testResetResultsToCardEntryWorkflowFailureDoesNotLogSuccess(): void
     {
-        $_SESSION = ['config_checked' => true];
+        $this->workflow->expects($this->once())
+            ->method('adminResetResultsToCardEntry')
+            ->willThrowException(new \RuntimeException('Simulated delete failure'));
+        $this->logger->expects($this->never())->method('log');
 
-        /** @var Application|MockObject $app */
-        $app = $this->createMock(Application::class);
-        /** @var Database|MockObject $db */
-        $db = $this->createMock(Database::class);
-        /** @var Logger|MockObject $logger */
-        $logger = $this->createMock(Logger::class);
+        $this->controller->resetResultsToCardEntry();
 
-        $app->method('getDatabase')->willReturn($db);
-        $db->method('getAuth')->willReturn($this->createAuthStub([
-            'user_id' => 17,
-            'username' => 'admin_user',
-        ]));
-
-        $db->expects($this->exactly(3))
-            ->method('fetchOne')
-            ->willReturnCallback(static function (string $sql, array $params = []): ?array {
-                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
-                    return [
-                        'round_id' => 7,
-                        'round_number' => 42,
-                        'workflow_step' => 'results_presented',
-                    ];
-                }
-
-                if (str_contains($sql, 'COUNT(*) AS total FROM TW4_live.results')) {
-                    return ['total' => 5];
-                }
-
-                if (str_contains($sql, 'FROM TW4_live.card')) {
-                    return ['total' => 9];
-                }
-
-                return null;
-            });
-
-        $db->expects($this->once())->method('beginTransaction');
-        $db->expects($this->never())->method('commit');
-        $db->expects($this->once())->method('rollback');
-
-        $db->expects($this->once())
-            ->method('query')
-            ->willReturnCallback(static function (string $sql, array $params = []) {
-                if (str_contains($sql, 'DELETE FROM TW4_live.results')) {
-                    throw new \RuntimeException('Simulated delete failure');
-                }
-
-                return null;
-            });
-
-        $logger->expects($this->never())->method('log');
-
-        $controller = new TestableAdminController($app, $logger);
-        $controller->resetResultsToCardEntry();
-
-        $this->assertSame('admin', $controller->requiredRole);
-        $this->assertSame('/admin/scoring-state', $controller->redirectedTo);
-        $this->assertSame('Simulated delete failure', $_SESSION['errors'][0]);
-        $this->assertArrayNotHasKey('success', $_SESSION);
-    }
-
-    private function createAuthStub(array $user): object
-    {
-        return new class($user) {
-            private array $user;
-
-            public function __construct(array $user)
-            {
-                $this->user = $user;
-            }
-
-            public function getUser(): array
-            {
-                return $this->user;
-            }
-
-            public function requireRole(string $role): void
-            {
-            }
-        };
+        $this->assertSame(['Simulated delete failure'], $_SESSION['_flash']['error']);
+        $this->assertArrayNotHasKey('success', $_SESSION['_flash']);
     }
 }
 

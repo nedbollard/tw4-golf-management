@@ -114,14 +114,14 @@ class CourseClubService
             $courseClub->getPar(),
             $courseClub->getStroke(),
             $courseClub->getUpdatedBy(),
-            $courseClub->getRowId()
+            $courseClub->getCourseClubId()
         ];
         
         try {
             // Debug: Store debugging info in session
             $_SESSION['service_debug'] = [
                 'step' => 'Executing database update',
-                'rowId' => $courseClub->getRowId(),
+                'courseClubId' => $courseClub->getCourseClubId(),
                 'sql' => $sql,
                 'params' => $params
             ];
@@ -143,7 +143,7 @@ class CourseClubService
                 $_SESSION['service_debug']['result'] = 'NO_ROWS_AFFECTED';
                 $this->logger->error('CourseClub update: No rows affected. SQL: ' . $sql);
                 $this->logger->error('Params: ' . json_encode($params));
-                $this->logger->error('Row ID: ' . $courseClub->getRowId());
+                $this->logger->error('Course club ID: ' . $courseClub->getCourseClubId());
                 return false;
             }
         } catch (\Exception $e) {

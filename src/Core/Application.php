@@ -10,12 +10,14 @@ class Application
     private static ?Application $instance = null;
     private array $config = [];
     private Database $database;
+    private ServiceContainer $services;
     private Router $router;
 
     private function __construct()
     {
         $this->loadConfig();
         $this->initializeDatabase();
+        $this->services = new ServiceContainer($this->database);
         $this->initializeRouter();
     }
 
@@ -46,6 +48,11 @@ class Application
         return $this->database;
     }
 
+    public function getServices(): ServiceContainer
+    {
+        return $this->services;
+    }
+
     public function getRouter(): Router
     {
         return $this->router;
@@ -66,7 +73,7 @@ class Application
 
     private function initializeRouter(): void
     {
-        $this->router = new Router($this);
+        $this->router = new Router($this, $this->services);
         $this->loadRoutes();
     }
 
@@ -82,8 +89,11 @@ class Application
     private function handleError(\Throwable $e): void
     {
         $requestUri = $_SERVER['REQUEST_URI'] ?? 'unknown';
+        $stackTrace = $e->getTraceAsString();
+
         error_log("Application Error on {$requestUri}: " . $e->getMessage() . " in " . $e->getFile() . ':' . $e->getLine());
-        
+        error_log("Stack trace:\n" . $stackTrace);
+
         if ($this->config['debug'] ?? false) {
             throw $e;
         } else {

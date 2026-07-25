@@ -17,7 +17,7 @@ class LeaderboardViewTest extends TestCase
         $html = $this->renderLeaderboardView();
 
         $this->assertStringContainsString('Leaderboard', $html);
-        $this->assertStringContainsString('Scoring Progress', $html);
+        $this->assertStringContainsString('Round 9 | card_entry_open', $html);
         $this->assertStringNotContainsString('Ball Winners', $html);
         $this->assertStringNotContainsString('<th>Prize</th>', $html);
         $this->assertStringContainsString('setInterval(function () {', $html);

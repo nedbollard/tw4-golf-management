@@ -35,16 +35,17 @@ composer install --dev
 ./vendor/bin/phpunit --coverage-html coverage
 ```
 
-### Run Migration Replay + Schema Parity Test
+### Run Canonical Schema Replay + Parity Test
 ```bash
-./test-runner.sh migrations
+./scripts/test-runner.sh migrations
 ```
 
 This command:
 - creates a temporary database `tw4_migration_test`
-- replays canonical SQL migrations from `src/migrations` (excluding `999_current_schema.sql`)
-- compares table inventory and `SHOW CREATE TABLE` output against `TW4`
+- imports `database/baseline/TW4_base_schema.sql` into the temporary database
+- compares table inventory and `SHOW CREATE TABLE` output against `TW4_base`
 - ignores `AUTO_INCREMENT` numeric drift during comparison
+- drops the temporary database after a successful comparison
 
 ## Test Structure
 
@@ -139,8 +140,8 @@ Add this to your CI/CD pipeline:
 # Run tests in parallel (if installed)
 ./vendor/bin/phpunit --parallel
 
-# Run migration replay/schema parity check
-./test-runner.sh migrations
+# Run canonical schema replay/parity check
+./scripts/test-runner.sh migrations
 
 # Filter tests by name
 ./vendor/bin/phpunit --filter testStaffCreation

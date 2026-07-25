@@ -2,14 +2,12 @@
 
 namespace App\Models;
 
-use App\Core\Database;
-
 /**
  * Staff Model - Represents staff members (admins and scorers)
  */
 class Staff
 {
-    private ?int $rowId = null;
+    private ?int $staffId = null;
     private string $username;
     private string $passwordHash;
     private string $firstName;
@@ -28,9 +26,9 @@ class Staff
         string $lastName,
         string $role,
         bool $isActive = true,
-        ?int $rowId = null
+        ?int $staffId = null
     ) {
-        $this->rowId = $rowId;
+        $this->staffId = $staffId;
         $this->username = $username;
         $this->passwordHash = $passwordHash;
         $this->firstName = $firstName;
@@ -40,9 +38,21 @@ class Staff
     }
 
     // Getters
-    public function getRowId(): ?int
+    public function getStaffId(): ?int
     {
-        return $this->rowId;
+        return $this->staffId;
+    }
+
+    /**
+     * @throws \LogicException If a different identity has already been assigned.
+     */
+    public function assignStaffId(int $staffId): void
+    {
+        if ($this->staffId !== null && $this->staffId !== $staffId) {
+            throw new \LogicException('Staff identity has already been assigned.');
+        }
+
+        $this->staffId = $staffId;
     }
 
     public function getUsername(): string
@@ -96,11 +106,6 @@ class Staff
     }
 
     // Setters
-    public function setStaffLoginId(string $staffLoginId): void
-    {
-        $this->staffLoginId = $staffLoginId;
-    }
-
     public function setUsername(string $username): void
     {
         $this->username = $username;
@@ -166,45 +171,6 @@ class Staff
         return $this->isActive && $this->isAdmin();
     }
 
-    public function updateLastLogin(Database $db): bool
-    {
-        if ($this->rowId === null) {
-            return false;
-        }
-
-        $this->lastLogin = new \DateTime();
-        return $db->update(
-            'staff',
-            ['last_login' => $this->lastLogin->format('Y-m-d H:i:s')],
-            ['row_id' => $this->rowId]
-        ) > 0;
-    }
-
-    // Database methods
-    public function save(Database $db): int
-    {
-        $data = [
-            'username' => $this->username,
-            'password_hash' => $this->passwordHash,
-            'first_name' => $this->firstName,
-            'last_name' => $this->lastName,
-            'role' => $this->role,
-            'is_active' => $this->isActive ? 1 : 0
-        ];
-
-        if ($this->rowId === null) {
-            // Insert new staff
-            $this->rowId = $db->insert('staff', $data);
-        } else {
-            // Update existing staff
-            $data['updated_by'] = $_SESSION['username'] ?? 'system';
-            
-            $db->update('staff', $data, ['row_id' => $this->rowId]);
-        }
-        
-        return $this->rowId;
-    }
-
     public function deactivate(): void
     {
         $this->isActive = false;
@@ -213,54 +179,6 @@ class Staff
     public function activate(): void
     {
         $this->isActive = true;
-    }
-
-    // Static methods for data access
-    public static function findById(Database $db, int $rowId): ?self
-    {
-        $data = $db->fetchOne(
-            'SELECT * FROM staff WHERE row_id = ? AND is_active = TRUE',
-            [$rowId]
-        );
-
-        if (!$data) {
-            return null;
-        }
-
-        return self::fromArray($data);
-    }
-
-    public static function findByUsername(Database $db, string $username): ?self
-    {
-        $data = $db->fetchOne(
-            'SELECT * FROM staff WHERE username = ? AND is_active = TRUE',
-            [$username]
-        );
-
-        if (!$data) {
-            return null;
-        }
-
-        return self::fromArray($data);
-    }
-
-    public static function findAll(Database $db): array
-    {
-        $data = $db->fetchAll(
-            'SELECT * FROM staff WHERE is_active = TRUE ORDER BY row_id',
-        );
-
-        return array_map([self::class, 'fromArray'], $data);
-    }
-
-    public static function findByRole(Database $db, string $role): array
-    {
-        $data = $db->fetchAll(
-            'SELECT * FROM staff WHERE role = ? AND is_active = TRUE ORDER BY username',
-            [$role]
-        );
-
-        return array_map([self::class, 'fromArray'], $data);
     }
 
     public function hasRole(string $role): bool
@@ -292,13 +210,17 @@ class Staff
             $staff->updatedBy = $data['updated_by'];
         }
 
+        if (!empty($data['last_login'])) {
+            $staff->lastLogin = new \DateTime($data['last_login']);
+        }
+
         return $staff;
     }
 
     public function toArray(): array
     {
         return [
-            'row_id' => $this->rowId,
+            'row_id' => $this->staffId,
             'username' => $this->username,
             'first_name' => $this->firstName,
             'last_name' => $this->lastName,

@@ -9,23 +9,20 @@ use App\Services\Logger;
 class CoursePlayedController extends BaseController
 {
     private Logger $logger;
+    private CoursePlayedService $coursePlayedService;
 
-    public function __construct(Application $app, Logger $logger)
+    public function __construct(Application $app, Logger $logger, CoursePlayedService $coursePlayedService)
     {
         parent::__construct($app);
         $this->logger = $logger;
-    }
-
-    private function getCoursePlayedService(): CoursePlayedService
-    {
-        return new CoursePlayedService($this->app->getDatabase(), $this->logger);
+        $this->coursePlayedService = $coursePlayedService;
     }
 
     public function index(): void
     {
         $this->requireRole('admin');
 
-        $service = $this->getCoursePlayedService();
+        $service = $this->coursePlayedService;
         $coursesPlayed = $service->getAllCoursesPlayed();
 
         $this->render('course-played/index', [
@@ -38,7 +35,7 @@ class CoursePlayedController extends BaseController
     {
         $this->requireRole('admin');
 
-        $service = $this->getCoursePlayedService();
+        $service = $this->coursePlayedService;
         $clubs = $service->getUniqueClubNames();
 
         $this->render('course-played/form', [
@@ -63,7 +60,7 @@ class CoursePlayedController extends BaseController
         $data = $this->getPostData();
         [$errors, $numberHoles] = $this->validateCoursePlayedInput($data);
 
-        $service = $this->getCoursePlayedService();
+        $service = $this->coursePlayedService;
         if (empty($errors) && $service->courseExistsForClub(trim($data['name_course'] ?? ''), trim($data['name_club'] ?? ''))) {
             $errors[] = 'This course name already exists for the selected club.';
         }
@@ -97,7 +94,7 @@ class CoursePlayedController extends BaseController
     {
         $this->requireRole('admin');
 
-        $service = $this->getCoursePlayedService();
+        $service = $this->coursePlayedService;
         $coursePlayed = $service->getCoursePlayedById($id);
         if (!$coursePlayed) {
             $this->flash->error('Course Played not found.');
@@ -127,7 +124,7 @@ class CoursePlayedController extends BaseController
             return;
         }
 
-        $service = $this->getCoursePlayedService();
+        $service = $this->coursePlayedService;
         $coursePlayed = $service->getCoursePlayedById($id);
         if (!$coursePlayed) {
             $this->flash->error('Course Played not found.');
@@ -172,7 +169,7 @@ class CoursePlayedController extends BaseController
         $this->requireRole('admin');
 
         $username = $this->authService->getUser()['username'] ?? 'system';
-        $ok = $this->getCoursePlayedService()->deleteCoursePlayed($id, $username);
+        $ok = $this->coursePlayedService->deleteCoursePlayed($id, $username);
 
         if ($ok) {
             $this->flash->success('Course Played deleted successfully.');

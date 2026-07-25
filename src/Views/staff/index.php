@@ -78,7 +78,7 @@
                             <tbody>
                                 <?php foreach ($staff as $member): ?>
                                     <tr>
-                                        <td><?php echo htmlspecialchars($member->getRowId() ?? ''); ?></td>
+                                        <td><?php echo htmlspecialchars($member->getStaffId() ?? ''); ?></td>
                                         <td><?php echo htmlspecialchars($member->getUsername()); ?></td>
                                         <td>
                                             <span class="badge bg-<?php echo $member->isAdmin() ? 'danger' : 'primary'; ?>">
@@ -91,9 +91,9 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <a href="/staff/edit/<?php echo $member->getRowId(); ?>" class="btn-action-primary btn-sm">Edit</a>
+                                            <a href="/staff/edit/<?php echo $member->getStaffId(); ?>" class="btn-action-primary btn-sm">Edit</a>
                                             <?php if ($member->getUsername() !== ($_SESSION['username'] ?? '')): ?>
-                                                <a href="/staff/delete/<?php echo $member->getRowId(); ?>"
+                                                <a href="/staff/delete/<?php echo $member->getStaffId(); ?>"
                                                    class="btn-action-destructive btn-sm"
                                                    onclick="return confirm('Are you sure you want to delete <?php echo htmlspecialchars($member->getUsername()); ?>? This will retain them for audit purposes.')">
                                                     Delete

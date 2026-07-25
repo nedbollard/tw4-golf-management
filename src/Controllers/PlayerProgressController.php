@@ -11,11 +11,15 @@ class PlayerProgressController extends BaseController
     private RosterService $rosterService;
     private PlayerProgressService $playerProgressService;
 
-    public function __construct(Application $app)
+    public function __construct(
+        Application $app,
+        RosterService $rosterService,
+        PlayerProgressService $playerProgressService
+    )
     {
         parent::__construct($app);
-        $this->rosterService = new RosterService($this->app->getDatabase());
-        $this->playerProgressService = new PlayerProgressService($this->app->getDatabase());
+        $this->rosterService = $rosterService;
+        $this->playerProgressService = $playerProgressService;
     }
 
     public function index(): void

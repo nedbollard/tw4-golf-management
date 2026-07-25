@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Core\Database;
-
 /**
  * Roster Model - Represents a player in the golf roster
  */
@@ -19,6 +17,7 @@ class Roster
     private string $status;
     private ?\DateTime $createdAt = null;
     private ?\DateTime $updatedAt = null;
+    private ?\DateTime $dateFirstPlayed = null;
 
     public function __construct(
         string $playerIdentifier,
@@ -28,9 +27,9 @@ class Roster
         string $status = 'active',
         int $handicap = 0,
         ?string $alias = null,
-        ?int $rosterId = null
+        ?int $playerId = null
     ) {
-        $this->playerId = $rosterId;
+        $this->playerId = $playerId;
         $this->playerIdentifier = $playerIdentifier;
         $this->firstName = $firstName;
         $this->lastName = $lastName;
@@ -44,6 +43,18 @@ class Roster
     public function getPlayerId(): ?int
     {
         return $this->playerId;
+    }
+
+    /**
+     * @throws \LogicException If a different identity has already been assigned.
+     */
+    public function assignPlayerId(int $playerId): void
+    {
+        if ($this->playerId !== null && $this->playerId !== $playerId) {
+            throw new \LogicException('Roster identity has already been assigned.');
+        }
+
+        $this->playerId = $playerId;
     }
 
     public function getPlayerIdentifier(): string
@@ -127,8 +138,6 @@ class Roster
         $this->status = $status;
     }
 
-    private ?\DateTime $dateFirstPlayed;
-
     public function getDateFirstPlayed(): ?\DateTime
     {
         return $this->dateFirstPlayed;
@@ -165,118 +174,17 @@ class Roster
         return $this->gender === 'female';
     }
 
-    // Database methods
-    public function save(Database $db): int
+    public function deactivate(): void
     {
-        $data = [
-            'player_identifier' => $this->playerIdentifier,
-            'first_name' => $this->firstName,
-            'last_name' => $this->lastName,
-            'alias' => $this->alias,
-            'gender' => $this->gender,
-            'handicap' => $this->handicap,
-            'status' => $this->status
-        ];
-
-        if ($this->playerId === null) {
-            // Insert new roster entry
-            $this->playerId = $db->insert('roster', $data);
-            return $this->playerId;
-        } else {
-            // Update existing player
-            $db->update('roster', $data, ['row_id' => $this->playerId]);
-            return $this->playerId;
-        }
-    }
-
-    public function delete(Database $db): bool
-    {
-        if ($this->playerId === null) {
-            return false;
-        }
-
         $this->status = 'inactive';
-        return $db->update('roster', ['status' => 'inactive'], ['row_id' => $this->playerId]) > 0;
     }
 
-    public function activate(Database $db): bool
+    public function activate(): void
     {
-        if ($this->playerId === null) {
-            return false;
-        }
-
         $this->status = 'active';
-        return $db->update('roster', ['status' => 'active'], ['row_id' => $this->playerId]) > 0;
     }
 
-    // Static methods for data access
-    public static function findById(Database $db, int $rosterId): ?self
-    {
-        $data = $db->fetchOne(
-            'SELECT * FROM roster WHERE row_id = ? AND status IN (?, ?)',
-            [$rosterId, 'active', 'scored']
-        );
-
-        if (!$data) {
-            return null;
-        }
-
-        return self::fromArray($data);
-    }
-
-    public static function findByIdentifier(Database $db, string $identifier): ?self
-    {
-        $data = $db->fetchOne(
-            'SELECT * FROM roster WHERE player_identifier = ? AND status IN (?, ?)',
-            [$identifier, 'active', 'scored']
-        );
-
-        if (!$data) {
-            return null;
-        }
-
-        return self::fromArray($data);
-    }
-
-    public static function findByAlias(Database $db, string $alias): ?self
-    {
-        $data = $db->fetchOne(
-            'SELECT * FROM roster WHERE alias = ? AND status IN (?, ?)',
-            [$alias, 'active', 'scored']
-        );
-
-        if (!$data) {
-            return null;
-        }
-
-        return self::fromArray($data);
-    }
-
-    public static function findAll(Database $db): array
-    {
-        $data = $db->fetchAll(
-            'SELECT * FROM roster WHERE status IN (?, ?) ORDER BY first_name, last_name',
-            ['active', 'scored']
-        );
-
-        return array_map([self::class, 'fromArray'], $data);
-    }
-
-    public static function search(Database $db, string $query): array
-    {
-        $searchTerm = "%{$query}%";
-        
-        $data = $db->fetchAll(
-            'SELECT * FROM roster WHERE 
-             (player_identifier LIKE ? OR alias LIKE ? OR first_name LIKE ? OR last_name LIKE ?)
-             AND status IN (?, ?) ORDER BY first_name, last_name',
-            [$searchTerm, $searchTerm, $searchTerm, $searchTerm, 'active', 'scored']
-        );
-
-        return array_map([self::class, 'fromArray'], $data);
-    }
-
-    private static function fromArray(array $data): self
+    public static function fromArray(array $data): self
     {
         $roster = new self(
             $data['player_identifier'],
@@ -295,6 +203,10 @@ class Roster
 
         if (isset($data['updated_at'])) {
             $roster->updatedAt = new \DateTime($data['updated_at']);
+        }
+
+        if (!empty($data['date_first_played'])) {
+            $roster->dateFirstPlayed = new \DateTime($data['date_first_played']);
         }
 
         return $roster;

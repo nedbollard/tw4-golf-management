@@ -51,20 +51,18 @@ class RosterWorkflowTest extends TestCase
         // Test that roster listing also requires authentication
         $_SERVER['REQUEST_METHOD'] = 'GET';
         $_SERVER['REQUEST_URI'] = '/roster';
-        
+
         ob_start();
         try {
             $this->app->run();
-            $output = ob_get_clean();
-            
-            // Should redirect to login
-            $this->assertSame('/login', $_SERVER['CLI_REDIRECT_URL'] ?? null);
-            $this->assertSame(302, $_SERVER['CLI_REDIRECT_STATUS'] ?? null);
-            
-        } catch (\Exception $e) {
-            ob_end_clean();
-            $this->fail("Roster index workflow failed: " . $e->getMessage());
+        } finally {
+            if (ob_get_level() > 0) {
+                ob_end_clean();
+            }
         }
+
+        $this->assertSame('/login', $_SERVER['CLI_REDIRECT_URL'] ?? null);
+        $this->assertSame(302, $_SERVER['CLI_REDIRECT_STATUS'] ?? null);
     }
 
     public function testInvalidRosterRouteHandling(): void

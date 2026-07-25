@@ -49,7 +49,8 @@ This file helps Copilot-style assistants (and future contributors) quickly under
 
 ## Where to look first
 - `README.md` — high-level overview and docker quick-start
-- `TESTING.md` — detailed test commands and examples
+- `docs/README.md` — documentation index
+- `docs/testing/TESTING.md` — detailed test commands and examples
 - `composer.json` and `phpunit.xml` — autoload, dev deps, test bootstrap and env
 - `public/index.php` — basic routing entrypoint
 - `src/migrations/` — DB schema for test and local setup

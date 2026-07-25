@@ -1,10 +1,19 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-ROOT="$HOME/TW4/public/reports"
-OUT="$HOME/TW4/seed_legacy_history.sql"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ "$(basename "$SCRIPT_DIR")" = "scripts" ]; then
+  PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+else
+  PROJECT_ROOT="$SCRIPT_DIR"
+fi
+
+ROOT="$PROJECT_ROOT/public/reports"
+OUT="$PROJECT_ROOT/database/seeds/generated/seed_legacy_history.sql"
 SEASONS=(22_23 23_24 24_25)
 IMPORT_BY="legacy_import"
+
+mkdir -p "$(dirname "$OUT")"
 
 extract_date() {
   tr -d '\r' < "$1" \

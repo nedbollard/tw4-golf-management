@@ -16,7 +16,7 @@ class ResultsRecordedViewTest extends TestCase
     {
         $html = $this->renderResultsRecordedView([]);
 
-        $this->assertStringContainsString('Results Recorded - Round', $html);
+        $this->assertStringContainsString('Round 17 — Results Recorded', $html);
         $this->assertStringContainsString('Results</h3>', $html);
         $this->assertStringContainsString('Ball Winners</h3>', $html);
         $this->assertStringContainsString('$6.00', $html);
@@ -42,8 +42,8 @@ class ResultsRecordedViewTest extends TestCase
         $html = $this->renderResultsRecordedView($commiserations);
 
         $this->assertStringContainsString('Commiserations', $html);
-        $this->assertStringContainsString('Player A - 18 points (last 3)', $html);
-        $this->assertStringContainsString('Player B - 18 points (coin toss)', $html);
+        $this->assertStringContainsString('Player A — 18 points (last 3)', $html);
+        $this->assertStringContainsString('Player B — 18 points (coin toss)', $html);
     }
 
     private function renderResultsRecordedView(array $commiserations): string

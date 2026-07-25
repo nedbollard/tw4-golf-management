@@ -16,14 +16,22 @@ class ScoreController extends BaseController
 {
     private ScoreEntryService $scoreEntryService;
     private ResultsPresentationService $resultsPresentationService;
+    private RoundWorkflowService $roundWorkflowService;
     private Logger $logger;
 
-    public function __construct(Application $app, Logger $logger = null)
+    public function __construct(
+        Application $app,
+        Logger $logger,
+        ScoreEntryService $scoreEntryService,
+        ResultsPresentationService $resultsPresentationService,
+        RoundWorkflowService $roundWorkflowService
+    )
     {
         parent::__construct($app);
-        $this->scoreEntryService = new ScoreEntryService($this->app->getDatabase());
-        $this->resultsPresentationService = new ResultsPresentationService($this->app->getDatabase());
-        $this->logger = $logger ?? new Logger($this->app->getDatabase());
+        $this->scoreEntryService = $scoreEntryService;
+        $this->resultsPresentationService = $resultsPresentationService;
+        $this->roundWorkflowService = $roundWorkflowService;
+        $this->logger = $logger;
     }
 
     public function index(): void
@@ -35,11 +43,9 @@ class ScoreController extends BaseController
     public function enter(): void
     {
         $this->requireRole('scorer');
-        $this->requireScoringConfigReady('/scorer/menu');
 
         $user = $this->authService->getUser();
-        $workflow = new RoundWorkflowService($this->app->getDatabase());
-        $active = $workflow->getActiveRoundForScorerMenu();
+        $active = $this->roundWorkflowService->getActiveRoundForScorerMenu();
 
         if (!$active || ($active['workflow_step'] ?? 'not_started') !== 'card_entry_open') {
             $this->flash->error('Start a round before entering cards.');
@@ -48,7 +54,7 @@ class ScoreController extends BaseController
         }
 
         $roundId = (int) $active['round_id'];
-        if (!$workflow->openCardEntry($roundId, (int) ($user['user_id'] ?? 0))) {
+        if (!$this->roundWorkflowService->openCardEntry($roundId, (int) ($user['user_id'] ?? 0))) {
             $this->flash->error('Unable to acquire lock for card entry.');
             $this->redirect('/scorer/menu');
             return;
@@ -64,10 +70,8 @@ class ScoreController extends BaseController
     public function enterCard(int $playerId): void
     {
         $this->requireRole('scorer');
-        $this->requireScoringConfigReady('/scorer/menu');
 
-        $workflow = new RoundWorkflowService($this->app->getDatabase());
-        $active = $workflow->getActiveRoundForScorerMenu();
+        $active = $this->roundWorkflowService->getActiveRoundForScorerMenu();
 
         if (!$active || ($active['workflow_step'] ?? 'not_started') !== 'card_entry_open') {
             $this->flash->error('Round is not open for card entry.');
@@ -94,14 +98,13 @@ class ScoreController extends BaseController
         $this->render('scores/enter-card', [
             'title' => 'Enter Card - TW4 Golf Management',
             'round' => $active,
-            'entry' => $entryData,
+            'entry' => $entryData
         ]);
     }
 
     public function storeCard(int $playerId): void
     {
         $this->requireRole('scorer');
-        $this->requireScoringConfigReady('/scorer/menu');
 
         if (!$this->validateCsrf()) {
             $this->flash->error('Invalid CSRF token');
@@ -113,8 +116,7 @@ class ScoreController extends BaseController
         $staffId = (int) ($user['user_id'] ?? 0);
         $username = (string) ($user['username'] ?? 'system');
 
-        $workflow = new RoundWorkflowService($this->app->getDatabase());
-        $active = $workflow->getActiveRoundForScorerMenu();
+        $active = $this->roundWorkflowService->getActiveRoundForScorerMenu();
         if (!$active || ($active['workflow_step'] ?? 'not_started') !== 'card_entry_open') {
             $this->flash->error('Round is not open for card entry.');
             $this->redirect('/scorer/menu');
@@ -181,12 +183,10 @@ class ScoreController extends BaseController
     public function presentResults(): void
     {
         $this->requireRole('scorer');
-        $this->requireScoringConfigReady('/scorer/menu');
 
         $user = $this->authService->getUser();
         $staffId = (int) ($user['user_id'] ?? 0);
-        $workflow = new RoundWorkflowService($this->app->getDatabase());
-        $active = $workflow->getActiveRoundForScorerMenu();
+        $active = $this->roundWorkflowService->getActiveRoundForScorerMenu();
 
         if (!$active || ($active['workflow_step'] ?? 'not_started') !== 'card_entry_open') {
             $this->flash->error('Round is not open for presenting results.');
@@ -196,13 +196,13 @@ class ScoreController extends BaseController
 
         $roundId = (int) $active['round_id'];
         if (!$this->scoreEntryService->assertEntryLock($roundId, $staffId)
-            && !$workflow->openCardEntry($roundId, $staffId)) {
+            && !$this->roundWorkflowService->openCardEntry($roundId, $staffId)) {
             $this->flash->error('Card entry lock is not held by your session.');
             $this->redirect('/scorer/menu');
             return;
         }
 
-        if (!$workflow->validateCanPresentResults($roundId)) {
+        if (!$this->roundWorkflowService->validateCanPresentResults($roundId)) {
             $this->flash->error('At least four cards are required before presenting results.');
             $this->redirect('/scorer/menu');
             return;
@@ -219,14 +219,13 @@ class ScoreController extends BaseController
         $this->render('scores/present-results', [
             'title' => 'Present Results - TW4 Golf Management',
             'round' => $active,
-            'resultsData' => $resultsData,
+            'resultsData' => $resultsData
         ]);
     }
 
     public function leaderboard(): void
     {
-        $workflow = new RoundWorkflowService($this->app->getDatabase());
-        $active = $workflow->getActiveRoundForScorerMenu();
+        $active = $this->roundWorkflowService->getActiveRoundForScorerMenu();
 
         $resultsData = [
             'leaderboard' => [],
@@ -235,17 +234,16 @@ class ScoreController extends BaseController
         $showPublishedResultsNudge = false;
 
         $workflowStep = (string) ($active['workflow_step'] ?? 'between_rounds');
-        $roundNumber  = (int) ($active['round_number'] ?? 0);
+        $isBetweenRounds = in_array($workflowStep, ['between_rounds', 'not_started'], true);
 
-        // between_rounds + round_number=0 → no round has ever been started
-        $neverStarted = $workflowStep === 'not_started'
-            || ($workflowStep === 'between_rounds' && $roundNumber === 0);
-
-        // between_rounds + round_number>0 → round finished but live card data still present
-        $isFinished = $workflowStep === 'between_rounds' && $roundNumber > 0;
-
-        if ($neverStarted) {
+        if (!$active) {
             $notice = 'No live round is active yet.';
+            $showPublishedResultsNudge = true;
+        } elseif ($isBetweenRounds) {
+            $roundNumber = (int) ($active['round_number'] ?? 0);
+            $notice = $roundNumber > 0
+                ? sprintf('Round %d is finished.', $roundNumber)
+                : 'No live round is active yet.';
             $showPublishedResultsNudge = true;
         } else {
             $roundId = (int) ($active['round_id'] ?? 0);
@@ -256,12 +254,7 @@ class ScoreController extends BaseController
                 $notice = $e->getMessage();
             }
 
-            if (empty($resultsData['leaderboard'])) {
-                $notice = 'No cards scored yet.';
-            } elseif ($isFinished) {
-                $notice = sprintf('Round %d is finished — showing final scores.', $roundNumber);
-                $showPublishedResultsNudge = true;
-            }
+            $leaderboard = $resultsData['leaderboard'] ?? [];
         }
 
         $this->render('scores/leaderboard', [
@@ -276,18 +269,21 @@ class ScoreController extends BaseController
     public function leaderboardCard(int $playerId): void
     {
         $chartData = $this->scoreEntryService->getCardChartData($playerId);
+        if ($chartData === null) {
+            $this->flash->error('No live card is available for this player.');
+            $this->redirect('/leaderboard');
+            return;
+        }
 
         $this->render('scores/leaderboard-card', [
-            'title'     => 'Card Chart - TW4 Golf Management',
+            'title' => 'Scorecard - TW4 Golf Management',
             'chartData' => $chartData,
-            'playerId'  => $playerId,
         ]);
     }
 
     public function finalizeResults(): void
     {
         $this->requireRole('scorer');
-        $this->requireScoringConfigReady('/scorer/menu');
 
         if (!$this->validateCsrf()) {
             $this->flash->error('Invalid CSRF token');
@@ -300,8 +296,7 @@ class ScoreController extends BaseController
         $staffId = (int) ($user['user_id'] ?? 0);
         $username = (string) ($user['username'] ?? 'system');
 
-        $workflow = new RoundWorkflowService($this->app->getDatabase());
-        $active = $workflow->getActiveRoundForScorerMenu();
+        $active = $this->roundWorkflowService->getActiveRoundForScorerMenu();
 
         if (!$active || ($active['workflow_step'] ?? 'not_started') !== 'card_entry_open') {
             $this->flash->error('Round is not open for presenting results.');
@@ -311,13 +306,13 @@ class ScoreController extends BaseController
 
         $roundId = (int) $active['round_id'];
         if (!$this->scoreEntryService->assertEntryLock($roundId, $staffId)
-            && !$workflow->openCardEntry($roundId, $staffId)) {
+            && !$this->roundWorkflowService->openCardEntry($roundId, $staffId)) {
             $this->flash->error('Card entry lock is not held by your session.');
             $this->redirect('/scorer/menu');
             return;
         }
 
-        if (!$workflow->validateCanPresentResults($roundId)) {
+        if (!$this->roundWorkflowService->validateCanPresentResults($roundId)) {
             $this->flash->error('At least four cards are required before presenting results.');
             $this->redirect('/scorer/menu');
             return;
@@ -346,7 +341,7 @@ class ScoreController extends BaseController
 
             $this->resultsPresentationService->saveResults($roundId, $resultsData, $closestToPinIdentifier, $username);
 
-            if (!$workflow->presentResults($roundId, $staffId)) {
+            if (!$this->roundWorkflowService->presentResults($roundId, $staffId)) {
                 throw new \RuntimeException('Unable to move workflow to results_presented.');
             }
 

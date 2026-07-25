@@ -21,14 +21,10 @@ class RosterServiceTest extends TestCase
     protected function setUp(): void
     {
         $this->mockDatabase = $this->createMock(Database::class);
-        $this->rosterService = new RosterService($this->mockDatabase);
-        
-        // Mock the AuthService to avoid null pointer errors
         $mockAuthService = $this->createMock(\App\Services\AuthService::class);
         $mockAuthService->method('isLoggedIn')->willReturn(false);
         $mockAuthService->method('getUser')->willReturn(null);
-        
-        $this->mockDatabase->method('getAuth')->willReturn($mockAuthService);
+        $this->rosterService = new RosterService($this->mockDatabase, $mockAuthService);
     }
 
     public function testGetAllPlayers(): void

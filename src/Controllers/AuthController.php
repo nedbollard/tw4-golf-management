@@ -14,12 +14,19 @@ use App\Services\RoundLockService;
 class AuthController extends BaseController
 {
     private Logger $logger;
+    private RoundLockService $roundLockService;
     
-    public function __construct(Application $app, AuthService $authService, Logger $logger)
+    public function __construct(
+        Application $app,
+        AuthService $authService,
+        Logger $logger,
+        RoundLockService $roundLockService
+    )
     {
         parent::__construct($app);
         $this->authService = $authService;
         $this->logger = $logger;
+        $this->roundLockService = $roundLockService;
     }
 
     public function showLogin(): void
@@ -100,8 +107,7 @@ class AuthController extends BaseController
         if ($user && isset($user['username'])) {
             $this->logger->logLogout($user['username']);
 
-            $lockService = new RoundLockService($this->app->getDatabase());
-            $lockService->releaseAnyLocksByStaff((int) ($user['user_id'] ?? 0), 'logout');
+            $this->roundLockService->releaseAnyLocksByStaff((int) ($user['user_id'] ?? 0), 'logout');
         }
         
         $this->authService->logout();

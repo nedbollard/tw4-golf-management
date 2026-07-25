@@ -52,7 +52,7 @@ class ConfigService
         return $this->configCache;
     }
 
-    public function getConfigValue(string $key, $default = null): ?string
+    public function getConfigValue(string $key, ?string $default = null): ?string
     {
         $config = $this->getAllConfig();
         return $config[$key] ?? $default;
@@ -68,17 +68,18 @@ class ConfigService
         );
         
         if ($existing) {
-            return $this->db->update(
+            $this->db->update(
                 'config_application',
                 ['config_value_string' => $value],
                 ['config_name' => $key]
-            ) > 0;
-        } else {
-            return $this->db->insert('config_application', [
-                'config_name' => $key,
-                'config_value_string' => $value
-            ]) > 0;
+            );
+            return true;
         }
+
+        return $this->db->insert('config_application', [
+            'config_name' => $key,
+            'config_value_string' => $value
+        ]) > 0;
     }
 
     public function initializeDefaultConfig(): void
@@ -184,7 +185,7 @@ class ConfigService
     /**
      * Update a specific configuration row with audit information
      */
-    public function updateConfigRow(int $rowId, $value, string $type, string $updatedBy = null): bool
+    public function updateConfigRow(int $rowId, string|int $value, string $type, ?string $updatedBy = null): bool
     {
         $data = [
             'updated_by' => $updatedBy
@@ -207,7 +208,7 @@ class ConfigService
     /**
      * Add a new configuration row
      */
-    public function addConfigRow(string $name, $value, string $type): bool
+    public function addConfigRow(string $name, string|int $value, string $type): bool
     {
         // Check if configuration already exists
         $existing = $this->db->fetchOne(

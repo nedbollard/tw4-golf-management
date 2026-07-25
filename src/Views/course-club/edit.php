@@ -51,7 +51,7 @@
 
 <?php 
     // Use relative URL for production-ready solution
-    $updateUrl = '/course-club/' . $courseClub->getRowId() . '/update';
+    $updateUrl = '/course-club/' . $courseClub->getCourseClubId() . '/update';
 ?>
 <form method="POST" action="<?php echo $updateUrl; ?>">
     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">

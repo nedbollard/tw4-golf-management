@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use App\Core\Application;
 use App\Core\Database;
 use App\Middleware\Auth;
+use App\Services\AuthService;
 
 class AuthenticationFlowTest extends TestCase
 {
@@ -107,7 +108,7 @@ class AuthenticationFlowTest extends TestCase
     public function testAuthServiceConsistency(): void
     {
         // Test that AuthService and Auth middleware are consistent
-        $authService = $this->db->getAuth();
+        $authService = new AuthService($this->db);
         $authMiddleware = new Auth($this->db);
         
         // Login with both methods

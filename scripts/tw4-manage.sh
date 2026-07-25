@@ -1,5 +1,13 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ "$(basename "$SCRIPT_DIR")" = "scripts" ]; then
+    PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+else
+    PROJECT_ROOT="$SCRIPT_DIR"
+fi
+cd "$PROJECT_ROOT"
+
 # TW4 Golf Management System - Management Scripts
 # Author: Ned Bollard
 # Description: Comprehensive application management scripts
@@ -189,8 +197,8 @@ deploy_changes() {
     print_status "Deploying changes to GitHub..."
     check_directory
     
-    if [ -f "deploy.sh" ]; then
-        ./deploy.sh "$1"
+    if [ -f "$SCRIPT_DIR/deploy.sh" ]; then
+        "$SCRIPT_DIR/deploy.sh" "$1"
     else
         print_error "deploy.sh script not found!"
         exit 1

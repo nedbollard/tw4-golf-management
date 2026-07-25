@@ -9,7 +9,8 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     env:
-      DB_PASSWORD: tw4_ci_password
+      E2E_DB_PASSWORD: tw4_ci_password
+      E2E_BASE_URL: http://localhost:8086
       PLAYWRIGHT_BROWSERS_PATH: 0
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -27,34 +28,34 @@ jobs:
             exit 1
           fi
 
-      - name: Start services with Compose
+      - name: Start isolated E2E services
         run: |
-          $COMPOSE_CMD up -d --build
+          $COMPOSE_CMD -p tw4-e2e -f docker-compose.e2e.yml up -d --build --wait
 
       - name: Wait for database to be ready
         run: |
           for i in {1..90}; do
-            if $COMPOSE_CMD exec -T db mysqladmin ping -h 127.0.0.1 -uroot -p"$DB_PASSWORD" --silent >/dev/null 2>&1; then
+            if $COMPOSE_CMD -p tw4-e2e -f docker-compose.e2e.yml exec -T db mysqladmin ping -h 127.0.0.1 -uroot -p"$E2E_DB_PASSWORD" --silent >/dev/null 2>&1; then
               echo 'database available'; exit 0;
             fi
             sleep 2
           done
           echo 'timeout waiting for database'
-          $COMPOSE_CMD ps
-          $COMPOSE_CMD logs --tail=200 db
+          $COMPOSE_CMD -p tw4-e2e -f docker-compose.e2e.yml ps
+          $COMPOSE_CMD -p tw4-e2e -f docker-compose.e2e.yml logs --tail=200 db
           exit 1
 
       - name: Wait for app to be healthy
         run: |
           for i in {1..180}; do
-            if curl -sSf http://localhost:8084 >/dev/null; then
+            if curl -sSf "$E2E_BASE_URL" >/dev/null; then
               echo 'app available'; exit 0;
             fi
             sleep 2
           done
           echo 'timeout waiting for app'
-          $COMPOSE_CMD ps
-          $COMPOSE_CMD logs --tail=200 app
+          $COMPOSE_CMD -p tw4-e2e -f docker-compose.e2e.yml ps
+          $COMPOSE_CMD -p tw4-e2e -f docker-compose.e2e.yml logs --tail=200 app
           exit 1
 
       - name: Setup Node
@@ -69,15 +70,17 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Run Playwright tests
-        run: npm run test:e2e:ci
+        run: |
+          npm run test:e2e:ci
+          npm run test:e2e:card-entry:ci
 
       - name: Show service logs on failure
         if: failure()
         run: |
-          $COMPOSE_CMD ps || true
-          $COMPOSE_CMD logs --tail=300 app db phpmyadmin || true
+          $COMPOSE_CMD -p tw4-e2e -f docker-compose.e2e.yml ps || true
+          $COMPOSE_CMD -p tw4-e2e -f docker-compose.e2e.yml logs --tail=300 app db || true
 
       - name: Stop services
         if: always()
         run: |
-          $COMPOSE_CMD down -v || true
+          $COMPOSE_CMD -p tw4-e2e -f docker-compose.e2e.yml down -v || true

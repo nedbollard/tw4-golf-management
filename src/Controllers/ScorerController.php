@@ -14,13 +14,20 @@ use App\Services\RoundWorkflowService;
 class ScorerController extends BaseController
 {
     private ScoreEntryService $scoreEntryService;
+    private RoundWorkflowService $roundWorkflowService;
     private Logger $logger;
 
-    public function __construct(Application $app, Logger $logger = null)
+    public function __construct(
+        Application $app,
+        Logger $logger,
+        ScoreEntryService $scoreEntryService,
+        RoundWorkflowService $roundWorkflowService
+    )
     {
         parent::__construct($app);
-        $this->scoreEntryService = new ScoreEntryService($this->app->getDatabase());
-        $this->logger = $logger ?? new Logger($this->app->getDatabase());
+        $this->scoreEntryService = $scoreEntryService;
+        $this->roundWorkflowService = $roundWorkflowService;
+        $this->logger = $logger;
     }
 
     public function menu(): void
@@ -32,9 +39,8 @@ class ScorerController extends BaseController
 
         $user = $this->authService->getUser();
 
-        $workflow = new RoundWorkflowService($this->app->getDatabase());
-        $active = $workflow->getActiveRoundForScorerMenu();
-        $roundState = $workflow->getMenuState(
+        $active = $this->roundWorkflowService->getActiveRoundForScorerMenu();
+        $roundState = $this->roundWorkflowService->getMenuState(
             $active ? (int) $active['round_id'] : null,
             (int) ($user['user_id'] ?? 0)
         );
@@ -73,8 +79,7 @@ class ScorerController extends BaseController
         $this->requireScoringConfigReady('/scorer/menu');
 
         $user = $this->authService->getUser();
-        $workflow = new RoundWorkflowService($this->app->getDatabase());
-        $active = $workflow->getActiveRoundForScorerMenu();
+        $active = $this->roundWorkflowService->getActiveRoundForScorerMenu();
 
         if (!$active || (string) ($active['workflow_step'] ?? '') !== 'card_entry_open') {
             $this->flash->error('Cards can only be deleted while the round is open for card entry.');
@@ -86,7 +91,7 @@ class ScorerController extends BaseController
         $staffId = (int) ($user['user_id'] ?? 0);
 
         if (!$this->scoreEntryService->assertEntryLock($roundId, $staffId)
-            && !$workflow->openCardEntry($roundId, $staffId)) {
+            && !$this->roundWorkflowService->openCardEntry($roundId, $staffId)) {
             $this->flash->error('Card entry lock is held by another scorer session.');
             $this->redirect('/scorer/menu');
             return;
@@ -124,8 +129,7 @@ class ScorerController extends BaseController
         }
 
         $user = $this->authService->getUser();
-        $workflow = new RoundWorkflowService($this->app->getDatabase());
-        $active = $workflow->getActiveRoundForScorerMenu();
+        $active = $this->roundWorkflowService->getActiveRoundForScorerMenu();
 
         if (!$active || (string) ($active['workflow_step'] ?? '') !== 'card_entry_open') {
             $this->flash->error('Cards can only be deleted while the round is open for card entry.');
@@ -137,7 +141,7 @@ class ScorerController extends BaseController
         $staffId = (int) ($user['user_id'] ?? 0);
 
         if (!$this->scoreEntryService->assertEntryLock($roundId, $staffId)
-            && !$workflow->openCardEntry($roundId, $staffId)) {
+            && !$this->roundWorkflowService->openCardEntry($roundId, $staffId)) {
             $this->flash->error('Card entry lock is held by another scorer session.');
             $this->redirect('/scorer/menu');
             return;

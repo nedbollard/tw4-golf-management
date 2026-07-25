@@ -4,7 +4,7 @@ namespace App\Models;
 
 class CourseClub
 {
-    private ?int $rowId;
+    private ?int $courseClubId;
     private string $nameClub;
     private int $numberHole;
     private string $nameHole;
@@ -22,10 +22,10 @@ class CourseClub
         int $par,
         int $stroke,
         string $updatedBy,
-        ?int $rowId = null,
+        ?int $courseClubId = null,
         ?string $updatedTs = null
     ) {
-        $this->rowId = $rowId;
+        $this->courseClubId = $courseClubId;
         $this->nameClub = $nameClub;
         $this->numberHole = $numberHole;
         $this->nameHole = $nameHole;
@@ -37,9 +37,9 @@ class CourseClub
     }
 
     // Getters
-    public function getRowId(): ?int
+    public function getCourseClubId(): ?int
     {
-        return $this->rowId;
+        return $this->courseClubId;
     }
 
     public function getNameClub(): string
@@ -83,9 +83,9 @@ class CourseClub
     }
 
     // Setters
-    public function setRowId(int $rowId): void
+    public function setCourseClubId(int $courseClubId): void
     {
-        $this->rowId = $rowId;
+        $this->courseClubId = $courseClubId;
     }
 
     public function setNameClub(string $nameClub): void
@@ -132,7 +132,7 @@ class CourseClub
     public function toArray(): array
     {
         return [
-            'row_id' => $this->rowId,
+            'row_id' => $this->courseClubId,
             'name_club' => $this->nameClub,
             'number_hole' => $this->numberHole,
             'name_hole' => $this->nameHole,

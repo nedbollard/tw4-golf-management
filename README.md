@@ -26,11 +26,13 @@ TW4 is a complete rewrite of the Twilight golf scoring application using modern 
 
 ## Deployment
 
-For a production hosting plan and launch checklist, see [DEPLOYMENT.md](DEPLOYMENT.md).
+For a production hosting plan and launch checklist, see [Deployment Guide](docs/deployment/DEPLOYMENT.md).
 
 ## User Documentation
 
-For end-user and tester-facing operating guidance, see [USER_GUIDE.md](USER_GUIDE.md).
+For end-user and tester-facing operating guidance, see the [User Guide](docs/USER_GUIDE.md).
+
+The complete documentation index is available in [docs/README.md](docs/README.md).
 
 ## Docker Development
 

@@ -14,7 +14,7 @@ class RosterService
     private AuthService $authService;
     private const NON_INACTIVE_STATUSES = ['active', 'scored'];
 
-    public function __construct(Database $db, AuthService $authService = null)
+    public function __construct(Database $db, ?AuthService $authService = null)
     {
         $this->db = $db;
         $this->authService = $authService ?? new AuthService($db);

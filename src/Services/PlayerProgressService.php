@@ -46,6 +46,9 @@ class PlayerProgressService
         return $seasonYear !== '' ? $seasonYear : null;
     }
 
+    /**
+     * @return list<array{row_id: int|string, player_identifier: string, alias: string|null, handicap: int|string}>
+     */
     public function getEligiblePlayersWithHistory(string $seasonYear): array
     {
         return $this->db->fetchAll(
@@ -65,6 +68,24 @@ class PlayerProgressService
         );
     }
 
+    /**
+     * @return array{
+     *     player: array<string, mixed>|null,
+     *     season_year: string,
+     *     rounds: list<array{
+     *         number_round: int,
+     *         round_date: string,
+     *         course_name: string,
+     *         score: int,
+     *         points: int,
+     *         handicap_applied: int,
+     *         handicap_updated: int,
+     *         handicap_changed: bool,
+     *         handicap_markers: list<array{type: string, level: float|int, value: int}>,
+     *         played: bool
+     *     }>
+     * }
+     */
     public function getPlayerProgress(int $playerId, string $seasonYear): array
     {
         $player = $this->db->fetchOne(

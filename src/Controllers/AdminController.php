@@ -17,11 +17,23 @@ use App\Services\TeamHaggleSeriousService;
 class AdminController extends BaseController
 {
     private Logger $logger;
+    private RoundWorkflowService $roundWorkflowService;
+    private RoundLockService $roundLockService;
+    private TeamHaggleSeriousService $teamHaggleSeriousService;
 
-    public function __construct(Application $app, Logger $logger)
+    public function __construct(
+        Application $app,
+        Logger $logger,
+        RoundWorkflowService $roundWorkflowService,
+        RoundLockService $roundLockService,
+        TeamHaggleSeriousService $teamHaggleSeriousService
+    )
     {
         parent::__construct($app);
         $this->logger = $logger;
+        $this->roundWorkflowService = $roundWorkflowService;
+        $this->roundLockService = $roundLockService;
+        $this->teamHaggleSeriousService = $teamHaggleSeriousService;
     }
 
     public function menu(): void
@@ -35,8 +47,7 @@ class AdminController extends BaseController
     {
         $this->requireRole('admin');
 
-        $workflow = new RoundWorkflowService($this->app->getDatabase());
-        $round = $workflow->getPermanentRound();
+        $round = $this->roundWorkflowService->getPermanentRound();
 
         $this->render('admin/scoring-state', [
             'round' => $round,
@@ -51,8 +62,7 @@ class AdminController extends BaseController
         $adminStaffId = (int) ($user['user_id'] ?? 0);
         $username = (string) ($user['username'] ?? 'system');
 
-        $workflow = new RoundWorkflowService($this->app->getDatabase());
-        $round = $workflow->getPermanentRound();
+        $round = $this->roundWorkflowService->getPermanentRound();
         $roundId = (int) ($round['round_id'] ?? 0);
 
         $before = $this->app->getDatabase()->fetchOne(
@@ -68,8 +78,7 @@ class AdminController extends BaseController
             return;
         }
 
-        $lockService = new RoundLockService($this->app->getDatabase());
-        $released = $lockService->forceReleaseLock($roundId, $adminStaffId, 'admin_forced');
+        $released = $this->roundLockService->forceReleaseLock($roundId, $adminStaffId, 'admin_forced');
 
         $after = $this->app->getDatabase()->fetchOne(
             'SELECT row_id, workflow_step, locked_by_staff_id, lock_release_reason
@@ -108,10 +117,8 @@ class AdminController extends BaseController
         $adminStaffId = (int) ($user['user_id'] ?? 0);
         $username = (string) ($user['username'] ?? 'system');
 
-        $workflow = new RoundWorkflowService($this->app->getDatabase());
-
         try {
-            $result = $workflow->adminResetResultsToCardEntry($username);
+            $result = $this->roundWorkflowService->adminResetResultsToCardEntry($username);
             $fromStep = (string) ($result['from_step'] ?? 'unknown');
 
             $after = $this->app->getDatabase()->fetchOne(
@@ -152,14 +159,13 @@ class AdminController extends BaseController
     {
         $this->requireRole('admin');
 
-        $service = new TeamHaggleSeriousService($this->app->getDatabase());
-        if (!$service->isSeriousMode()) {
+        if (!$this->teamHaggleSeriousService->isSeriousMode()) {
             $this->flash->error('team_haggle_state must be set to serious before editing fixed teams.');
             $this->redirect('/admin/menu');
             return;
         }
 
-        $state = $service->buildEditorState();
+        $state = $this->teamHaggleSeriousService->buildEditorState();
         $workflowStep = (string) ($state['round']['workflow_step'] ?? 'between_rounds');
         if (!in_array($workflowStep, ['between_rounds', 'not_started'], true)) {
             $this->flash->error('Serious team-haggle membership can only be changed between rounds.');
@@ -187,8 +193,7 @@ class AdminController extends BaseController
             return;
         }
 
-        $service = new TeamHaggleSeriousService($this->app->getDatabase());
-        if (!$service->isSeriousMode()) {
+        if (!$this->teamHaggleSeriousService->isSeriousMode()) {
             $this->flash->error('team_haggle_state must be set to serious before editing fixed teams.');
             $this->redirect('/admin/menu');
             return;
@@ -204,7 +209,7 @@ class AdminController extends BaseController
                 $updatedBy = (string) ($user['username'] ?? 'system');
                 $postedRevision = max(0, (int) ($data['revision'] ?? 0));
 
-                $result = $service->saveTeams($draft, $postedRevision, $updatedBy);
+                $result = $this->teamHaggleSeriousService->saveTeams($draft, $postedRevision, $updatedBy);
                 $this->logger->info('Serious team-haggle teams saved', [
                     'teams_saved' => (int) ($result['teams_saved'] ?? 0),
                     'new_revision' => (int) ($result['revision'] ?? 0),
@@ -214,7 +219,7 @@ class AdminController extends BaseController
                 $this->redirect('/admin/team-haggle');
                 return;
             } catch (\RuntimeException $e) {
-                $state = $service->buildEditorState($draft);
+                $state = $this->teamHaggleSeriousService->buildEditorState($draft);
                 $this->render('admin/team-haggle-serious', [
                     'state' => $state,
                     'errors' => [$e->getMessage()],
@@ -227,8 +232,8 @@ class AdminController extends BaseController
         $removedOrder = $removedOrderRaw === '' ? [] : array_filter(array_map('trim', explode(',', $removedOrderRaw)));
         $replacementIds = array_values(array_map('strval', (array) ($data['replacement_ids'] ?? [])));
 
-        $applied = $service->applyReplacements($draft, $removedOrder, $replacementIds);
-        $state = $service->buildEditorState((array) ($applied['teams'] ?? []), (array) ($applied['messages'] ?? []));
+        $applied = $this->teamHaggleSeriousService->applyReplacements($draft, $removedOrder, $replacementIds);
+        $state = $this->teamHaggleSeriousService->buildEditorState((array) ($applied['teams'] ?? []), (array) ($applied['messages'] ?? []));
 
         $this->render('admin/team-haggle-serious', [
             'state' => $state,

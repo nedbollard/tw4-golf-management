@@ -1,5 +1,13 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ "$(basename "$SCRIPT_DIR")" = "scripts" ]; then
+    PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+else
+    PROJECT_ROOT="$SCRIPT_DIR"
+fi
+cd "$PROJECT_ROOT"
+
 # TW4 Test Runner - Comprehensive Testing Script
 # Author: Ned Bollard
 # Description: Run all TW4 tests with proper setup and reporting
@@ -55,7 +63,7 @@ check_directory() {
 check_docker() {
     if ! docker compose ps | grep -q "Up"; then
         print_warning "Docker containers are not running. Starting them..."
-        ./tw4-manage.sh start
+        "$SCRIPT_DIR/tw4-manage.sh" start
         sleep 5
     fi
 }
@@ -101,20 +109,15 @@ check_test_database() {
         return 1
     fi
 
-    # Apply migrations to test database
-    print_status "Applying migrations to test database..."
-    for migration in src/migrations/*.sql; do
-        if [ -f "$migration" ]; then
-            if [ "$(basename "$migration")" = "017_create_live_database_schema.sql" ] || [ "$(basename "$migration")" = "018_seed_live_round.sql" ] || [ "$(basename "$migration")" = "019_round_workflow_and_lock.sql" ] || [ "$(basename "$migration")" = "021_live_round_start_defaults.sql" ] || [ "$(basename "$migration")" = "022_live_card_tables.sql" ]; then
-                continue
-            fi
-            print_status "Applying $(basename "$migration")..."
-            if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root tw4_test < "$migration"; then
-                print_error "Failed applying migration $(basename "$migration") to tw4_test."
-                return 1
-            fi
-        fi
-    done
+    # Cross-schema migrations switch explicitly to TW4_base/TW4_live, so they
+    # cannot be replayed safely into a single test schema. Import the canonical
+    # base snapshot with only its schema qualifier redirected to tw4_test.
+    print_status "Importing canonical base schema into tw4_test..."
+    if ! sed 's/`TW4_base`/`tw4_test`/g' database/baseline/TW4_base_schema.sql \
+        | docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root; then
+        print_error "Failed importing the canonical schema into tw4_test."
+        return 1
+    fi
 
     return 0
 }
@@ -227,7 +230,7 @@ show_test_stats() {
     echo ""
     
     echo -e "${CYAN}Docker Status:${NC}"
-    ./tw4-manage.sh status
+    "$SCRIPT_DIR/tw4-manage.sh" status
 }
 
 # Clean test artifacts
@@ -248,7 +251,7 @@ clean_tests() {
 
 # Run migration replay and schema parity test
 run_migration_schema_test() {
-    print_status "Running migration replay/schema parity test..."
+    print_status "Running canonical schema replay/parity test..."
 
     local temp_db="tw4_migration_test"
     local migrate_log
@@ -270,19 +273,17 @@ run_migration_schema_test() {
         return 1
     fi
 
-    # Replay canonical migration chain (exclude snapshot schema)
-    for migration in $(ls src/migrations/*.sql | grep -v '999_current_schema.sql' | sort); do
-        if [ "$(basename "$migration")" = "017_create_live_database_schema.sql" ] || [ "$(basename "$migration")" = "018_seed_live_round.sql" ] || [ "$(basename "$migration")" = "019_round_workflow_and_lock.sql" ] || [ "$(basename "$migration")" = "021_live_round_start_defaults.sql" ] || [ "$(basename "$migration")" = "022_live_card_tables.sql" ]; then
-            continue
-        fi
-        echo "Applying $(basename "$migration")" >> "$migrate_log"
-        if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root "$temp_db" < "$migration" >> "$migrate_log" 2>&1; then
-            print_error "Migration replay failed at $(basename "$migration")."
-            cat "$migrate_log"
-            rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
-            return 1
-        fi
-    done
+    # Incremental migrations now intentionally span TW4_base, TW4_live,
+    # TW4_history, and TW4_holding. Replay the canonical base snapshot into the
+    # temporary schema rather than redirecting cross-schema migration effects.
+    if ! sed "s/\`TW4_base\`/\`${temp_db}\`/g" database/baseline/TW4_base_schema.sql \
+        | docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root \
+            >> "$migrate_log" 2>&1; then
+        print_error "Canonical schema replay failed for ${temp_db}."
+        cat "$migrate_log"
+        rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
+        return 1
+    fi
 
     # Compare table sets
     if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "USE TW4_base; SHOW TABLES;" | tail -n +2 | sort > "$tw4_tables"; then
@@ -328,8 +329,10 @@ run_migration_schema_test() {
         return 1
     fi
 
-    print_status "Migration replay/schema parity test passed"
+    print_status "Canonical schema replay/parity test passed"
 
+    docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root \
+        -e "DROP DATABASE IF EXISTS ${temp_db};" >/dev/null 2>&1
     rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
     return 0
 }
@@ -343,16 +346,16 @@ show_help() {
     echo -e "${GREEN}  unit${NC}          - Run unit tests only"
     echo -e "${GREEN}  integration${NC}   - Run integration tests only"
     echo -e "${GREEN}  coverage${NC}      - Run tests with coverage report"
-    echo -e "${GREEN}  migrations${NC}    - Replay migrations and compare schema parity"
+    echo -e "${GREEN}  migrations${NC}    - Replay canonical schema and compare parity"
     echo -e "${GREEN}  specific <file>${NC} - Run specific test file"
     echo -e "${GREEN}  stats${NC}         - Show test statistics"
     echo -e "${GREEN}  clean${NC}         - Clean test artifacts"
     echo -e "${GREEN}  help${NC}          - Show this help menu"
     echo ""
     echo -e "${YELLOW}Examples:${NC}"
-    echo "  ./test-runner.sh all                    # Run all tests"
-    echo "  ./test-runner.sh unit                   # Unit tests only"
-    echo "  ./test-runner.sh specific tests/Unit/StaffTest.php"
+    echo "  ./scripts/test-runner.sh all                    # Run all tests"
+    echo "  ./scripts/test-runner.sh unit                   # Unit tests only"
+    echo "  ./scripts/test-runner.sh specific tests/Unit/StaffTest.php"
     echo ""
     echo -e "${YELLOW}Test Files:${NC}"
     echo "  Unit Tests:"
@@ -388,7 +391,7 @@ main() {
         "specific")
             if [ -z "$2" ]; then
                 print_error "Please specify a test file"
-                echo "Usage: ./test-runner.sh specific <test_file>"
+                echo "Usage: ./scripts/test-runner.sh specific <test_file>"
                 exit 1
             fi
             check_docker && validate_db_connection && ensure_reference_database_schema && check_test_database && run_specific_test "$2"

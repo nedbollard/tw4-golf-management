@@ -4,8 +4,8 @@ namespace App\Controllers;
 
 use App\Controllers\BaseController;
 use App\Core\Application;
-use App\Services\Database;
 use App\Models\Staff;
+use App\Repositories\StaffRepository;
 use App\Services\Logger;
 use App\Utility\NameHelper;
 
@@ -15,18 +15,20 @@ use App\Utility\NameHelper;
 class StaffController extends BaseController
 {
     private Logger $logger;
+    private StaffRepository $staffRepository;
 
-    public function __construct(Application $app, Logger $logger)
+    public function __construct(Application $app, Logger $logger, StaffRepository $staffRepository)
     {
         parent::__construct($app);
         $this->logger = $logger;
+        $this->staffRepository = $staffRepository;
     }
 
     public function index(): void
     {
         $this->requireRole('admin');
         
-        $staff = Staff::findAll($this->app->getDatabase());
+        $staff = $this->staffRepository->findAll();
         
         $this->render('staff/index', [
             'staff' => $staff,
@@ -62,7 +64,7 @@ class StaffController extends BaseController
             }
             
             // Check if username already exists
-            $existingStaff = Staff::findByUsername($this->app->getDatabase(), $data['username']);
+            $existingStaff = $this->staffRepository->findByUsername($data['username']);
             if ($existingStaff) {
                 $errors['username'] = 'Username already exists';
             }
@@ -92,7 +94,7 @@ class StaffController extends BaseController
                 null
             );
             
-            $staffId = $newStaff->save($this->app->getDatabase());
+            $staffId = $this->staffRepository->save($newStaff, (string) ($_SESSION['username'] ?? 'system'));
             
             if ($staffId) {
                 $this->logger->logConfig('staff_added', [
@@ -112,14 +114,14 @@ class StaffController extends BaseController
         $this->render('staff/add');
     }
 
-    public function edit($id): void
+    public function edit(int $id): void
     {
         $this->requireRole('admin');
         
         // Convert string ID to integer
-        $rowId = (int)$id;
+        $staffId = (int)$id;
         
-        $staff = Staff::findById($this->app->getDatabase(), $rowId);
+        $staff = $this->staffRepository->findById($staffId);
         if (!$staff) {
             $this->flash->error('Staff member not found.');
             $this->redirect('/staff');
@@ -131,23 +133,20 @@ class StaffController extends BaseController
         ]);
     }
 
-    public function update($id): void
+    public function update(int $id): void
     {
         $this->requireRole('admin');
-        $rowId = (int)$id;
+        $staffId = (int)$id;
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$this->validateCsrf()) {
                 $this->flash->error('Invalid CSRF token');
-                $this->redirect("/staff/edit/{$rowId}");
+                $this->redirect("/staff/edit/{$staffId}");
                 return;
             }
 
             $data = $this->getPostData();
             $errors = [];
-            
-            // Convert string ID to integer
-            $staffId = (int)$id;
             
             // Validate required fields
             if (empty($data['username'])) {
@@ -159,20 +158,20 @@ class StaffController extends BaseController
             }
             
             // Check if username already exists (excluding current staff)
-            $existingStaff = Staff::findByUsername($this->app->getDatabase(), $data['username']);
-            if ($existingStaff && $existingStaff->getRowId() != $staffId) {
+            $existingStaff = $this->staffRepository->findByUsername($data['username']);
+            if ($existingStaff && $existingStaff->getStaffId() != $staffId) {
                 $errors['username'] = 'Username already exists';
             }
             
             if (!empty($errors)) {
                 $this->flash->error($errors);
                 $this->flash->setOld($data);
-                $this->redirect("/staff/edit/{$rowId}");
+                $this->redirect("/staff/edit/{$staffId}");
                 return;
             }
             
             // Load existing staff member
-            $staff = Staff::findById($this->app->getDatabase(), $staffId);
+            $staff = $this->staffRepository->findById($staffId);
             if (!$staff) {
                 $this->flash->error('Staff member not found.');
                 $this->redirect('/staff');
@@ -197,11 +196,12 @@ class StaffController extends BaseController
                 $staff->setPasswordHash($passwordHash);
             }
             
-            $success = $staff->save($this->app->getDatabase());
+            $this->staffRepository->save($staff, (string) ($_SESSION['username'] ?? 'system'));
+            $success = true;
             
             if ($success) {
                 $this->logger->logConfig('staff_updated', [
-                    'row_id' => $staff->getRowId(),
+                    'row_id' => $staff->getStaffId(),
                     'username' => $data['username'],
                     'role' => $data['role'],
                     'password_changed' => !empty($data['password'])
@@ -216,14 +216,14 @@ class StaffController extends BaseController
         }
     }
 
-    public function delete($id): void
+    public function delete(int $id): void
     {
         $this->requireRole('admin');
         
         // Convert string ID to integer
-        $rowId = (int)$id;
+        $staffId = (int)$id;
         
-        $staff = Staff::findById($this->app->getDatabase(), $rowId);
+        $staff = $this->staffRepository->findById($staffId);
         if (!$staff) {
             $this->flash->error('Staff member not found.');
             $this->redirect('/staff');
@@ -238,11 +238,13 @@ class StaffController extends BaseController
         }
         
         // Logical deletion - mark as inactive
-        $success = $staff->deactivate($this->app->getDatabase());
+        $staff->deactivate();
+        $this->staffRepository->save($staff, (string) ($_SESSION['username'] ?? 'system'));
+        $success = true;
         
         if ($success) {
             $this->logger->logConfig('staff_deleted', [
-                'row_id' => $rowId,
+                'row_id' => $staffId,
                 'username' => $staff->getUsername(),
                 'role' => $staff->getRole(),
                 'first_name' => $staff->getFirstName(),

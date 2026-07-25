@@ -10,7 +10,7 @@ Minimum practical stack:
 
 1. Ubuntu 24.04 LTS
 2. Docker Engine and Docker Compose plugin
-3. TW4 app container built from [Dockerfile](Dockerfile)
+3. TW4 app container built from [Dockerfile](../../Dockerfile)
 4. MySQL 8.0 container
 5. Caddy or Nginx as the HTTPS reverse proxy
 6. Persistent volumes for MySQL data, report snapshots, and PHP sessions
@@ -29,8 +29,8 @@ What to use there:
 
 1. One Ubuntu VM instance.
 2. Docker Engine and Docker Compose plugin.
-3. The system-test stack in [docker-compose.systest.yml](docker-compose.systest.yml).
-4. [Caddyfile](Caddyfile) for HTTPS termination.
+3. The system-test stack in [docker-compose.systest.yml](../../docker-compose.systest.yml).
+4. [Caddyfile](../../Caddyfile) for HTTPS termination.
 
 Oracle Cloud is the best free option here because TW4 is stateful and container-friendly, but not a good fit for shared free PHP hosting.
 

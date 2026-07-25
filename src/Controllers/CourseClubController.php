@@ -10,29 +10,23 @@ use App\Services\Logger;
 class CourseClubController extends BaseController
 {
     private Logger $logger;
+    private CourseClubService $courseClubService;
 
-    public function __construct(Application $app, Logger $logger)
+    public function __construct(Application $app, Logger $logger, CourseClubService $courseClubService)
     {
         parent::__construct($app);
         $this->logger = $logger;
-    }
-
-    /**
-     * Get CourseClubService instance
-     */
-    private function getCourseClubService(): CourseClubService
-    {
-        return new CourseClubService($this->app->getDatabase(), $this->logger);
+        $this->courseClubService = $courseClubService;
     }
 
     /**
      * Display all course club holes
      */
-    public function index(string $club = null, string $gender = null): void
+    public function index(?string $club = null, ?string $gender = null): void
     {
         $this->requireRole('admin');
         
-        $courseClubService = $this->getCourseClubService();
+        $courseClubService = $this->courseClubService;
         $courseClubs = $courseClubService->getAllCourseClubs();
         $clubNames = $courseClubService->getUniqueClubNames();
         
@@ -60,7 +54,7 @@ class CourseClubController extends BaseController
     {
         $this->requireRole('admin');
         
-        $courseClubService = $this->getCourseClubService();
+        $courseClubService = $this->courseClubService;
         $clubNames = $courseClubService->getUniqueClubNames();
         $newCourse = $_GET['course'] ?? $_SESSION['newCourseAdded'] ?? null;
         
@@ -99,7 +93,7 @@ class CourseClubController extends BaseController
             return;
         }
 
-        $courseClubService = $this->getCourseClubService();
+        $courseClubService = $this->courseClubService;
         
         // Check if hole number already exists for this club
         if ($courseClubService->holeNumberExists($data['name_club'], (int) $data['number_hole'])) {
@@ -137,7 +131,7 @@ class CourseClubController extends BaseController
     {
         $this->requireRole('admin');
         
-        $courseClubService = $this->getCourseClubService();
+        $courseClubService = $this->courseClubService;
         $courseClub = $courseClubService->getCourseClubById($id);
         if (!$courseClub) {
             $this->flash->error('Course hole not found');
@@ -167,7 +161,7 @@ class CourseClubController extends BaseController
             return;
         }
 
-        $courseClubService = $this->getCourseClubService();
+        $courseClubService = $this->courseClubService;
         $courseClub = $courseClubService->getCourseClubById($id);
         if (!$courseClub) {
             $this->flash->error('Course hole not found');

@@ -7,6 +7,7 @@ use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use App\Controllers\StaffController;
 use App\Core\Application;
+use App\Repositories\StaffRepository;
 use App\Services\Logger;
 
 #[AllowMockObjectsWithoutExpectations]
@@ -15,13 +16,19 @@ class StaffControllerTest extends TestCase
     private StaffController $staffController;
     private Application|MockObject $appMock;
     private Logger|MockObject $loggerMock;
+    private StaffRepository|MockObject $staffRepositoryMock;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->appMock = $this->createMock(Application::class);
         $this->loggerMock = $this->createMock(Logger::class);
-        $this->staffController = new StaffController($this->appMock, $this->loggerMock);
+        $this->staffRepositoryMock = $this->createMock(StaffRepository::class);
+        $this->staffController = new StaffController(
+            $this->appMock,
+            $this->loggerMock,
+            $this->staffRepositoryMock
+        );
     }
 
     public function testControllerInstantiatesWithDependencies(): void
@@ -48,8 +55,9 @@ class StaffControllerTest extends TestCase
 
         $this->assertNotNull($constructor);
         $parameters = $constructor->getParameters();
-        $this->assertCount(2, $parameters);
+        $this->assertCount(3, $parameters);
         $this->assertEquals('app', $parameters[0]->getName());
         $this->assertEquals('logger', $parameters[1]->getName());
+        $this->assertEquals('staffRepository', $parameters[2]->getName());
     }
 }

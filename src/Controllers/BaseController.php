@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Application;
+use App\Core\ServiceContainer;
 use App\Services\ConfigService;
 use App\Services\AuthService;
 use App\Services\FlashMessage;
@@ -17,29 +18,65 @@ abstract class BaseController
     protected ConfigService $configService;
     protected AuthService $authService;
     protected FlashMessage $flash;
+    private Logger $baseLogger;
+    private bool $servicesInitialized = false;
+    private ?ServiceContainer $fallbackServices = null;
 
     public function __construct(Application $app)
     {
         $this->app = $app;
-        // Initialize ConfigService for all controllers
-        $this->configService = new \App\Services\ConfigService($this->app->getDatabase());
+    }
+
+    public function initializeServices(
+        ConfigService $configService,
+        AuthService $authService,
+        FlashMessage $flash,
+        Logger $logger
+    ): void {
+        if ($this->servicesInitialized) {
+            return;
+        }
+
+        $this->configService = $configService;
         $this->configService->initializeDefaultConfig();
-        
-        // Initialize AuthService for all controllers
-        $this->authService = new \App\Services\AuthService($this->app->getDatabase());
-        
-        // Initialize FlashMessage for all controllers
-        $this->flash = new \App\Services\FlashMessage();
-        
-        // Check configuration status and load to session
+
+        $this->authService = $authService;
+        $this->authService->updateActivity();
+
+        $this->flash = $flash;
+        $this->baseLogger = $logger;
+
         if (!isset($_SESSION['config_checked'])) {
             $this->configService->loadConfigToSession();
             $_SESSION['config_checked'] = true;
         }
+
+        $this->servicesInitialized = true;
+    }
+
+    protected function ensureServicesInitialized(): void
+    {
+        if ($this->servicesInitialized) {
+            return;
+        }
+
+        $this->initializeServices(
+            $this->resolveService(ConfigService::class),
+            $this->resolveService(AuthService::class),
+            $this->resolveService(FlashMessage::class),
+            $this->resolveService(Logger::class)
+        );
+    }
+
+    protected function resolveService(string $serviceClass): object
+    {
+        $this->fallbackServices ??= new ServiceContainer($this->app->getDatabase());
+        return $this->fallbackServices->get($serviceClass);
     }
 
     protected function render(string $view, array $data = []): void
     {
+        $this->ensureServicesInitialized();
         $viewPath = $this->app->getConfig()['paths']['views'] . '/' . $view . '.php';
         
         if (!file_exists($viewPath)) {
@@ -151,25 +188,27 @@ abstract class BaseController
 
     protected function requireAuth(): void
     {
+        $this->ensureServicesInitialized();
         $this->authService->requireLogin();
     }
 
     protected function requireRole(string $role): void
     {
+        $this->ensureServicesInitialized();
         $this->authService->requireRole($role);
     }
 
     protected function requireScoringConfigReady(string $redirect = '/scorer/menu'): void
     {
+        $this->ensureServicesInitialized();
         $status = $this->configService->getConfigStatus();
         if ($status === 'ready') {
             return;
         }
 
         try {
-            $logger = new Logger($this->app->getDatabase());
             $username = isset($_SESSION['username']) ? (string) $_SESSION['username'] : null;
-            $logger->log(
+            $this->baseLogger->log(
                 Logger::LEVEL_WARNING,
                 Logger::EVENT_SECURITY,
                 'Blocked scoring action while configuration status is not ready',

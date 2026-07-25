@@ -9,10 +9,10 @@ class ResultsArchiveController extends BaseController
 {
     private ResultsArchiveService $archiveService;
 
-    public function __construct(Application $app)
+    public function __construct(Application $app, ResultsArchiveService $archiveService)
     {
         parent::__construct($app);
-        $this->archiveService = new ResultsArchiveService($this->app->getDatabase());
+        $this->archiveService = $archiveService;
     }
 
     public function index(): void

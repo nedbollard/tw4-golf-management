@@ -11,6 +11,7 @@ class Logger
 {
     private Database $db;
     private string $logFile;
+    private const DIR_PERMISSIONS = 0755;
     
     // Log levels
     const LEVEL_DEBUG = 'DEBUG';
@@ -38,7 +39,7 @@ class Logger
     /**
      * Log any application event
      */
-    public function log(string $level, string $event, string $message, array $context = [], string $username = null): void
+    public function log(string $level, string $event, string $message, array $context = [], ?string $username = null): void
     {
         $timestamp = date('Y-m-d H:i:s');
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
@@ -116,7 +117,7 @@ class Logger
     /**
      * Convenience method for security events
      */
-    public function logSecurity(string $message, array $context = [], string $username = null): void
+    public function logSecurity(string $message, array $context = [], ?string $username = null): void
     {
         $this->log(
             self::LEVEL_WARNING,
@@ -129,6 +130,16 @@ class Logger
     
     /**
      * Get logs with filtering and sorting
+     */
+    /**
+     * @param array{
+     *     level?: string,
+     *     event_type?: string,
+     *     username?: string,
+     *     date_from?: string,
+     *     date_to?: string
+     * } $filters
+     * @return list<array<string, mixed>>
      */
     public function getLogs(array $filters = [], string $search = '', string $order = 'DESC', int $limit = 100, int $offset = 0): array
     {
@@ -246,6 +257,9 @@ class Logger
     /**
      * Get unique values for filter dropdowns
      */
+    /**
+     * @return array{levels: list<string>, event_types: list<string>, usernames: list<string>}
+     */
     public function getFilterOptions(): array
     {
         return [
@@ -260,10 +274,7 @@ class Logger
      */
     private function getUniqueValues(string $column): array
     {
-        $allowedColumns = ['level', 'event_type', 'username'];
-        if (!in_array($column, $allowedColumns, true)) {
-            throw new \InvalidArgumentException("Unsupported column requested: {$column}");
-        }
+        $this->db->validateColumn($column);
 
         $result = $this->db->fetchAll("SELECT DISTINCT $column FROM application_log WHERE $column IS NOT NULL ORDER BY $column");
         return array_column($result, $column);
@@ -277,9 +288,9 @@ class Logger
         $targetFile = $this->logFile;
         $logDir = dirname($targetFile);
 
-        if (!is_dir($logDir) && !@mkdir($logDir, 0755, true)) {
+        if (!is_dir($logDir) && !@mkdir($logDir, self::DIR_PERMISSIONS, true)) {
             $fallbackDir = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'tw4-logs';
-            if (!is_dir($fallbackDir) && !@mkdir($fallbackDir, 0755, true)) {
+            if (!is_dir($fallbackDir) && !@mkdir($fallbackDir, self::DIR_PERMISSIONS, true)) {
                 return;
             }
 
@@ -289,7 +300,7 @@ class Logger
 
         if (!is_writable($logDir)) {
             $fallbackDir = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'tw4-logs';
-            if (!is_dir($fallbackDir) && !@mkdir($fallbackDir, 0755, true)) {
+            if (!is_dir($fallbackDir) && !@mkdir($fallbackDir, self::DIR_PERMISSIONS, true)) {
                 return;
             }
 
@@ -303,27 +314,27 @@ class Logger
         @file_put_contents($targetFile, $message, FILE_APPEND | LOCK_EX);
     }
     
-    public function debug(string $message, array $context = [], string $username = null): void
+    public function debug(string $message, array $context = [], ?string $username = null): void
     {
         $this->log(self::LEVEL_DEBUG, self::EVENT_SYSTEM, $message, $context, $username);
     }
     
-    public function info(string $message, array $context = [], string $username = null): void
+    public function info(string $message, array $context = [], ?string $username = null): void
     {
         $this->log(self::LEVEL_INFO, self::EVENT_SYSTEM, $message, $context, $username);
     }
     
-    public function warning(string $message, array $context = [], string $username = null): void
+    public function warning(string $message, array $context = [], ?string $username = null): void
     {
         $this->log(self::LEVEL_WARNING, self::EVENT_SYSTEM, $message, $context, $username);
     }
     
-    public function error(string $message, array $context = [], string $username = null): void
+    public function error(string $message, array $context = [], ?string $username = null): void
     {
         $this->log(self::LEVEL_ERROR, self::EVENT_ERROR, $message, $context, $username);
     }
     
-    public function critical(string $message, array $context = [], string $username = null): void
+    public function critical(string $message, array $context = [], ?string $username = null): void
     {
         $this->log(self::LEVEL_CRITICAL, self::EVENT_ERROR, $message, $context, $username);
     }

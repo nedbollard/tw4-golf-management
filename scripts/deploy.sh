@@ -1,5 +1,13 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ "$(basename "$SCRIPT_DIR")" = "scripts" ]; then
+    PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+else
+    PROJECT_ROOT="$SCRIPT_DIR"
+fi
+cd "$PROJECT_ROOT"
+
 # TW4 Golf Management System - Deployment Script
 # Author: Ned Bollard
 # Description: Automated deployment script for solo development

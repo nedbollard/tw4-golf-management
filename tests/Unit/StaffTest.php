@@ -98,12 +98,13 @@ class StaffTest extends TestCase
         $staff = Staff::fromArray($data);
 
         $this->assertInstanceOf(Staff::class, $staff);
-        $this->assertEquals(1, $staff->getRowId());
+        $this->assertEquals(1, $staff->getStaffId());
         $this->assertEquals('testuser2', $staff->getUsername());
         $this->assertEquals('Jane', $staff->getFirstName());
         $this->assertEquals('Smith', $staff->getLastName());
         $this->assertEquals('scorer', $staff->getRole());
         $this->assertFalse($staff->isActive());
+        $this->assertSame('2024-01-01 00:00:00', $staff->getLastLogin()?->format('Y-m-d H:i:s'));
     }
 
     public function testHasRole(): void
@@ -114,5 +115,15 @@ class StaffTest extends TestCase
         $this->staff->setRole('scorer');
         $this->assertTrue($this->staff->hasRole('scorer'));
         $this->assertFalse($this->staff->hasRole('admin'));
+    }
+
+    public function testStaffIdentityCannotBeReassigned(): void
+    {
+        $staff = new Staff('existing', 'hash', 'Existing', 'User', 'admin', true, 9);
+
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessage('Staff identity has already been assigned.');
+
+        $staff->assignStaffId(10);
     }
 }

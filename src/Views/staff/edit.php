@@ -62,7 +62,7 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                     </div>
                 <?php endif; ?>
 
-                <form method="POST" action="/staff/update/<?php echo $staff->getRowId(); ?>">
+                <form method="POST" action="/staff/update/<?php echo $staff->getStaffId(); ?>">
                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                     <div class="mb-3">
                         <label for="first_name" class="form-label">First Name</label>

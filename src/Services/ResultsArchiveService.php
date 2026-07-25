@@ -13,6 +13,22 @@ class ResultsArchiveService
         $this->db = $db;
     }
 
+    /**
+     * @return list<array{
+     *     season_year: string,
+     *     rounds: list<array{
+     *         number_round: int,
+     *         round_date: string|null,
+     *         round_slug: string,
+     *         card_count: int,
+     *         name_course: string,
+     *         name_club: string,
+     *         ident_eclectic: string,
+     *         is_legacy: bool,
+     *         snapshots: list<array{filename: string, label: string, href: string, exists: bool}>
+     *     }>
+     * }>
+     */
     public function getArchiveTree(): array
     {
         $eclecticContextByRound = $this->loadRoundEclecticContexts();

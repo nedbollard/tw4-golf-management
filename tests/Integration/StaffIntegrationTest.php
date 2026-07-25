@@ -5,10 +5,12 @@ namespace Tests\Integration;
 use PHPUnit\Framework\TestCase;
 use App\Core\Database;
 use App\Models\Staff;
+use App\Repositories\StaffRepository;
 
 class StaffIntegrationTest extends TestCase
 {
     private Database $database;
+    private StaffRepository $staffRepository;
     private array $createdStaff = [];
 
     protected function setUp(): void
@@ -23,6 +25,7 @@ class StaffIntegrationTest extends TestCase
             'password' => $_ENV['DB_PASSWORD'] ?? getenv('DB_PASSWORD') ?: ''
         ];
         $this->database = new Database($config);
+        $this->staffRepository = new StaffRepository($this->database);
         
         // Clean up any existing test data
         $this->cleanupTestData();
@@ -56,7 +59,7 @@ class StaffIntegrationTest extends TestCase
         );
 
         // Save to database
-        $id = $staff->save($this->database);
+        $id = $this->staffRepository->save($staff);
         $this->createdStaff[] = $id;
 
         // Verify it was saved
@@ -64,10 +67,10 @@ class StaffIntegrationTest extends TestCase
         $this->assertGreaterThan(0, $id);
 
         // Retrieve from database
-        $retrievedStaff = Staff::findById($this->database, $id);
+        $retrievedStaff = $this->staffRepository->findById($id);
         
         $this->assertInstanceOf(Staff::class, $retrievedStaff);
-        $this->assertEquals($id, $retrievedStaff->getRowId());
+        $this->assertEquals($id, $retrievedStaff->getStaffId());
         $this->assertEquals($staff->getUsername(), $retrievedStaff->getUsername());
         $this->assertEquals($staff->getFirstName(), $retrievedStaff->getFirstName());
         $this->assertEquals($staff->getLastName(), $retrievedStaff->getLastName());
@@ -88,7 +91,7 @@ class StaffIntegrationTest extends TestCase
             null
         );
 
-        $id = $staff->save($this->database);
+        $id = $this->staffRepository->save($staff);
         $this->createdStaff[] = $id;
 
         // Update the staff member
@@ -96,11 +99,11 @@ class StaffIntegrationTest extends TestCase
         $staff->setLastName('Name');
         $staff->setRole('scorer');
 
-        $result = $staff->save($this->database);
+        $result = $this->staffRepository->save($staff);
         $this->assertEquals($id, $result);
 
         // Verify the update
-        $updatedStaff = Staff::findById($this->database, $id);
+        $updatedStaff = $this->staffRepository->findById($id);
         $this->assertEquals('Updated', $updatedStaff->getFirstName());
         $this->assertEquals('Name', $updatedStaff->getLastName());
         $this->assertEquals('scorer', $updatedStaff->getRole());
@@ -119,7 +122,7 @@ class StaffIntegrationTest extends TestCase
             null
         );
 
-        $id = $staff->save($this->database);
+        $id = $this->staffRepository->save($staff);
         $this->createdStaff[] = $id;
 
         // Verify inactive
@@ -127,25 +130,25 @@ class StaffIntegrationTest extends TestCase
 
         // Activate
         $staff->activate();
-        $staff->save($this->database);
+        $this->staffRepository->save($staff);
 
         // Verify activated
-        $activeStaff = Staff::findById($this->database, $id);
+        $activeStaff = $this->staffRepository->findById($id);
         $this->assertTrue($activeStaff->isActive());
 
         // Deactivate
         $activeStaff->deactivate();
-        $activeStaff->save($this->database);
+        $this->staffRepository->save($activeStaff);
 
         // Verify deactivated
-        $deactivatedStaff = Staff::findById($this->database, $id);
+        $deactivatedStaff = $this->staffRepository->findById($id);
         $this->assertNull($deactivatedStaff);
     }
 
     public function testFindAllStaff(): void
     {
         // Create multiple staff members
-        $originalCount = count(Staff::findAll($this->database));
+        $originalCount = count($this->staffRepository->findAll());
 
         for ($i = 0; $i < 3; $i++) {
             $staff = new Staff(
@@ -158,12 +161,12 @@ class StaffIntegrationTest extends TestCase
                 null
             );
 
-            $id = $staff->save($this->database);
+            $id = $this->staffRepository->save($staff);
             $this->createdStaff[] = $id;
         }
 
         // Find all staff
-        $allStaff = Staff::findAll($this->database);
+        $allStaff = $this->staffRepository->findAll();
         
         $this->assertIsArray($allStaff);
         $this->assertEquals($originalCount + 3, count($allStaff));
@@ -177,7 +180,7 @@ class StaffIntegrationTest extends TestCase
     public function testStaffNotFound(): void
     {
         $nonExistentId = 999999;
-        $staff = Staff::findById($this->database, $nonExistentId);
+        $staff = $this->staffRepository->findById($nonExistentId);
         
         $this->assertNull($staff);
     }

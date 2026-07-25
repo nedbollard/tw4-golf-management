@@ -3,7 +3,9 @@
   "private": true,
   "scripts": {
     "test:e2e": "npx playwright test",
-    "test:e2e:ci": "npx playwright test --reporter=github"
+    "test:e2e:ci": "npx playwright test --reporter=github",
+    "test:e2e:card-entry": "npx playwright test --config=playwright.card-entry.config.js",
+    "test:e2e:card-entry:ci": "npx playwright test --config=playwright.card-entry.config.js --reporter=github"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0"

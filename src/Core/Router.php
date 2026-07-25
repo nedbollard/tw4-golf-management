@@ -2,6 +2,12 @@
 
 namespace App\Core;
 
+use App\Controllers\BaseController;
+use App\Services\AuthService;
+use App\Services\ConfigService;
+use App\Services\FlashMessage;
+use App\Services\Logger;
+
 /**
  * URL Router class for clean URL handling
  */
@@ -10,10 +16,15 @@ class Router
     private array $routes = [];
     private string $basePath = '';
     private ?Application $app = null;
+    private ?ServiceContainer $services = null;
 
-    public function __construct(Application $app = null)
+    public function __construct(?Application $app = null, ?ServiceContainer $services = null)
     {
         $this->app = $app;
+        $this->services = $services;
+        if ($this->services === null && $app !== null) {
+            $this->services = new ServiceContainer($app->getDatabase());
+        }
     }
 
     public function loadRoutes(array $routes): void
@@ -30,13 +41,6 @@ class Router
     {
         $method = $_SERVER['REQUEST_METHOD'];
         $path = $this->getPath();
-        
-        // Debug: Store routing info in session
-        $_SESSION['router_debug'] = [
-            'method' => $method,
-            'path' => $path,
-            'timestamp' => date('Y-m-d H:i:s')
-        ];
         
         // Get routes for this HTTP method
         $methodRoutes = $this->routes[$method] ?? [];
@@ -150,7 +154,17 @@ class Router
             $dependencies[] = $this->resolveDependency($parameter);
         }
         
-        return $reflection->newInstanceArgs($dependencies);
+        $controller = $reflection->newInstanceArgs($dependencies);
+        if ($controller instanceof BaseController) {
+            $controller->initializeServices(
+                $this->resolveService(ConfigService::class),
+                $this->resolveService(AuthService::class),
+                $this->resolveService(FlashMessage::class),
+                $this->resolveService(Logger::class)
+            );
+        }
+
+        return $controller;
     }
 
     /**
@@ -184,19 +198,10 @@ class Router
      */
     private function resolveService(string $serviceClass): object
     {
-        // Map service classes to their instantiation logic
-        $serviceMap = [
-            \App\Services\AuthService::class => fn() => new \App\Services\AuthService($this->app->getDatabase()),
-            \App\Services\PlayerService::class => fn() => new \App\Services\PlayerService($this->app->getDatabase()),
-            \App\Services\ConfigService::class => fn() => new \App\Services\ConfigService($this->app->getDatabase()),
-            \App\Services\Logger::class => fn() => new \App\Services\Logger($this->app->getDatabase()),
-            \App\Services\RosterService::class => fn() => new \App\Services\RosterService($this->app->getDatabase()),
-        ];
-        
-        if (isset($serviceMap[$serviceClass])) {
-            return $serviceMap[$serviceClass]();
+        if ($this->services === null) {
+            throw new \RuntimeException('Service container is not configured.');
         }
-        
-        throw new \RuntimeException("Service not registered: {$serviceClass}");
+
+        return $this->services->get($serviceClass);
     }
 }

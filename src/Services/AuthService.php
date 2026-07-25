@@ -10,6 +10,7 @@ use App\Core\Database;
 class AuthService
 {
     private Database $db;
+    private const SESSION_TIMEOUT = 3600; // 1 hour in seconds
 
     public function __construct(Database $db)
     {
@@ -59,7 +60,27 @@ class AuthService
 
     public function isLoggedIn(): bool
     {
-        return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
+        if (!isset($_SESSION['user_id']) || empty($_SESSION['user_id'])) {
+            return false;
+        }
+
+        // Check session timeout
+        if (isset($_SESSION['last_activity_at'])) {
+            $inactiveTime = time() - $_SESSION['last_activity_at'];
+            if ($inactiveTime > self::SESSION_TIMEOUT) {
+                $this->logout();
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function updateActivity(): void
+    {
+        if ($this->isLoggedIn()) {
+            $_SESSION['last_activity_at'] = time();
+        }
     }
 
     public function getUser(): ?array
@@ -87,26 +108,15 @@ class AuthService
     public function requireLogin(): void
     {
         if (!$this->isLoggedIn()) {
-            header('Location: /login');
-            if (php_sapi_name() === 'cli') {
-                $_SERVER['CLI_REDIRECT_URL'] = '/login';
-                $_SERVER['CLI_REDIRECT_STATUS'] = 302;
-                return;
-            }
-            exit;
+            $this->redirectToLogin();
         }
     }
 
     public function requireRole(string $role): void
     {
         if (!$this->isLoggedIn()) {
-            header('Location: /login');
-            if (php_sapi_name() === 'cli') {
-                $_SERVER['CLI_REDIRECT_URL'] = '/login';
-                $_SERVER['CLI_REDIRECT_STATUS'] = 302;
-                return;
-            }
-            exit;
+            $this->redirectToLogin();
+            return;
         }
 
         if (!$this->hasRole($role)) {
@@ -119,16 +129,24 @@ class AuthService
                     $currentRole
                 ),
             ]);
-            $url = '/error?' . $query;
-
-            header('Location: ' . $url);
-            if (php_sapi_name() === 'cli') {
-                $_SERVER['CLI_REDIRECT_URL'] = $url;
-                $_SERVER['CLI_REDIRECT_STATUS'] = 302;
-                return;
-            }
-            exit;
+            $this->redirectToUrl('/error?' . $query);
         }
+    }
+
+    private function redirectToLogin(): void
+    {
+        $this->redirectToUrl('/login');
+    }
+
+    private function redirectToUrl(string $url, int $statusCode = 302): void
+    {
+        header('Location: ' . $url, true, $statusCode);
+        if (php_sapi_name() === 'cli') {
+            $_SERVER['CLI_REDIRECT_URL'] = $url;
+            $_SERVER['CLI_REDIRECT_STATUS'] = $statusCode;
+            return;
+        }
+        exit;
     }
 
     public function registerStaff(array $data): int

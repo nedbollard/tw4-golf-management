@@ -1,0 +1,70 @@
+name: PHPUnit
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  test:
+    name: PHPUnit ${{ matrix.suite }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [Unit, Integration]
+    env:
+      DB_PASSWORD: tw4_ci_password
+      COMPOSE_FILE: docker-compose.systest.yml
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create CI environment
+        run: |
+          cat > .env <<'ENV'
+          DB_HOST=db
+          DB_PORT=3306
+          DB_NAME=TW4_base
+          DB_USER=root
+          DB_PASSWORD=tw4_ci_password
+          APP_ENV=testing
+          DEBUG=false
+          ENV
+
+      - name: Build application image
+        run: docker compose -f "$COMPOSE_FILE" build app
+
+      - name: Bootstrap canonical databases
+        run: ./scripts/bootstrap-systest.sh
+
+      - name: Create legacy test database
+        run: |
+          docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+            mysql -u root -e "DROP DATABASE IF EXISTS tw4_test; CREATE DATABASE tw4_test;"
+          docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+            mysql -u root tw4_test < database/baseline/TW4_base_schema.sql
+
+      - name: Start application container
+        run: docker compose -f "$COMPOSE_FILE" up -d app
+
+      - name: Run PHPUnit ${{ matrix.suite }} suite
+        run: |
+          docker compose -f "$COMPOSE_FILE" exec -T \
+            -e APP_ENV=testing \
+            -e DB_HOST=db \
+            -e DB_NAME=tw4_test \
+            -e DB_USER=root \
+            -e DB_PASSWORD="$DB_PASSWORD" \
+            app ./vendor/bin/phpunit --testsuite "${{ matrix.suite }}" --colors=always
+
+      - name: Show service logs on failure
+        if: failure()
+        run: |
+          docker compose -f "$COMPOSE_FILE" ps || true
+          docker compose -f "$COMPOSE_FILE" logs --tail=300 app db || true
+
+      - name: Stop services
+        if: always()
+        run: docker compose -f "$COMPOSE_FILE" down -v || true

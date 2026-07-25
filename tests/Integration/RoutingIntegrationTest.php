@@ -3,7 +3,6 @@
 namespace Tests\Integration;
 
 use PHPUnit\Framework\TestCase;
-use App\Core\Application;
 use App\Core\Router;
 
 /**
@@ -12,7 +11,6 @@ use App\Core\Router;
  */
 class RoutingIntegrationTest extends TestCase
 {
-    private Application $app;
     private Router $router;
 
     protected function setUp(): void
@@ -21,8 +19,8 @@ class RoutingIntegrationTest extends TestCase
         $_SESSION = [];
         $_SERVER['CLI_REDIRECT_URL'] = null;
         $_SERVER['CLI_REDIRECT_STATUS'] = null;
-        $this->app = Application::getInstance();
-        $this->router = $this->app->getRouter();
+        $this->router = new Router();
+        $this->router->loadRoutes(require __DIR__ . '/../../src/config/routes.php');
     }
 
     public function testRosterCreateRouteResolvesCorrectly(): void
