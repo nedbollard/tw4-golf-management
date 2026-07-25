@@ -173,6 +173,33 @@ class SnapshotExportServiceTest extends TestCase
         $this->assertSame([34, 25, 25, 22], array_map(static fn(array $row): int => (int) $row['value_total'], $filtered));
     }
 
+    public function testBuildSmallBeerBaggersCountsTwosAndClosestToPinAwards(): void
+    {
+        /** @var Database|MockObject $db */
+        $db = $this->createMock(Database::class);
+        $db->expects($this->once())
+            ->method('fetchAll')
+            ->with(
+                $this->callback(static fn(string $sql): bool =>
+                    str_contains($sql, 'hr.type_result IN ("Twos", "C_P")')
+                    && str_contains($sql, 'LOWER(TRIM(hr.player_identifier)) <> "not taker"')),
+                ['25_26', 5]
+            )
+            ->willReturn([
+                ['player_identifier' => 'ApiW', 'display_player' => 'ApiW', 'value_total' => 2],
+                ['player_identifier' => 'PremS', 'display_player' => 'PremS', 'value_total' => 1],
+            ]);
+
+        $service = new SnapshotExportService($db);
+        $method = new \ReflectionMethod(SnapshotExportService::class, 'buildSmallBeerBaggers');
+        $method->setAccessible(true);
+
+        $rows = $method->invoke($service, '25_26', 5);
+
+        $this->assertSame(2, $rows[0]['value_total']);
+        $this->assertSame('PremS', $rows[1]['display_player']);
+    }
+
     public function testRenderMovementsShowsBestFiveMovementBeforeTotalPoints(): void
     {
         $ctx = [

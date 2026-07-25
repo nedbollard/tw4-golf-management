@@ -234,16 +234,14 @@ class ScoreController extends BaseController
         $showPublishedResultsNudge = false;
 
         $workflowStep = (string) ($active['workflow_step'] ?? 'between_rounds');
-        $isBetweenRounds = in_array($workflowStep, ['between_rounds', 'not_started'], true);
+        $roundNumber = (int) ($active['round_number'] ?? 0);
+        $neverStarted = !$active
+            || $workflowStep === 'not_started'
+            || ($workflowStep === 'between_rounds' && $roundNumber === 0);
+        $isFinished = $workflowStep === 'between_rounds' && $roundNumber > 0;
 
-        if (!$active) {
+        if ($neverStarted) {
             $notice = 'No live round is active yet.';
-            $showPublishedResultsNudge = true;
-        } elseif ($isBetweenRounds) {
-            $roundNumber = (int) ($active['round_number'] ?? 0);
-            $notice = $roundNumber > 0
-                ? sprintf('Round %d is finished.', $roundNumber)
-                : 'No live round is active yet.';
             $showPublishedResultsNudge = true;
         } else {
             $roundId = (int) ($active['round_id'] ?? 0);
@@ -254,7 +252,12 @@ class ScoreController extends BaseController
                 $notice = $e->getMessage();
             }
 
-            $leaderboard = $resultsData['leaderboard'] ?? [];
+            if (empty($resultsData['leaderboard'])) {
+                $notice = 'No cards scored yet.';
+            } elseif ($isFinished) {
+                $notice = sprintf('Round %d is finished - showing final scores.', $roundNumber);
+                $showPublishedResultsNudge = true;
+            }
         }
 
         $this->render('scores/leaderboard', [

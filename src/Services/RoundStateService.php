@@ -198,11 +198,19 @@ class RoundStateService
 
     private function determineDefaultRoundNumber(?array $round, string $seasonYear): int
     {
-        if (($round['season_year'] ?? null) !== $seasonYear) {
-            return 1;
+        $history = $this->db->fetchOne(
+            'SELECT MAX(number_round) AS latest_round_number
+             FROM TW4_history.round
+             WHERE season_year = ?',
+            [$seasonYear]
+        );
+        $latestRoundNumber = (int) ($history['latest_round_number'] ?? 0);
+
+        if (($round['season_year'] ?? null) === $seasonYear) {
+            $latestRoundNumber = max($latestRoundNumber, (int) ($round['round_number'] ?? 0));
         }
 
-        return ((int) ($round['round_number'] ?? 0)) + 1;
+        return $latestRoundNumber + 1;
     }
 
     private function getConfiguredSeasonYear(): string

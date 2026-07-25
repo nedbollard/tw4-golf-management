@@ -1251,7 +1251,8 @@ class SnapshotExportService
              LEFT JOIN TW4_base.roster r ON r.player_identifier = hr.player_identifier
              WHERE hr.season_year = ?
                AND hr.number_round <= ?
-               AND hr.type_result = "Twos"
+                             AND hr.type_result IN ("Twos", "C_P")
+                             AND LOWER(TRIM(hr.player_identifier)) <> "not taker"
              GROUP BY hr.player_identifier, r.alias, r.player_identifier
              ORDER BY value_total DESC, display_player ASC',
             [$seasonYear, $roundNumber]

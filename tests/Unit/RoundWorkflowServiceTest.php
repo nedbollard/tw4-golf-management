@@ -163,7 +163,7 @@ class RoundWorkflowServiceTest extends TestCase
         /** @var Database|MockObject $db */
         $db = $this->createMock(Database::class);
 
-        $db->expects($this->exactly(3))
+        $db->expects($this->exactly(4))
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
                 if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
@@ -206,7 +206,7 @@ class RoundWorkflowServiceTest extends TestCase
         /** @var Database|MockObject $db */
         $db = $this->createMock(Database::class);
 
-        $db->expects($this->exactly(3))
+        $db->expects($this->exactly(4))
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
                 if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
@@ -241,6 +241,51 @@ class RoundWorkflowServiceTest extends TestCase
 
         $this->assertSame('25_26', $formData['current_season_year']);
         $this->assertSame(19, $formData['default_round_number']);
+    }
+
+    public function testGetStartRoundFormDataIncrementsLatestHistoryRoundWhenLiveRowIsBlank(): void
+    {
+        /** @var Database|MockObject $db */
+        $db = $this->createMock(Database::class);
+
+        $db->expects($this->exactly(4))
+            ->method('fetchOne')
+            ->willReturnCallback(static function (string $sql, array $params = []): ?array {
+                if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
+                    return [
+                        'round_id' => 7,
+                        'season_year' => null,
+                        'round_number' => 0,
+                        'workflow_step' => 'between_rounds',
+                    ];
+                }
+
+                if (str_contains($sql, 'FROM TW4_base.config_application') && $params === ['season_year']) {
+                    return ['config_value_string' => '25_26'];
+                }
+
+                if (str_contains($sql, 'FROM TW4_base.config_application') && $params === ['club_number']) {
+                    return ['club_number' => 294];
+                }
+
+                if (str_contains($sql, 'FROM TW4_history.round') && $params === ['25_26']) {
+                    return ['latest_round_number' => 4];
+                }
+
+                return null;
+            });
+
+        $db->expects($this->once())
+            ->method('fetchAll')
+            ->with($this->stringContains('FROM TW4_base.course_played'))
+            ->willReturn([
+                ['row_id' => 3, 'name_course' => 'Whites', 'name_club' => 'TW4'],
+            ]);
+
+        $service = new RoundWorkflowService($db);
+        $formData = $service->getStartRoundFormData();
+
+        $this->assertSame(5, $formData['default_round_number']);
     }
 
     public function testAdminResetResultsToCardEntryClearsResultsAndUpdatesRound(): void
