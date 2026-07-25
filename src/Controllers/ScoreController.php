@@ -235,16 +235,17 @@ class ScoreController extends BaseController
         $showPublishedResultsNudge = false;
 
         $workflowStep = (string) ($active['workflow_step'] ?? 'between_rounds');
-        $isBetweenRounds = in_array($workflowStep, ['between_rounds', 'not_started'], true);
+        $roundNumber  = (int) ($active['round_number'] ?? 0);
 
-        if (!$active) {
+        // between_rounds + round_number=0 → no round has ever been started
+        $neverStarted = $workflowStep === 'not_started'
+            || ($workflowStep === 'between_rounds' && $roundNumber === 0);
+
+        // between_rounds + round_number>0 → round finished but live card data still present
+        $isFinished = $workflowStep === 'between_rounds' && $roundNumber > 0;
+
+        if ($neverStarted) {
             $notice = 'No live round is active yet.';
-            $showPublishedResultsNudge = true;
-        } elseif ($isBetweenRounds) {
-            $roundNumber = (int) ($active['round_number'] ?? 0);
-            $notice = $roundNumber > 0
-                ? sprintf('Round %d is finished.', $roundNumber)
-                : 'No live round is active yet.';
             $showPublishedResultsNudge = true;
         } else {
             $roundId = (int) ($active['round_id'] ?? 0);
@@ -255,7 +256,12 @@ class ScoreController extends BaseController
                 $notice = $e->getMessage();
             }
 
-            $leaderboard = $resultsData['leaderboard'] ?? [];
+            if (empty($resultsData['leaderboard'])) {
+                $notice = 'No cards scored yet.';
+            } elseif ($isFinished) {
+                $notice = sprintf('Round %d is finished — showing final scores.', $roundNumber);
+                $showPublishedResultsNudge = true;
+            }
         }
 
         $this->render('scores/leaderboard', [
@@ -264,6 +270,17 @@ class ScoreController extends BaseController
             'resultsData' => $resultsData,
             'notice' => $notice,
             'showPublishedResultsNudge' => $showPublishedResultsNudge,
+        ]);
+    }
+
+    public function leaderboardCard(int $playerId): void
+    {
+        $chartData = $this->scoreEntryService->getCardChartData($playerId);
+
+        $this->render('scores/leaderboard-card', [
+            'title'     => 'Card Chart - TW4 Golf Management',
+            'chartData' => $chartData,
+            'playerId'  => $playerId,
         ]);
     }
 

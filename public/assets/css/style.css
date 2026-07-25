@@ -1710,8 +1710,8 @@ body.page-player-progress {
 }
 
 .progress-handicap-circle {
-    fill: none;
-    stroke-width: 2.5;
+    fill: #f8fffb;
+    stroke-width: 1.5;
 }
 
 .progress-handicap-start {
@@ -1772,6 +1772,150 @@ body.page-player-progress {
     font-size: 0.85rem;
     margin: 24px auto 0 auto;
     text-align: center;
+}
+
+/* ── Leaderboard player link ────────────────────────────────────────────── */
+.leaderboard-player-link {
+    color: var(--color-text-primary);
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+}
+
+.leaderboard-player-link:hover {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
+/* ── Leaderboard card chart ─────────────────────────────────────────────── */
+.card-chart-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.card-chart-summary {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.9rem;
+    gap: 18px;
+    justify-content: center;
+    padding: 10px 16px;
+}
+
+.card-chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.82rem;
+    gap: 14px;
+    justify-content: center;
+}
+
+.card-chart-legend-item {
+    align-items: center;
+    display: flex;
+    gap: 6px;
+}
+
+.card-chart-swatch {
+    border-radius: 3px;
+    display: inline-block;
+    height: 14px;
+    width: 18px;
+}
+
+.card-chart-swatch-score { background: #2563eb; }
+.card-chart-swatch-shots { background: #fce4ec; border: 1px solid #f9a8d4; }
+.card-chart-swatch-sfp3  { background: #388E3C; }
+.card-chart-swatch-par   { border: 2px dashed #94a3b8; }
+
+.card-chart-scroll {
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.card-chart-svg {
+    display: block;
+    min-width: 560px;
+}
+
+/* SVG element classes */
+.card-chart-grid {
+    stroke: #d1fae5;
+    stroke-width: 1;
+}
+
+.card-chart-base-line {
+    stroke: #6b7280;
+    stroke-width: 1.5;
+}
+
+.card-chart-par-outline {
+    fill: none;
+    stroke: #94a3b8;
+    stroke-dasharray: 5 3;
+    stroke-width: 1.5;
+}
+
+.card-chart-shot-block {
+    fill: #fce4ec;
+    stroke: #f9a8d4;
+    stroke-width: 1;
+}
+
+.card-chart-axis-label {
+    fill: var(--color-muted);
+    font-size: 11px;
+    text-anchor: end;
+}
+
+.card-chart-block-label {
+    dominant-baseline: middle;
+    font-size: 11px;
+    font-weight: 700;
+    text-anchor: middle;
+}
+
+.card-chart-shot-label {
+    fill: #5f1d35;
+}
+
+.card-chart-score-label {
+    fill: #1e3a8a;
+    font-size: 12px;
+    font-weight: 700;
+    text-anchor: middle;
+}
+
+.card-chart-hole-label {
+    fill: var(--color-text-primary);
+    font-size: 11px;
+    font-weight: 700;
+    text-anchor: middle;
+}
+
+.card-chart-par-label {
+    fill: var(--color-muted);
+    font-size: 10px;
+    text-anchor: middle;
+}
+
+.card-chart-empty {
+    background: #f8fffb;
+    border: 1px dashed #bbf7d0;
+    border-radius: 14px;
+    color: var(--color-muted);
+    padding: 24px;
+    text-align: center;
+}
+
+.card-chart-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 8px;
 }
 
 /* Admin menu page (scoped) */

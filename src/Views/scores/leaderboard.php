@@ -85,7 +85,13 @@ $fromScorerMenu = strpos($_SERVER['HTTP_REFERER'] ?? '', '/scorer/menu') !== fal
                                         ?>
                                         <tr>
                                             <td><?php echo (int) ($entry['position'] ?? 0); ?></td>
-                                            <td class="player-col"><?php echo htmlspecialchars($name); ?></td>
+                                            <td class="player-col">
+                                                <?php if (!empty($entry['row_id_player'])): ?>
+                                                    <a href="/leaderboard/card/<?php echo (int) $entry['row_id_player']; ?>" class="leaderboard-player-link"><?php echo htmlspecialchars($name); ?></a>
+                                                <?php else: ?>
+                                                    <?php echo htmlspecialchars($name); ?>
+                                                <?php endif; ?>
+                                            </td>
                                             <td><?php echo (int) ($entry['points'] ?? 0); ?></td>
                                             <td><?php echo (int) ($entry['score'] ?? 0); ?></td>
                                             <td><?php echo (int) ($entry['handicap'] ?? 0); ?></td>
