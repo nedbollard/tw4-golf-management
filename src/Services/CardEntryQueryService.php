@@ -14,6 +14,16 @@ class CardEntryQueryService
 
     public function getSelectablePlayers(int $roundId): array
     {
+        $round = $this->db->fetchOne(
+            'SELECT card_entry_reopened
+             FROM TW4_live.round
+             WHERE row_id = ?',
+            [$roundId]
+        );
+        $statusFilter = !empty($round['card_entry_reopened'])
+            ? 'r.status IN ("active", "scored")'
+            : 'r.status = "active"';
+
         return $this->db->fetchAll(
             'SELECT r.row_id,
                     r.first_name,
@@ -26,7 +36,7 @@ class CardEntryQueryService
              FROM TW4_base.roster r
              LEFT JOIN TW4_live.card c
                       ON c.row_id_player = r.row_id
-               WHERE r.status IN ("active", "scored")
+                             WHERE ' . $statusFilter . '
                   ORDER BY r.last_name, r.first_name'
         );
     }

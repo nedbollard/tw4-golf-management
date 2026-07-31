@@ -145,6 +145,19 @@ class ConfigController extends BaseController
             ], $username);
         }
 
+        // When team_haggle_state is set to serious, clear the live team tables so the
+        // serious panel opens as a fresh blank slate rather than showing floating-generated
+        // teams as a pre-filled revisit. Floating mode writes to the same tables on every
+        // round finish, so without this the admin would always see stale auto-assigned teams.
+        if (isset($changes['team_haggle_state']) && $changes['team_haggle_state']['new_value'] === 'serious') {
+            $db = $this->app->getDatabase();
+            $db->query('DELETE FROM TW4_live.best_five_team_member');
+            $db->query('DELETE FROM TW4_live.best_five_team');
+            $this->logger->info('best_five_team tables cleared on switch to serious mode', [
+                'updated_by' => $username,
+            ], $username);
+        }
+
         // Auto-set config_status to "ready" after a valid save, even if no field values changed.
         if ($currentStatus !== 'ready') {
             $statusPromotedToReady = $this->configService->setConfigStatus('ready');

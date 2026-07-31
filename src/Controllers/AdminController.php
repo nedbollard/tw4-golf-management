@@ -200,44 +200,39 @@ class AdminController extends BaseController
         }
 
         $data = $this->getPostData();
-        $draft = $this->parseDraftFromRequest($data['draft'] ?? []);
-        $action = (string) ($data['action'] ?? 'apply');
 
-        if ($action === 'save') {
-            try {
-                $user = $this->authService->getUser();
-                $updatedBy = (string) ($user['username'] ?? 'system');
-                $postedRevision = max(0, (int) ($data['revision'] ?? 0));
-
-                $result = $this->teamHaggleSeriousService->saveTeams($draft, $postedRevision, $updatedBy);
-                $this->logger->info('Serious team-haggle teams saved', [
-                    'teams_saved' => (int) ($result['teams_saved'] ?? 0),
-                    'new_revision' => (int) ($result['revision'] ?? 0),
-                ], $updatedBy);
-
-                $this->flash->success('Team-haggle membership saved.');
-                $this->redirect('/admin/team-haggle');
-                return;
-            } catch (\RuntimeException $e) {
-                $state = $this->teamHaggleSeriousService->buildEditorState($draft);
-                $this->render('admin/team-haggle-serious', [
-                    'state' => $state,
-                    'errors' => [$e->getMessage()],
-                ]);
-                return;
-            }
+        // Parse flat team_assignments: [identifier => teamNumString] where blank/0 = unassigned
+        $rawAssignments = (array) ($data['team_assignments'] ?? []);
+        $assignments = [];
+        foreach ($rawAssignments as $identifier => $value) {
+            $teamNum = (int) preg_replace('/[^0-9]/', '', (string) $value);
+            $assignments[trim((string) $identifier)] = $teamNum;
         }
 
-        $removedOrderRaw = trim((string) ($data['removed_order'] ?? ''));
-        $removedOrder = $removedOrderRaw === '' ? [] : array_filter(array_map('trim', explode(',', $removedOrderRaw)));
-        $replacementIds = array_values(array_map('strval', (array) ($data['replacement_ids'] ?? [])));
+        try {
+            $user = $this->authService->getUser();
+            $updatedBy = (string) ($user['username'] ?? 'system');
+            $postedRevision = max(0, (int) ($data['revision'] ?? 0));
 
-        $applied = $this->teamHaggleSeriousService->applyReplacements($draft, $removedOrder, $replacementIds);
-        $state = $this->teamHaggleSeriousService->buildEditorState((array) ($applied['teams'] ?? []), (array) ($applied['messages'] ?? []));
+            $draft = $this->teamHaggleSeriousService->buildDraftFromFlatAssignments($assignments);
+            $result = $this->teamHaggleSeriousService->saveTeams($draft, $postedRevision, $updatedBy);
+            $this->logger->info('Serious team-haggle teams saved', [
+                'teams_saved' => (int) ($result['teams_saved'] ?? 0),
+                'new_revision' => (int) ($result['revision'] ?? 0),
+            ], $updatedBy);
 
-        $this->render('admin/team-haggle-serious', [
-            'state' => $state,
-        ]);
+            $this->flash->success('Team-haggle membership saved.');
+            $this->redirect('/admin/team-haggle');
+            return;
+        } catch (\RuntimeException $e) {
+            // Re-render with the user's submitted values preserved so they can fix the error.
+            $state = $this->teamHaggleSeriousService->buildEditorState(null, [], $assignments);
+            $this->render('admin/team-haggle-serious', [
+                'state' => $state,
+                'errors' => [$e->getMessage()],
+            ]);
+            return;
+        }
     }
 
     private function parseDraftFromRequest(array $draft): array

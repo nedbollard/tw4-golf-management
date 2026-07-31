@@ -57,15 +57,30 @@
                 <form method="POST" action="/admin/team-haggle" id="teamHaggleForm">
                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                     <input type="hidden" name="revision" value="<?php echo (int) ($state['revision'] ?? 0); ?>">
-                    <input type="hidden" name="removed_order" id="removed_order" value="">
+                    <?php
+                    $playerList   = $state['player_list'] ?? [];
+                    $isRevisit    = (bool) ($state['is_revisit'] ?? false);
+                    $hasUnassigned = false;
+                    foreach ($playerList as $plRow) {
+                        if ($plRow['assigned_team'] === null) { $hasUnassigned = true; break; }
+                    }
+                    ?>
+
+                    <?php if ($isRevisit): ?>
+                        <p class="text-muted small mb-2">
+                            Players are shown in team &amp; slot order. Set a team to <strong>0</strong> to remove a player and return them to the unassigned pool. Blank = unassigned.
+                        </p>
+                    <?php else: ?>
+                        <p class="text-muted small mb-2">
+                            Enter a team number (1–99) next to each committed player. Leave blank to exclude. Short teams are padded with makeup players automatically.
+                        </p>
+                    <?php endif; ?>
 
                     <div class="table-responsive mb-3">
                         <table class="table table-striped table-sm align-middle">
                             <thead>
                                 <tr>
-                                    <th>Select</th>
-                                    <th>Team</th>
-                                    <th>Slot</th>
+                                    <th style="width:5rem">Team</th>
                                     <th>Player</th>
                                     <th>Rounds</th>
                                     <th>Points</th>
@@ -73,108 +88,61 @@
                             </thead>
                             <tbody>
                                 <?php
-                                $playerPool = $state['player_pool'] ?? [];
-                                $teams = $state['teams'] ?? [];
-                                $replacementPlayers = $state['replacement_players'] ?? [];
-                                foreach ($teams as $teamNumber => $slots):
-                                    foreach ($slots as $slotNumber => $slot):
-                                        $identifier = (string) ($slot['player_identifier'] ?? '');
-                                        $poolRow = $playerPool[$identifier] ?? null;
-                                        $displayName = (string) ($slot['display_name'] ?? ($poolRow['display_name'] ?? $identifier));
-                                        $roundsPlayed = (int) ($slot['rounds_played'] ?? ($poolRow['rounds_played'] ?? 0));
-                                        $pointsTotal = (int) ($slot['player_points_total'] ?? ($poolRow['points_total'] ?? 0));
-                                        $slotRef = (int) $teamNumber . ':' . (int) $slotNumber;
+                                $unassignedSectionStarted = false;
+                                foreach ($playerList as $plRow):
+                                    $plIdentifier   = (string) ($plRow['player_identifier'] ?? '');
+                                    $plDisplayName  = htmlspecialchars((string) ($plRow['display_name'] ?? ''));
+                                    $plPoints       = (int) ($plRow['points_total'] ?? 0);
+                                    $plRounds       = (int) ($plRow['rounds_played'] ?? 0);
+                                    $plAssignedTeam = $plRow['assigned_team'];
+                                    $plInputValue   = $plAssignedTeam !== null ? (string) $plAssignedTeam : '';
+                                    $plIsMakeup     = (bool) ($plRow['is_makeup'] ?? false);
+
+                                    if ($isRevisit && $plAssignedTeam === null && !$unassignedSectionStarted):
+                                        $unassignedSectionStarted = true;
                                 ?>
-                                    <tr>
+                                    <tr id="unassigned-section">
+                                        <td colspan="4" class="text-muted small py-1 bg-light">— Unassigned players —</td>
+                                    </tr>
+                                <?php endif; ?>
+                                    <tr<?php if ($plIsMakeup): ?> class="text-muted"<?php endif; ?>>
                                         <td>
                                             <input
-                                                type="checkbox"
-                                                class="form-check-input slot-checkbox"
-                                                data-slot-ref="<?php echo htmlspecialchars($slotRef); ?>"
-                                                name="selected_slots[]"
-                                                value="<?php echo htmlspecialchars($slotRef); ?>"
+                                                type="text"
+                                                inputmode="numeric"
+                                                pattern="[0-9]{0,2}"
+                                                maxlength="2"
+                                                name="<?php echo $plIsMakeup ? '' : 'team_assignments[' . htmlspecialchars($plIdentifier) . ']'; ?>"
+                                                value="<?php echo htmlspecialchars($plInputValue); ?>"
+                                                class="form-control form-control-sm<?php echo $plIsMakeup ? ' bg-light text-muted' : ' team-input'; ?>"
+                                                style="width:4rem"
+                                                <?php echo $plIsMakeup ? 'disabled' : ''; ?>
+                                                aria-label="Team for <?php echo htmlspecialchars((string) ($plRow['display_name'] ?? $plIdentifier)); ?>"
                                             >
                                         </td>
-                                        <td><?php echo (int) $teamNumber; ?></td>
-                                        <td><?php echo (int) $slotNumber; ?></td>
                                         <td>
-                                            <?php echo htmlspecialchars($displayName); ?>
-                                            <div class="text-muted small"><?php echo htmlspecialchars($identifier); ?></div>
-                                            <input type="hidden" name="draft[<?php echo (int) $teamNumber; ?>][<?php echo (int) $slotNumber; ?>]" value="<?php echo htmlspecialchars($identifier); ?>">
+                                            <?php if ($plIsMakeup): ?>
+                                                <em><?php echo $plDisplayName; ?></em>
+                                                <span class="small ms-2">— <a href="#unassigned-section">assign a real player to team <?php echo htmlspecialchars($plInputValue); ?> to replace</a></span>
+                                            <?php else: ?>
+                                                <?php echo $plDisplayName; ?> <span class="text-muted small">(<?php echo htmlspecialchars($plIdentifier); ?>)</span>
+                                            <?php endif; ?>
                                         </td>
-                                        <td><?php echo $roundsPlayed; ?></td>
-                                        <td><?php echo $pointsTotal; ?></td>
+                                        <td><?php echo $plRounds; ?></td>
+                                        <td><?php echo $plPoints; ?></td>
                                     </tr>
-                                <?php
-                                    endforeach;
-                                endforeach;
-                                ?>
+                                <?php endforeach; ?>
                             </tbody>
                         </table>
                     </div>
 
                     <div class="admin-actions">
-                        <button type="button" id="openReplacementModal" class="btn btn-outline-primary">Find Replacements</button>
                         <button type="submit" name="action" value="save" class="btn btn-primary">Save Teams</button>
+                        <?php if ($isRevisit && $hasUnassigned): ?>
+                            <a href="#unassigned-section" class="btn btn-outline-secondary">Find Replacements</a>
+                        <?php endif; ?>
                         <a href="/admin/team-haggle" class="btn btn-outline-secondary">Cancel</a>
                         <a href="/admin/menu" class="btn-secondary-pill">Back to Admin Menu</a>
-                    </div>
-
-                    <div class="modal fade" id="replacementModal" tabindex="-1" aria-labelledby="replacementModalLabel" aria-hidden="true">
-                        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h3 class="modal-title h5" id="replacementModalLabel">Replacement Players</h3>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <p class="text-muted mb-2">Select up to the number of removed slots. If fewer are selected, makeup players are inserted automatically.</p>
-                                    <?php if (empty($replacementPlayers)): ?>
-                                        <div class="alert alert-warning mb-0" role="alert">
-                                            No replacement players are currently available. You can still apply to fill selected slots with makeup players.
-                                        </div>
-                                    <?php else: ?>
-                                        <div class="table-responsive">
-                                            <table class="table table-sm align-middle mb-0">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Select</th>
-                                                        <th>Rank</th>
-                                                        <th>Player</th>
-                                                        <th>Identifier</th>
-                                                        <th>Rounds</th>
-                                                        <th>Points</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <?php foreach ($replacementPlayers as $index => $row): ?>
-                                                        <tr>
-                                                            <td>
-                                                                <input
-                                                                    type="checkbox"
-                                                                    class="form-check-input"
-                                                                    name="replacement_ids[]"
-                                                                    value="<?php echo htmlspecialchars((string) ($row['player_identifier'] ?? '')); ?>"
-                                                                >
-                                                            </td>
-                                                            <td><span class="badge bg-secondary rounded-pill"><?php echo (int) $index + 1; ?></span></td>
-                                                            <td><strong><?php echo htmlspecialchars((string) ($row['display_name'] ?? '')); ?></strong></td>
-                                                            <td class="text-muted"><?php echo htmlspecialchars((string) ($row['player_identifier'] ?? '')); ?></td>
-                                                            <td><?php echo (int) ($row['rounds_played'] ?? 0); ?></td>
-                                                            <td><?php echo (int) ($row['points_total'] ?? 0); ?></td>
-                                                        </tr>
-                                                    <?php endforeach; ?>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-                                    <button type="submit" name="action" value="apply" class="btn btn-outline-primary">Apply Replacements</button>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </form>
             </div>
@@ -185,50 +153,26 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 (function () {
-    const checkboxes = Array.from(document.querySelectorAll('.slot-checkbox'));
-    const hiddenOrder = document.getElementById('removed_order');
-    const openReplacementModalButton = document.getElementById('openReplacementModal');
-    const replacementModalElement = document.getElementById('replacementModal');
-    const replacementModal = replacementModalElement ? new bootstrap.Modal(replacementModalElement) : null;
-    const ordered = [];
-
-    function sync() {
-        hiddenOrder.value = ordered.join(',');
-    }
-
-    function hasSelection() {
-        return ordered.length > 0;
-    }
-
-    checkboxes.forEach((checkbox) => {
-        checkbox.addEventListener('change', function () {
-            const ref = this.getAttribute('data-slot-ref') || '';
-            const existingIdx = ordered.indexOf(ref);
-
-            if (this.checked) {
-                if (existingIdx === -1) {
-                    ordered.push(ref);
-                }
-            } else if (existingIdx >= 0) {
-                ordered.splice(existingIdx, 1);
+    var form = document.getElementById('teamHaggleForm');
+    if (!form) { return; }
+    form.addEventListener('submit', function (e) {
+        var inputs = form.querySelectorAll('.team-input');
+        var firstBad = null;
+        inputs.forEach(function (input) {
+            var v = input.value.trim();
+            if (v !== '' && !/^[0-9]{1,2}$/.test(v)) {
+                input.classList.add('is-invalid');
+                if (!firstBad) { firstBad = input; }
+            } else {
+                input.classList.remove('is-invalid');
             }
-
-            sync();
         });
+        if (firstBad) {
+            e.preventDefault();
+            firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            firstBad.focus();
+        }
     });
-
-    if (openReplacementModalButton && replacementModal) {
-        openReplacementModalButton.addEventListener('click', function () {
-            if (!hasSelection()) {
-                window.alert('Select one or more team member slots before finding replacements.');
-                return;
-            }
-
-            replacementModal.show();
-        });
-    }
-
-    sync();
 })();
 </script>
 </body>

@@ -13,7 +13,6 @@ class TeamHaggleSeriousService
     public function __construct(Database $db)
     {
         $this->db = $db;
-        $this->ensureInfrastructure();
     }
 
     public function isSeriousMode(): bool
@@ -21,47 +20,126 @@ class TeamHaggleSeriousService
         return $this->getTeamHaggleState() === 'serious';
     }
 
-    public function buildEditorState(?array $draftTeams = null, array $messages = []): array
+    public function buildEditorState(?array $draftTeams = null, array $messages = [], ?array $flatAssignments = null): array
     {
         $teamSize = $this->getTeamSize();
         $makeupMethod = $this->getMakeupMethod();
         $playerPool = $this->getPlayerPool();
 
-        $liveTeams = $this->getLiveTeams($teamSize);
-        if (empty($liveTeams)) {
-            $generated = $this->generateFloatingDraft($playerPool, $teamSize, $makeupMethod);
-            $liveTeams = $generated['teams'];
+        // Error re-render: submitted flat assignments take precedence over everything.
+        // Show all pool players in Points DESC order with their submitted values pre-filled.
+        if ($flatAssignments !== null) {
+            $playerList = [];
+            foreach ($playerPool as $identifier => $player) {
+                if ($this->isMakeupIdentifier($identifier)) {
+                    continue;
+                }
+                $submitted = isset($flatAssignments[$identifier]) ? (int) $flatAssignments[$identifier] : 0;
+                $playerList[] = [
+                    'player_identifier' => $identifier,
+                    'display_name'      => (string) ($player['display_name'] ?? $identifier),
+                    'points_total'      => (int) ($player['points_total'] ?? 0),
+                    'rounds_played'     => (int) ($player['rounds_played'] ?? 0),
+                    'assigned_team'     => $submitted >= 1 ? $submitted : null,
+                    'is_makeup'         => false,
+                ];
+            }
+            // pool is already Points DESC from getPlayerPool(); list inherits that order
+            return [
+                'round'         => $this->getRoundIdentity(),
+                'team_size'     => $teamSize,
+                'makeup_method' => $makeupMethod,
+                'revision'      => $this->getSeriousRevision(),
+                'teams'         => [],
+                'player_pool'   => $playerPool,
+                'is_revisit'    => false,
+                'player_list'   => $playerList,
+                'messages'      => $messages,
+            ];
         }
 
-        $draft = $draftTeams ?? $liveTeams;
-        $draft = $this->normalizeDraft($draft, $teamSize);
+        $liveTeams = $this->getLiveTeams($teamSize);
+        $isRevisit = !empty($liveTeams);
 
-        $assigned = [];
-        foreach ($draft as $teamRows) {
-            foreach ($teamRows as $slotData) {
+        // Use provided draft on error re-render; otherwise use live teams
+        $workingDraft = $draftTeams !== null
+            ? $this->normalizeDraft($draftTeams, $teamSize)
+            : $liveTeams;
+
+        // Build identifier → teamNumber lookup from working draft (real players only)
+        $assignedTeamByIdentifier = [];
+        foreach ($workingDraft as $teamNumber => $slots) {
+            foreach ($slots as $slotData) {
                 $identifier = trim((string) ($slotData['player_identifier'] ?? ''));
                 if ($identifier !== '' && !$this->isMakeupIdentifier($identifier)) {
-                    $assigned[$identifier] = true;
+                    $assignedTeamByIdentifier[$identifier] = (int) $teamNumber;
                 }
             }
         }
 
-        $replacements = [];
-        foreach ($playerPool as $identifier => $player) {
-            if (!isset($assigned[$identifier]) && !$this->isMakeupIdentifier($identifier)) {
-                $replacements[] = $player;
+        // Build flat player_list for the view
+        $playerList = [];
+        if ($isRevisit) {
+            // Assigned players in team / slot order first (including makeup placeholders)
+            $sortedDraft = $workingDraft;
+            ksort($sortedDraft);
+            foreach ($sortedDraft as $teamNumber => $slots) {
+                ksort($slots);
+                foreach ($slots as $slotData) {
+                    $identifier = trim((string) ($slotData['player_identifier'] ?? ''));
+                    if ($identifier === '') {
+                        continue;
+                    }
+                    $isMakeup = $this->isMakeupIdentifier($identifier);
+                    $poolRow  = $playerPool[$identifier] ?? null;
+                    $playerList[] = [
+                        'player_identifier' => $identifier,
+                        'display_name'      => (string) ($slotData['display_name'] ?? ($poolRow['display_name'] ?? $identifier)),
+                        'points_total'      => (int) ($slotData['player_points_total'] ?? ($poolRow['points_total'] ?? 0)),
+                        'rounds_played'     => (int) ($slotData['rounds_played'] ?? ($poolRow['rounds_played'] ?? 0)),
+                        'assigned_team'     => (int) $teamNumber,
+                        'is_makeup'         => $isMakeup,
+                    ];
+                }
+            }
+            // Unassigned pool players at the bottom (Points DESC — pool already sorted)
+            foreach ($playerPool as $identifier => $player) {
+                if (!isset($assignedTeamByIdentifier[$identifier]) && !$this->isMakeupIdentifier($identifier)) {
+                    $playerList[] = [
+                        'player_identifier' => $identifier,
+                        'display_name'      => (string) ($player['display_name'] ?? $identifier),
+                        'points_total'      => (int) ($player['points_total'] ?? 0),
+                        'rounds_played'     => (int) ($player['rounds_played'] ?? 0),
+                        'assigned_team'     => null,
+                    ];
+                }
+            }
+        } else {
+            // Fresh: all pool players Points DESC (getPlayerPool already orders this way)
+            foreach ($playerPool as $identifier => $player) {
+                if ($this->isMakeupIdentifier($identifier)) {
+                    continue;
+                }
+                $playerList[] = [
+                    'player_identifier' => $identifier,
+                    'display_name'      => (string) ($player['display_name'] ?? $identifier),
+                    'points_total'      => (int) ($player['points_total'] ?? 0),
+                    'rounds_played'     => (int) ($player['rounds_played'] ?? 0),
+                    'assigned_team'     => null,
+                ];
             }
         }
 
         return [
-            'round' => $this->getRoundIdentity(),
-            'team_size' => $teamSize,
+            'round'         => $this->getRoundIdentity(),
+            'team_size'     => $teamSize,
             'makeup_method' => $makeupMethod,
-            'revision' => $this->getSeriousRevision(),
-            'teams' => $draft,
-            'player_pool' => $playerPool,
-            'replacement_players' => $replacements,
-            'messages' => $messages,
+            'revision'      => $this->getSeriousRevision(),
+            'teams'         => $workingDraft,
+            'player_pool'   => $playerPool,
+            'is_revisit'    => $isRevisit,
+            'player_list'   => $playerList,
+            'messages'      => $messages,
         ];
     }
 
@@ -133,6 +211,99 @@ class TeamHaggleSeriousService
         ];
     }
 
+    public function buildDraftFromFlatAssignments(array $assignments): array
+    {
+        $teamSize = $this->getTeamSize();
+        $makeupMethod = $this->getMakeupMethod();
+        $playerPool = $this->getPlayerPool();
+
+        // Group real players by team number (skip unassigned: teamNum < 1 or blank)
+        $teamGroups = [];
+        foreach ($assignments as $identifier => $teamNum) {
+            $teamNum = (int) $teamNum;
+            if ($teamNum < 1) {
+                continue;
+            }
+            $identifier = trim((string) $identifier);
+            if ($identifier === '' || $this->isMakeupIdentifier($identifier) || !isset($playerPool[$identifier])) {
+                continue;
+            }
+            $teamGroups[$teamNum][] = $playerPool[$identifier];
+        }
+
+        if (empty($teamGroups)) {
+            return [];
+        }
+
+        // Validate: team numbers must be exactly 1..N with no gaps
+        ksort($teamGroups);
+        $maxTeam = max(array_keys($teamGroups));
+        $missing = array_diff(range(1, $maxTeam), array_keys($teamGroups));
+        if (!empty($missing)) {
+            throw new \RuntimeException(sprintf(
+                'Team numbers must run 1–%d with no gaps. Missing: %s.',
+                $maxTeam,
+                implode(', ', array_values($missing))
+            ));
+        }
+
+        $makeupIdentifier = $this->makeupIdentifierForMethod($makeupMethod);
+
+        // Makeup points calculated from participating players only, not the full roster.
+        // Using all active players drags the average down via low-round participants.
+        $participatingIds = [];
+        foreach ($teamGroups as $tgPlayers) {
+            foreach ($tgPlayers as $tgPlayer) {
+                $participatingIds[] = (string) ($tgPlayer['player_identifier'] ?? '');
+            }
+        }
+        $participatingPool = array_intersect_key($playerPool, array_flip(array_filter($participatingIds)));
+        $makeupPoints = $this->calculateMakeupPointsFromPool(
+            empty($participatingPool) ? $playerPool : $participatingPool,
+            $makeupMethod
+        );
+        $draft = [];
+
+        foreach ($teamGroups as $teamNum => $players) {
+            if (count($players) > $teamSize) {
+                throw new \RuntimeException(sprintf(
+                    'Team %d has %d players assigned but team size is %d.',
+                    $teamNum,
+                    count($players),
+                    $teamSize
+                ));
+            }
+
+            // Sort players within team by points DESC, then assign slots
+            usort($players, static fn(array $a, array $b): int =>
+                ((int) ($b['points_total'] ?? 0)) <=> ((int) ($a['points_total'] ?? 0))
+            );
+
+            $draft[$teamNum] = [];
+            for ($slot = 1; $slot <= $teamSize; $slot++) {
+                $player = $players[$slot - 1] ?? null;
+                if ($player !== null) {
+                    $id = (string) ($player['player_identifier'] ?? '');
+                    $draft[$teamNum][$slot] = [
+                        'player_identifier'   => $id,
+                        'player_points_total' => (int) ($player['points_total'] ?? 0),
+                        'rounds_played'       => (int) ($player['rounds_played'] ?? 0),
+                        'display_name'        => (string) ($player['display_name'] ?? $id),
+                    ];
+                } else {
+                    $draft[$teamNum][$slot] = [
+                        'player_identifier'   => $makeupIdentifier,
+                        'player_points_total' => $makeupPoints,
+                        'rounds_played'       => 0,
+                        'display_name'        => $makeupIdentifier,
+                    ];
+                }
+            }
+        }
+
+        return $draft;
+    }
+
     public function saveTeams(array $draftTeams, int $postedRevision, string $updatedBy): array
     {
         $teamSize = $this->getTeamSize();
@@ -152,6 +323,23 @@ class TeamHaggleSeriousService
         $playerPool = $this->getPlayerPool();
         $round = $this->getRoundIdentity();
 
+        // Pre-calculate makeup points from participating (real) players only.
+        $makeupMethod = $this->getMakeupMethod();
+        $participatingIds = [];
+        foreach ($draft as $slots) {
+            foreach ($slots as $slotData) {
+                $id = trim((string) ($slotData['player_identifier'] ?? ''));
+                if ($id !== '' && !$this->isMakeupIdentifier($id)) {
+                    $participatingIds[] = $id;
+                }
+            }
+        }
+        $participatingPool = array_intersect_key($playerPool, array_flip($participatingIds));
+        $makeupFallback = $this->calculateMakeupPointsFromPool(
+            empty($participatingPool) ? $playerPool : $participatingPool,
+            $makeupMethod
+        );
+
         $this->db->beginTransaction();
         try {
             $this->db->query('DELETE FROM TW4_live.best_five_team_member');
@@ -161,6 +349,7 @@ class TeamHaggleSeriousService
             foreach ($draft as $teamNumber => $slots) {
                 $teamPoints = 0;
                 $firstIdentifier = '';
+                $firstDisplayName = '';
 
                 for ($slot = 1; $slot <= $teamSize; $slot++) {
                     $slotData = $slots[$slot] ?? ['player_identifier' => ''];
@@ -171,9 +360,11 @@ class TeamHaggleSeriousService
 
                     if ($firstIdentifier === '') {
                         $firstIdentifier = $identifier;
+                        $displayName = (string) ($playerPool[$identifier]['display_name'] ?? $identifier);
+                        $firstDisplayName = explode(' ', $displayName)[0] ?: $identifier;
                     }
 
-                    $points = $this->resolvePlayerPoints($identifier, $playerPool);
+                    $points = $this->resolvePlayerPoints($identifier, $playerPool, $makeupFallback);
                     $teamPoints += $points;
 
                     $this->db->insert('TW4_live.best_five_team_member', [
@@ -186,7 +377,7 @@ class TeamHaggleSeriousService
 
                 $this->db->insert('TW4_live.best_five_team', [
                     'team_number' => (int) $teamNumber,
-                    'team_name' => 'Team ' . $firstIdentifier,
+                    'team_name' => 'Team ' . $firstDisplayName,
                     'team_points_total' => $teamPoints,
                     'updated_by' => $updatedBy,
                 ]);
@@ -222,13 +413,26 @@ class TeamHaggleSeriousService
 
         $playerPool = $this->getPlayerPool();
         $makeupMethod = $this->getMakeupMethod();
-        $makeupPoints = $this->calculateMakeupPointsFromPool($playerPool, $makeupMethod);
         $revision = $this->getSeriousRevision();
 
         $liveRows = $this->db->fetchAll(
             'SELECT row_id, team_number, player_identifier, player_points_total
              FROM TW4_live.best_five_team_member
              ORDER BY team_number ASC, row_id ASC'
+        );
+
+        // Calculate makeup points from participating (real) players only.
+        $participatingIds = [];
+        foreach ($liveRows as $liveRow) {
+            $id = trim((string) ($liveRow['player_identifier'] ?? ''));
+            if ($id !== '' && !$this->isMakeupIdentifier($id)) {
+                $participatingIds[] = $id;
+            }
+        }
+        $participatingPool = array_intersect_key($playerPool, array_flip($participatingIds));
+        $makeupPoints = $this->calculateMakeupPointsFromPool(
+            empty($participatingPool) ? $playerPool : $participatingPool,
+            $makeupMethod
         );
 
         $slotByTeam = [];
@@ -279,41 +483,6 @@ class TeamHaggleSeriousService
              SET t.team_points_total = m.team_points_total,
                  t.updated_by = ?',
             [$updatedBy]
-        );
-    }
-
-    private function ensureInfrastructure(): void
-    {
-        $this->db->query(
-            "CREATE TABLE IF NOT EXISTS TW4_history.best_five_team_member_audit (
-                row_id INT NOT NULL AUTO_INCREMENT,
-                season_year CHAR(5) NOT NULL,
-                number_round INT NOT NULL,
-                serious_revision INT NOT NULL DEFAULT 0,
-                team_number INT NOT NULL,
-                slot_number INT NOT NULL,
-                action_type ENUM('assign','replace','remove','makeup','finish_refresh') NOT NULL,
-                old_player_identifier VARCHAR(100) DEFAULT NULL,
-                new_player_identifier VARCHAR(100) DEFAULT NULL,
-                old_player_points INT NOT NULL DEFAULT 0,
-                new_player_points INT NOT NULL DEFAULT 0,
-                note VARCHAR(255) DEFAULT NULL,
-                updated_by VARCHAR(100) NOT NULL,
-                updated_ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (row_id),
-                KEY idx_best_five_team_member_audit_round (season_year, number_round, serious_revision),
-                KEY idx_best_five_team_member_audit_team_slot (team_number, slot_number),
-                KEY idx_best_five_team_member_audit_action (action_type)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
-        );
-
-        $this->db->query(
-            "INSERT INTO TW4_base.config_application
-                (config_name, config_value_string, config_value_int, config_type, updated_by)
-             SELECT 'team_haggle_serious_revision', '0', 0, 'int', 'system'
-             WHERE NOT EXISTS (
-                SELECT 1 FROM TW4_base.config_application WHERE config_name = 'team_haggle_serious_revision'
-             )"
         );
     }
 
@@ -683,7 +852,7 @@ class TeamHaggleSeriousService
             return (int) round((($points[$middle - 1] + $points[$middle]) / 2), 0, PHP_ROUND_HALF_UP);
         }
 
-        return (int) round((array_sum($points) / count($points)), 0, PHP_ROUND_HALF_UP);
+        return (int) floor(array_sum($points) / count($points));
     }
 
     private function makeupIdentifierForMethod(string $makeupMethod): string

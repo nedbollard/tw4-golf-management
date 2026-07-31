@@ -131,6 +131,7 @@ CREATE TABLE `round` (
   `course_played_id` int DEFAULT NULL,
   `workflow_step` enum('between_rounds','not_started','card_entry_open','results_presented','finished','cancelled') NOT NULL DEFAULT 'between_rounds',
   `card_count` int NOT NULL DEFAULT '0',
+  `card_entry_reopened` tinyint(1) NOT NULL DEFAULT '0',
   `results_presented_at` timestamp NULL DEFAULT NULL,
   `finished_at` timestamp NULL DEFAULT NULL,
   `locked_by_staff_id` int DEFAULT NULL,

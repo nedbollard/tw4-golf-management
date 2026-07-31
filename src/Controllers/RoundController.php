@@ -257,4 +257,239 @@ class RoundController extends BaseController
 
         return '';
     }
+
+    /**
+     * AUTOMATION ONLY: API endpoint for season replication
+     * Start a new round via automated workflow
+     *
+     * POST /api/automation/start-round
+     * Requires: X-Automation-Token header, JSON body with round metadata
+     * Body: {season_year, number_round, round_date, course_played_id}
+     * Returns: JSON {success: bool, message: string}
+     *
+     * TO PRODUCTION REVIEWER: DELETE THIS METHOD before going live
+     */
+    public function automationStartRound(): void
+    {
+        header('Content-Type: application/json');
+
+        // Verify automation token
+        $token = $_SERVER['HTTP_X_AUTOMATION_TOKEN'] ?? '';
+        $expectedToken = getenv('AUTOMATION_TOKEN');
+        if (!$expectedToken || $token !== $expectedToken) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
+        try {
+            // Parse JSON body
+            $input = json_decode(file_get_contents('php://input'), true);
+            if (!is_array($input)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid JSON body']);
+                return;
+            }
+
+            // Extract payload
+            $payload = [
+                'round_number' => $input['number_round'] ?? null,
+                'round_date' => $input['round_date'] ?? null,
+                'course_played_id' => $input['course_played_id'] ?? null,
+            ];
+
+            // Use system automation user
+            $staffId = 0;
+            $systemUser = 'automation';
+
+            // Force release any existing locks from automation user before starting
+            $this->roundLockService->releaseAnyLocksByStaff($staffId, 'logout');
+
+            // Call startRound with full workflow execution
+            // (startRound acquires and releases its own lock internally)
+            $result = $this->roundWorkflowService->startRound($payload, $staffId);
+
+            if (!$result || empty($result['round_id'])) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Round start failed']);
+                return;
+            }
+
+            // Log the automation start
+            $this->logger->log(
+                Logger::LEVEL_INFO,
+                Logger::EVENT_SYSTEM,
+                'Automation: Round started via API',
+                ['round_id' => $result['round_id'], 'staff_id' => $staffId],
+                $systemUser
+            );
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Round started successfully',
+                'round' => [
+                    'round_id' => $result['round_id'],
+                    'number_round' => $result['number_round'] ?? null,
+                    'workflow_step' => $result['workflow_step'] ?? 'card_entry_open'
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * AUTOMATION ONLY: API endpoint for season replication
+     * Finish the current round via automated workflow
+     *
+     * POST /api/automation/finish-round
+     * Requires: X-Automation-Token header
+     * Returns: JSON {success: bool, message: string}
+     *
+     * TO PRODUCTION REVIEWER: DELETE THIS METHOD before going live
+     */
+    // AUTOMATION ONLY: Remove before production
+    public function automationPresentResults(): void
+    {
+        header('Content-Type: application/json');
+
+        // Verify automation token (simple security check)
+        $token = $_SERVER['HTTP_X_AUTOMATION_TOKEN'] ?? '';
+        $expectedToken = getenv('AUTOMATION_TOKEN');
+        if (!$expectedToken || $token !== $expectedToken) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
+        try {
+            $round = $this->roundWorkflowService->getPermanentRound();
+            if (!$round) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'No permanent round found']);
+                return;
+            }
+
+            $roundId = (int) ($round['round_id'] ?? $round['row_id'] ?? 0);
+            if ($roundId < 1) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid round_id']);
+                return;
+            }
+
+            // Use system automation user (staff_id = 0)
+            $staffId = 0;
+            $systemUser = 'automation';
+
+            // Force release any existing locks from automation user
+            $this->roundLockService->releaseAnyLocksByStaff($staffId, 'logout');
+
+            // Acquire fresh lock for automation
+            if (!$this->roundLockService->acquireLock($roundId, $staffId)) {
+                http_response_code(409);
+                echo json_encode(['success' => false, 'message' => 'Could not acquire lock on round']);
+                return;
+            }
+
+            // Call presentResults to transition from card_entry_open to results_presented
+            $presented = $this->roundWorkflowService->presentResults($roundId, $staffId);
+
+            // Release lock now that operation is complete
+            $this->roundLockService->releaseLock($roundId, $staffId, 'finished');
+
+            if (!$presented) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Results presentation failed; check workflow state']);
+                return;
+            }
+
+            // Log the automation presentation
+            $this->logger->log(
+                Logger::LEVEL_INFO,
+                Logger::EVENT_SYSTEM,
+                'Automation: Results presented via API',
+                ['round_id' => $roundId, 'staff_id' => $staffId],
+                $systemUser
+            );
+
+            http_response_code(200);
+            echo json_encode(['success' => true, 'message' => 'Results presented successfully']);
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    public function automationFinishRound(): void
+    {
+        header('Content-Type: application/json');
+
+        // Verify automation token (simple security check)
+        $token = $_SERVER['HTTP_X_AUTOMATION_TOKEN'] ?? '';
+        $expectedToken = getenv('AUTOMATION_TOKEN');
+        if (!$expectedToken || $token !== $expectedToken) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
+        try {
+            $round = $this->roundWorkflowService->getPermanentRound();
+            if (!$round) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'No permanent round found']);
+                return;
+            }
+
+            $roundId = (int) ($round['round_id'] ?? $round['row_id'] ?? 0);
+            if ($roundId < 1) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid round_id']);
+                return;
+            }
+
+            // Use system automation user (staff_id = 0)
+            $staffId = 0;
+            $systemUser = 'automation';
+
+            // Force release any existing locks from automation user
+            $this->roundLockService->releaseAnyLocksByStaff($staffId, 'logout');
+
+            // Acquire lock for automation
+            if (!$this->roundLockService->acquireLock($roundId, $staffId)) {
+                http_response_code(409);
+                echo json_encode(['success' => false, 'message' => 'Could not acquire lock on round']);
+                return;
+            }
+
+            // Call finishRound with full workflow execution
+            $finished = $this->roundWorkflowService->finishRound($roundId, $staffId);
+
+            // Release lock now that operation is complete
+            $this->roundLockService->releaseLock($roundId, $staffId, 'finished');
+
+            if (!$finished) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Round finish failed; check workflow state']);
+                return;
+            }
+
+            // Log the automation finish
+            $this->logger->log(
+                Logger::LEVEL_INFO,
+                Logger::EVENT_SYSTEM,
+                'Automation: Round finished via API',
+                ['round_id' => $roundId, 'staff_id' => $staffId],
+                $systemUser
+            );
+
+            http_response_code(200);
+            echo json_encode(['success' => true, 'message' => 'Round finished successfully']);
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
 }

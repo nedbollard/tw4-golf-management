@@ -62,6 +62,7 @@ POST_BOOTSTRAP_MIGRATIONS=(
     "src/migrations/039_team_haggle_floating_setup.sql"
     "src/migrations/040_team_haggle_serious_audit.sql"
     "src/migrations/041_handicap_reference_tees.sql"
+    "src/migrations/042_card_entry_reopened.sql"
 )
 
 ensure_application_log_table() {
@@ -265,8 +266,56 @@ print_status "handicap_audit verification passed: points columns present, change
 
 # Clean up report files and sessions to start fresh
 print_status "Cleaning up report files and session data..."
-docker compose -f "$COMPOSE_FILE" exec -T app bash -c 'rm -rf /var/www/html/public/reports/* && echo "Reports directory cleared"' || true
-docker compose -f "$COMPOSE_FILE" exec -T app bash -c 'rm -rf /var/www/html/logs/*.log && echo "Old logs cleared"' || true
+
+# Safety guard: never wipe a path that is (or sits under) a host bind mount.
+# On the dev compose the repo is bind-mounted at /var/www/html, so wiping
+# public/reports or logs there would destroy real host files. A path is
+# considered wipe-safe only when it is an isolated named Docker volume or a
+# container-internal path with no bind mount covering it.
+path_is_wipe_safe() {
+    local target="$1"
+    local cid mounts mtype mdest
+    cid="$(docker compose -f "$COMPOSE_FILE" ps -q app 2>/dev/null || true)"
+    if [ -z "$cid" ]; then
+        return 1
+    fi
+    # Each line: "<type> <destination>"
+    mounts="$(docker inspect -f '{{range .Mounts}}{{.Type}} {{.Destination}}{{"\n"}}{{end}}' "$cid" 2>/dev/null || true)"
+
+    # Exact named volume at the target -> safe.
+    if printf '%s\n' "$mounts" | grep -qx "volume ${target}"; then
+        return 0
+    fi
+
+    # Any bind mount at or above the target -> real host data -> unsafe.
+    while read -r mtype mdest; do
+        [ -n "$mtype" ] || continue
+        if [ "$mtype" = "bind" ]; then
+            if [ "$mdest" = "$target" ] || case "$target" in "$mdest"/*) true ;; *) false ;; esac; then
+                return 1
+            fi
+        fi
+    done <<EOF
+$mounts
+EOF
+
+    # No bind mount covers it -> container-internal -> safe.
+    return 0
+}
+
+safe_wipe() {
+    local target="$1"   # container path checked for bind-mount safety
+    local cmd="$2"      # rm command executed inside the container
+    local label="$3"
+    if path_is_wipe_safe "$target"; then
+        docker compose -f "$COMPOSE_FILE" exec -T app bash -c "$cmd" || true
+    else
+        print_warn "Skipping $label cleanup: '$target' is a host bind mount (real files), not an isolated volume. Host data left untouched."
+    fi
+}
+
+safe_wipe "/var/www/html/public/reports" 'rm -rf /var/www/html/public/reports/* && echo "Reports directory cleared"' "reports"
+safe_wipe "/var/www/html/logs" 'rm -rf /var/www/html/logs/*.log && echo "Old logs cleared"' "logs"
 docker compose -f "$COMPOSE_FILE" exec -T app bash -c 'rm -f /tmp/sess_* && echo "Session files cleared"' || true
 
 print_status "System test bootstrap completed successfully (virgin baseline state)."

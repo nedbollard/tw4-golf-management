@@ -39,6 +39,7 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'scorer');
 
                 <div class="roster-toolbar">
                     <a href="/roster/create" class="btn-action-primary">Add New Player</a>
+                    <a href="/scorer/menu" class="btn-secondary-pill">Back to Scorer Menu</a>
                 </div>
 
                 <?php if (empty($roster)): ?>
@@ -121,6 +122,7 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'scorer');
                 <?php endif; ?>
 
                 <div class="roster-toolbar roster-toolbar-bottom">
+                    <a href="/roster/create" class="btn-action-primary">Add New Player</a>
                     <a href="/scorer/menu" class="btn-secondary-pill">Back to Scorer Menu</a>
                 </div>
             </div>

@@ -85,7 +85,7 @@ ensure_reference_database_schema() {
 
     if [ "$table_count" = "0" ]; then
         print_status "TW4_base is empty; applying baseline migrations..."
-        for migration in $(ls src/migrations/*.sql | grep -v '017_create_live_database_schema.sql' | grep -v '018_seed_live_round.sql' | grep -v '019_round_workflow_and_lock.sql' | grep -v '021_live_round_start_defaults.sql' | grep -v '022_live_card_tables.sql' | grep -v '999_current_schema.sql' | sort); do
+        for migration in $(ls src/migrations/*.sql | grep -v '017_create_live_database_schema.sql' | grep -v '018_seed_live_round.sql' | grep -v '019_round_workflow_and_lock.sql' | grep -v '021_live_round_start_defaults.sql' | grep -v '022_live_card_tables.sql' | grep -v '042_card_entry_reopened.sql' | grep -v '999_current_schema.sql' | sort); do
             print_status "Applying $(basename "$migration") to TW4_base..."
             if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root TW4_base < "$migration"; then
                 print_error "Failed applying $(basename "$migration") to TW4_base."

@@ -114,6 +114,7 @@ class RoundWorkflowService
                      course_played_id = ?,
                      workflow_step = 'card_entry_open',
                      card_count = 0,
+                     card_entry_reopened = 0,
                      results_presented_at = NULL,
                      finished_at = NULL,
                      updated_by = ?
@@ -216,6 +217,7 @@ class RoundWorkflowService
                 "UPDATE TW4_live.round
                  SET workflow_step = 'card_entry_open',
                      card_count = ?,
+                     card_entry_reopened = 1,
                      round_date = COALESCE(round_date, ?),
                      course_played_id = COALESCE(course_played_id, ?),
                      results_presented_at = NULL,
@@ -278,7 +280,12 @@ class RoundWorkflowService
 
             $this->db->commit();
         } catch (\Throwable $e) {
-            $this->db->rollback();
+            try {
+                $this->db->rollback();
+            } catch (\Throwable $rollbackException) {
+                // Swallow rollback errors (e.g. PDO "There is no active transaction").
+                // The original exception is what matters and will be re-thrown below.
+            }
             throw $e;
         }
 

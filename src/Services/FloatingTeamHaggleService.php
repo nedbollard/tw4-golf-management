@@ -59,8 +59,7 @@ class FloatingTeamHaggleService
             $players,
             static fn(array $a, array $b): int =>
                 ((int) ($b['points_total'] ?? 0) <=> (int) ($a['points_total'] ?? 0))
-                ?: ((int) ($a['handicap'] ?? 0) <=> (int) ($b['handicap'] ?? 0))
-                ?: strcmp((string) ($b['player_identifier'] ?? ''), (string) ($a['player_identifier'] ?? ''))
+                ?: strcmp((string) ($a['player_identifier'] ?? ''), (string) ($b['player_identifier'] ?? ''))
         );
 
         $countPlayers = count($players);
@@ -143,6 +142,13 @@ class FloatingTeamHaggleService
             return;
         }
 
+        // In serious mode the team membership is manually curated by the admin and must
+        // survive a result reset. Only floating mode auto-generates teams on every finish,
+        // so only floating mode needs the tables cleared here.
+        if ($this->getConfiguredTeamHaggleState() === 'serious') {
+            return;
+        }
+
         $this->db->query('DELETE FROM TW4_live.best_five_team_member');
         $this->db->query('DELETE FROM TW4_live.best_five_team');
     }
@@ -172,7 +178,7 @@ class FloatingTeamHaggleService
         }
 
         $average = array_sum($points) / count($points);
-        return (int) round($average, 0, PHP_ROUND_HALF_UP);
+        return (int) floor($average);
     }
 
     private function hasTeamHaggleTables(): bool
