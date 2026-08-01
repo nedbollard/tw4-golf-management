@@ -138,9 +138,6 @@
 
                     <div class="admin-actions">
                         <button type="submit" name="action" value="save" class="btn btn-primary">Save Teams</button>
-                        <?php if ($isRevisit && $hasUnassigned): ?>
-                            <a href="#unassigned-section" class="btn btn-outline-secondary">Find Replacements</a>
-                        <?php endif; ?>
                         <a href="/admin/team-haggle" class="btn btn-outline-secondary">Cancel</a>
                         <a href="/admin/menu" class="btn-secondary-pill">Back to Admin Menu</a>
                     </div>

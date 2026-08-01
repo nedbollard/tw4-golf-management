@@ -314,7 +314,17 @@ safe_wipe() {
     fi
 }
 
-safe_wipe "/var/www/html/public/reports" 'rm -rf /var/www/html/public/reports/* && echo "Reports directory cleared"' "reports"
+# Reports are intentionally preserved across bootstrap runs.
+# They live in the tw4_reports named volume and should survive a database reset
+# so that historical season reports remain accessible after re-bootstrapping.
+print_status "Skipping report cleanup — historical reports are preserved in the tw4_reports volume."
+
+# Ensure any files restored via 'docker cp' (owned by the host user) are
+# readable by Apache (www-data) inside the container.
+print_status "Ensuring report file ownership is correct (www-data)..."
+docker compose -f "$COMPOSE_FILE" exec -T app bash -c \
+    'chown -R www-data:www-data /var/www/html/public/reports && echo "Report ownership verified"' || true
+
 safe_wipe "/var/www/html/logs" 'rm -rf /var/www/html/logs/*.log && echo "Old logs cleared"' "logs"
 docker compose -f "$COMPOSE_FILE" exec -T app bash -c 'rm -f /tmp/sess_* && echo "Session files cleared"' || true
 

@@ -342,6 +342,17 @@ class TeamHaggleSeriousService
 
         $this->db->beginTransaction();
         try {
+            // Preserve any team names that were set on a previous save so that
+            // re-editing the draft (e.g. swapping a player mid-season) does not
+            // rename a team whose captain was established at first setup.
+            $existingNameRows = $this->db->fetchAll(
+                'SELECT team_number, team_name FROM TW4_live.best_five_team'
+            );
+            $existingNames = [];
+            foreach ($existingNameRows as $row) {
+                $existingNames[(int) $row['team_number']] = (string) $row['team_name'];
+            }
+
             $this->db->query('DELETE FROM TW4_live.best_five_team_member');
             $this->db->query('DELETE FROM TW4_live.best_five_team');
 
@@ -375,9 +386,14 @@ class TeamHaggleSeriousService
                     ]);
                 }
 
+                // Use the previously-established name if one exists; only derive
+                // a new name from slot 1 when this team is being created for the
+                // first time.
+                $teamName = $existingNames[(int) $teamNumber] ?? ('Team ' . $firstDisplayName);
+
                 $this->db->insert('TW4_live.best_five_team', [
                     'team_number' => (int) $teamNumber,
-                    'team_name' => 'Team ' . $firstDisplayName,
+                    'team_name' => $teamName,
                     'team_points_total' => $teamPoints,
                     'updated_by' => $updatedBy,
                 ]);
