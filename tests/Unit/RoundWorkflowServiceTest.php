@@ -163,7 +163,7 @@ class RoundWorkflowServiceTest extends TestCase
         /** @var Database|MockObject $db */
         $db = $this->createMock(Database::class);
 
-        $db->expects($this->exactly(4))
+        $db->expects($this->exactly(3))
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
                 if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
@@ -206,7 +206,7 @@ class RoundWorkflowServiceTest extends TestCase
         /** @var Database|MockObject $db */
         $db = $this->createMock(Database::class);
 
-        $db->expects($this->exactly(4))
+        $db->expects($this->exactly(3))
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
                 if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
@@ -243,12 +243,12 @@ class RoundWorkflowServiceTest extends TestCase
         $this->assertSame(19, $formData['default_round_number']);
     }
 
-    public function testGetStartRoundFormDataIncrementsLatestHistoryRoundWhenLiveRowIsBlank(): void
+    public function testGetStartRoundFormDataResetsRoundNumberWhenLiveRowSeasonIsBlank(): void
     {
         /** @var Database|MockObject $db */
         $db = $this->createMock(Database::class);
 
-        $db->expects($this->exactly(4))
+        $db->expects($this->exactly(3))
             ->method('fetchOne')
             ->willReturnCallback(static function (string $sql, array $params = []): ?array {
                 if (str_contains($sql, 'FROM TW4_live.round') && str_contains($sql, 'ORDER BY r.row_id ASC')) {
@@ -268,10 +268,6 @@ class RoundWorkflowServiceTest extends TestCase
                     return ['club_number' => 294];
                 }
 
-                if (str_contains($sql, 'FROM TW4_history.round') && $params === ['25_26']) {
-                    return ['latest_round_number' => 4];
-                }
-
                 return null;
             });
 
@@ -285,7 +281,7 @@ class RoundWorkflowServiceTest extends TestCase
         $service = new RoundWorkflowService($db);
         $formData = $service->getStartRoundFormData();
 
-        $this->assertSame(5, $formData['default_round_number']);
+        $this->assertSame(1, $formData['default_round_number']);
     }
 
     public function testAdminResetResultsToCardEntryClearsResultsAndUpdatesRound(): void

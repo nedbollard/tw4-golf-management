@@ -473,6 +473,10 @@ class SnapshotExportService
             'round_date' => isset($round['round_date']) ? (string) $round['round_date'] : null,
             'name_course' => (string) ($round['name_course'] ?? ''),
             'name_club' => (string) ($round['name_club'] ?? ''),
+            'app_club_name' => trim((string) ($this->db->fetchOne(
+                'SELECT config_value_string FROM config_application WHERE config_name = ? LIMIT 1',
+                ['club_name']
+            )['config_value_string'] ?? '')),
             'eclectic_played_name' => $eclecticPlayedName,
             'eclectic_other_name' => $eclecticOtherName,
             'leaderboard' => $leaderboard,
@@ -658,6 +662,24 @@ class SnapshotExportService
         return (int) (($count % 2) ? $values[$middle] : ($values[$middle - 1] + $values[$middle]) / 2);
     }
 
+    private function renderCourseHeading(array $ctx): string
+    {
+        $club = trim((string) ($ctx['name_club'] ?? ''));
+        $course = trim((string) ($ctx['name_course'] ?? ''));
+
+        if ($club === '' && $course === '') {
+            $label = 'n/a';
+        } elseif ($club === '') {
+            $label = $course;
+        } elseif ($course === '') {
+            $label = $club;
+        } else {
+            $label = $club . ' / ' . $course;
+        }
+
+        return '<h3>Course: ' . $this->e($label) . '</h3>';
+    }
+
     private function renderRoundStats(array $stats): string
     {
         return '<div class="round-stats-section">'
@@ -722,7 +744,7 @@ class SnapshotExportService
             'Results',
             '<h2>Results Sheet</h2>'
             . '<h3>Date: ' . $this->e((string) ($ctx['round_date'] ?? 'n/a')) . '</h3>'
-            . '<h3>Course: ' . $this->e((string) ($ctx['name_course'] ?? 'n/a')) . '</h3>'
+            . $this->renderCourseHeading($ctx)
             . '<h4>The field:</h4><table><tr><th>Position</th><th>Player</th><th>Points</th><th>Gross</th><th>Handicap</th><th>Count Back ...</th><th>Decision ...</th></tr>' . $rows . '</table>'
             . '<h4>The Payout:</h4><table><tr><th>Player</th><th>Prize</th></tr>' . $payout . '</table>'
             . '<h4>Twos:</h4><table><tr><th>Player</th><th>Number</th></tr>' . $twos . '</table>'
@@ -760,7 +782,7 @@ class SnapshotExportService
             'Best 5 Scores',
             '<h2>Haggle: Best 5 scores</h2>'
             . '<h3>Date: ' . $this->e((string) ($ctx['round_date'] ?? 'n/a')) . '</h3>'
-            . '<h3>Course: ' . $this->e((string) ($ctx['name_course'] ?? 'n/a')) . '</h3>'
+            . $this->renderCourseHeading($ctx)
             . '<table><tr><th>Standing</th><th>Player</th><th>Total Points</th><th>Best 1</th><th>Best 2</th><th>Best 3</th><th>Best 4</th><th>Best 5</th><th>Last Change</th><th>Round</th></tr>'
             . $bodyRows
             . '</table>'
@@ -782,7 +804,7 @@ class SnapshotExportService
                 'Best 5 Haggle Teams',
                 '<h2>Haggle: Best 5 Team Standings (' . $haggleMode . ')</h2>'
                 . '<h3>Date: ' . $this->e((string) ($ctx['round_date'] ?? 'n/a')) . '</h3>'
-                . '<h3>Course: ' . $this->e((string) ($ctx['name_course'] ?? 'n/a')) . '</h3>'
+                . $this->renderCourseHeading($ctx)
                 . '<table><tr><td>No team haggle data available.</td></tr></table>'
             );
         }
@@ -824,7 +846,7 @@ class SnapshotExportService
             'Best 5 Haggle Teams',
             '<h2>Haggle: Best 5 Team Standings (' . $haggleMode . ')</h2>'
             . '<h3>Date: ' . $this->e((string) ($ctx['round_date'] ?? 'n/a')) . '</h3>'
-            . '<h3>Course: ' . $this->e((string) ($ctx['name_course'] ?? 'n/a')) . '</h3>'
+            . $this->renderCourseHeading($ctx)
             . '<table><tr><th>Standing</th><th>Team</th><th>Total Points</th></tr>'
             . $teamRows
             . '</table>'
@@ -923,7 +945,7 @@ class SnapshotExportService
             'Movements',
             '<h2>Movements</h2>'
             . '<h3>Date: ' . $this->e((string) ($ctx['round_date'] ?? 'n/a')) . '</h3>'
-            . '<h3>Course: ' . $this->e((string) ($ctx['name_course'] ?? 'n/a')) . '</h3>'
+            . $this->renderCourseHeading($ctx)
             . '<h4>Handicap Changes</h4>'
             . '<table><tr><th>Player</th><th>Change</th><th>New</th><th>Points</th><th>(Points)</th><th>Source</th><th>Reason</th></tr>'
             . $handicapRows
@@ -996,7 +1018,7 @@ class SnapshotExportService
             'Eclectic',
             '<h2>' . $this->e($heading) . '</h2>'
             . '<h3>Date: ' . $this->e((string) ($ctx['round_date'] ?? 'n/a')) . '</h3>'
-            . '<h3>Course: ' . $this->e((string) ($ctx['name_course'] ?? 'n/a')) . '</h3>'
+            . $this->renderCourseHeading($ctx)
             . '<table><tr><th>Standing</th><th>Player</th><th>Total</th><th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th><th>H7</th><th>H8</th><th>H9</th><th>Last Change</th><th>Round</th></tr>'
             . $bodyRows
             . '</table>'
@@ -1034,7 +1056,7 @@ class SnapshotExportService
             'Eclectic',
             '<h2>' . $this->e($heading) . '</h2>'
             . '<h3>Date: ' . $this->e((string) ($ctx['round_date'] ?? 'n/a')) . '</h3>'
-            . '<h3>Course: ' . $this->e((string) ($ctx['name_course'] ?? 'n/a')) . '</h3>'
+            . $this->renderCourseHeading($ctx)
             . $message
         );
     }
@@ -1366,7 +1388,7 @@ class SnapshotExportService
 
     private function wrap(array $ctx, string $title, string $content): string
     {
-        $club = trim((string) ($ctx['name_club'] ?? ''));
+        $club = trim((string) ($ctx['app_club_name'] ?? ''));
         if ($club === '') {
             $club = 'Twilight Golf';
         }

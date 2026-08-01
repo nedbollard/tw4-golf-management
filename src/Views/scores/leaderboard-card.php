@@ -1,32 +1,24 @@
 <?php
 /**
- * Leaderboard card chart — split-column design.
+ * Leaderboard card chart — single-column design.
  *
- * Per hole:
- *  LEFT  col   : blue bar = actual score; pink blocks fill top of bar (handicap shots)
- *  RIGHT col   : SFP stacked blocks rising from base (one per Stableford point, all same colour = total points)
- *  FULL WIDTH  : dotted outline rect = par (may extend above the blue bar for birdies/eagles)
- *  TOOLTIP     : transparent hit-rect covers full column incl. empty dotted space above bar
+ * Per hole (one bar):
+ *  PAR BLOCK   : pale rectangle from baseline up to par height (may extend above the score bar)
+ *  SCORE BAR   : solid blue bar from baseline up to score height, drawn over the par block
+ *  SHOT DOTS   : pink dot markers, one per handicap shot, starting at the top of the score bar
+ *                and descending one score-line per shot
+ *  POINT DOTS  : green dot markers, one per Stableford point, stacked from the baseline upward
+ *  TOOLTIP     : transparent hit-rect covers the full column incl. empty space above the bar
  */
-
-// SFP colour palette (matches the enter-card panel)
-$sfpPalette = [
-    1 => ['bg' => '#E64A19', 'text' => '#fff7f3'],
-    2 => ['bg' => '#FBC02D', 'text' => '#3d2f00'],
-    3 => ['bg' => '#388E3C', 'text' => '#f3fff3'],
-    4 => ['bg' => '#1976D2', 'text' => '#f4f9ff'],
-    5 => ['bg' => '#6A1B9A', 'text' => '#fbf5ff'],
-];
 
 // ── Geometry ────────────────────────────────────────────────────────────────
 $chartMax    = 10;          // y-axis max (max shots per hole)
 $scale       = 24;          // px per 1 shot/point unit
-$blockHeight = $scale;      // 1 unit = 24 px (shot blocks inside bar have no internal gap)
-$sfpGap      = 2;           // gap between stacked SFP blocks (right column)
-$blockR      = 4;           // corner radius on all blocks
-$halfWidth   = 28;          // width of each half-column
-$halfGap     = 8;           // gap between left and right half-columns
-$fullBarW    = $halfWidth * 2 + $halfGap; // 64 px — par outline and hit-rect span this
+$dotRadius   = 6;           // radius of shot/point dot markers
+$dotOffset   = 9;           // horizontal offset of shot/point dots either side of centre
+$blockR      = 4;           // corner radius on bar/par blocks
+$barWidth    = 44;          // width of the single score bar
+$parWidth    = (int) round($barWidth * 1.4); // par shadow block — double the previous overlap either side
 $groupWidth  = 72;          // column pitch per hole
 $leftMargin  = 52;
 $rightMargin = 20;
@@ -49,6 +41,7 @@ if ($playerName === '') {
 $totalScore   = (int)    ($card['score']           ?? 0);
 $totalPoints  = (int)    ($card['points']          ?? 0);
 $handicap     = (int)    ($card['handicap_applied'] ?? 0);
+$totalNet     = $totalScore - $handicap;
 $seasonYear   = (string) ($round['season_year']    ?? '');
 $roundNumber  = (int)    ($round['number_round']   ?? 0);
 
@@ -63,8 +56,10 @@ ob_start();
         <?php if ($roundNumber > 0): ?>
         <span><strong>Round</strong> <?php echo $roundNumber; ?></span>
         <?php endif; ?>
-        <span><strong>Handicap</strong> <?php echo $handicap; ?></span>
+        <span class="card-chart-summary-sep">:</span>
         <span><strong>Gross</strong> <?php echo $totalScore; ?></span>
+        <span><strong>Net</strong> <?php echo $totalNet; ?></span>
+        <span><strong>Handicap</strong> <?php echo $handicap; ?></span>
         <span><strong>Points</strong> <?php echo $totalPoints; ?></span>
     </div>
 
@@ -74,16 +69,16 @@ ob_start();
 
     <div class="card-chart-legend" aria-label="Chart legend">
         <span class="card-chart-legend-item">
+            <span class="card-chart-swatch card-chart-swatch-par"></span>Par
+        </span>
+        <span class="card-chart-legend-item">
             <span class="card-chart-swatch card-chart-swatch-score"></span>Score
         </span>
         <span class="card-chart-legend-item">
             <span class="card-chart-swatch card-chart-swatch-shots"></span>Handicap shots
         </span>
         <span class="card-chart-legend-item">
-            <span class="card-chart-swatch card-chart-swatch-sfp3"></span>Stableford points
-        </span>
-        <span class="card-chart-legend-item">
-            <span class="card-chart-swatch card-chart-swatch-par"></span>Par
+            <span class="card-chart-swatch card-chart-swatch-points"></span>Stableford points
         </span>
     </div>
 
@@ -95,9 +90,9 @@ ob_start();
              xmlns="http://www.w3.org/2000/svg">
             <desc id="card-chart-desc">
                 Per-hole scorecard chart for <?php echo htmlspecialchars($playerName); ?>.
-                Left bar = score; pink section at top of bar = handicap shots allowed.
-                Right column = Stableford points (colour = hole total). Dotted outline = par.
-                Hover a hole for details.
+                Blue bar = score. Pale block = par. Pink dots, descending from the top of the bar,
+                = handicap shots received. Green dots, stacked from the baseline, = Stableford
+                points earned. Hover a hole for details.
             </desc>
 
             <!-- Chart background -->
@@ -124,86 +119,83 @@ ob_start();
                 $shots  = (int) ($hole['shots']  ?? 0);
                 $pts    = (int) ($hole['points'] ?? 0);
                 $par    = (int) ($hole['par']    ?? 0);
+                $stroke = (int) ($hole['stroke']  ?? 0);
                 $holeD  = (int) ($hole['hole_display'] ?? ($index + 1));
 
-                $leftX   = $leftMargin + $index * $groupWidth;
-                $rightX  = $leftX + $halfWidth + $halfGap;
-                $centerX = $leftX + intdiv($fullBarW, 2);
-                $leftCX  = $leftX + intdiv($halfWidth, 2);
-                $rightCX = $rightX + intdiv($halfWidth, 2);
+                $groupX  = $leftMargin + $index * $groupWidth;
+                $barX    = $groupX + intdiv($groupWidth - $barWidth, 2);
+                $centerX = $barX + intdiv($barWidth, 2);
+                $parX    = $centerX - intdiv($parWidth, 2);
+                $shotCX  = $centerX - $dotOffset;
+                $pointCX = $centerX + $dotOffset;
                 $scoreLabel = ($score === 10) ? 'X' : (string) $score;
 
                 // Key Y positions
                 $barTopY  = ($score > 0) ? $baseY - $score * $scale : $baseY;
                 $parTopY  = ($par  > 0) ? $baseY - $par  * $scale : $baseY;
-                $sfpTopY  = ($pts  > 0) ? $baseY - $pts * $blockHeight - ($pts - 1) * $sfpGap : $baseY;
+                $pointsTopY = ($pts > 0) ? $baseY - $pts * $scale : $baseY;
 
-                // Hit-rect covers all visual elements incl. dotted empty space above bar
-                $hitTopY  = min($barTopY, $parTopY, $sfpTopY) - 2;
-                $hitH     = $baseY - $hitTopY;
-
-                // Number of shot blocks that fit inside the bar
+                // Number of shot dots that fit inside the bar (shots are allocated against scored strokes)
                 $shotsInBar = min($shots, $score);
+
+                // Hit-rect covers all visual elements incl. the wider par shadow and empty space above the bar
+                $hitX     = min($barX, $parX);
+                $hitW     = max($barX + $barWidth, $parX + $parWidth) - $hitX;
+                $hitTopY  = min($barTopY, $parTopY, $pointsTopY) - $dotRadius - 2;
+                $hitH     = $baseY - $hitTopY;
 
                 // Tooltip text
                 $tip = 'Hole ' . $holeD
                      . ' | Par ' . $par
+                     . ' | Stroke ' . $stroke
                      . ' | Score ' . $scoreLabel
                      . ' | Shots allowed ' . $shots
                      . ' | Points ' . $pts;
             ?>
                 <g>
-                    <?php // ── 1. Blue score bar — full group width ───────────────── ?>
+                    <?php // ── 1. Pale par block — background reference, ~20% wider than the score bar ──── ?>
+                    <?php if ($par > 0): ?>
+                    <rect x="<?php echo $parX; ?>" y="<?php echo $parTopY; ?>"
+                          width="<?php echo $parWidth; ?>" height="<?php echo $par * $scale; ?>"
+                          rx="<?php echo $blockR; ?>" class="card-chart-par-block" />
+                    <?php endif; ?>
+
+                    <?php // ── 2. Blue score bar — drawn over the par block ─────────── ?>
                     <?php if ($score > 0): ?>
-                    <rect x="<?php echo $leftX; ?>" y="<?php echo $barTopY; ?>"
-                          width="<?php echo $fullBarW; ?>" height="<?php echo $score * $scale; ?>"
+                    <rect x="<?php echo $barX; ?>" y="<?php echo $barTopY; ?>"
+                          width="<?php echo $barWidth; ?>" height="<?php echo $score * $scale; ?>"
                           rx="<?php echo $blockR; ?>" fill="#2563eb" />
                     <?php endif; ?>
 
-                    <?php // ── 2. Pink shot blocks — left half, top of bar, stacked down ── ?>
-                    <?php for ($s = 0; $s < $shotsInBar; $s++):
-                        $shotY = $barTopY + $s * ($blockHeight + $sfpGap);
-                    ?>
-                    <rect x="<?php echo $leftX; ?>" y="<?php echo $shotY; ?>"
-                          width="<?php echo $halfWidth; ?>" height="<?php echo $blockHeight; ?>"
-                          rx="<?php echo $blockR; ?>" class="card-chart-shot-block" />
-                    <?php endfor; ?>
-
-                    <?php // ── 3. Par dotted outline (full group width, no fill) ────── ?>
-                    <?php if ($par > 0): ?>
-                    <rect x="<?php echo $leftX; ?>" y="<?php echo $parTopY; ?>"
-                          width="<?php echo $fullBarW; ?>" height="<?php echo $par * $scale; ?>"
-                          rx="<?php echo $blockR; ?>" class="card-chart-par-outline" />
-                    <?php endif; ?>
-
-                    <?php // ── 4. SFP point blocks — right half, rising from base ───── ?>
-                    <?php
-                        $sfpKey = min($pts, 5);
-                        $sfpBg  = $sfpPalette[$sfpKey]['bg'] ?? '#6A1B9A';
-                    ?>
+                    <?php // ── 3. Green Stableford-point dots — right of centre, ascending from the "1" line ── ?>
                     <?php for ($p = 0; $p < $pts; $p++):
-                        $sfpY  = $baseY - ($p + 1) * $blockHeight - $p * $sfpGap;
+                        $pointCY = $baseY - ($p + 1) * $scale;
                     ?>
-                    <rect x="<?php echo $rightX; ?>" y="<?php echo $sfpY; ?>"
-                          width="<?php echo $halfWidth; ?>" height="<?php echo $blockHeight; ?>"
-                          rx="<?php echo $blockR; ?>" fill="<?php echo $sfpBg; ?>" />
+                    <circle cx="<?php echo $pointCX; ?>" cy="<?php echo $pointCY; ?>"
+                            r="<?php echo $dotRadius; ?>" class="card-chart-point-dot" />
                     <?php endfor; ?>
 
-                    <?php // ── 5. (score label removed — chart is self-explanatory) ──── ?>
+                    <?php // ── 4. Pink handicap-shot dots — left of centre, descending from the score line ── ?>
+                    <?php for ($s = 0; $s < $shotsInBar; $s++):
+                        $shotCY = $barTopY + $s * $scale;
+                    ?>
+                    <circle cx="<?php echo $shotCX; ?>" cy="<?php echo $shotCY; ?>"
+                            r="<?php echo $dotRadius; ?>" class="card-chart-shot-dot" />
+                    <?php endfor; ?>
 
-                    <?php // ── 6. Transparent hit-rect for tooltip ───────────────── ?>
-                    <rect x="<?php echo $leftX; ?>" y="<?php echo $hitTopY; ?>"
-                          width="<?php echo $fullBarW; ?>" height="<?php echo $hitH; ?>"
+                    <?php // ── 5. Transparent hit-rect for tooltip ───────────────── ?>
+                    <rect x="<?php echo $hitX; ?>" y="<?php echo $hitTopY; ?>"
+                          width="<?php echo $hitW; ?>" height="<?php echo $hitH; ?>"
                           rx="<?php echo $blockR; ?>" fill="transparent">
                         <title><?php echo htmlspecialchars($tip); ?></title>
                     </rect>
 
-                    <?php // ── 7. Hole and par labels below baseline ─────────────── ?>
+                    <?php // ── 6. Hole and par labels below baseline ─────────────── ?>
                     <text x="<?php echo $centerX; ?>" y="<?php echo $baseY + 18; ?>"
                           class="card-chart-hole-label">H<?php echo $holeD; ?></text>
                     <?php if ($par > 0): ?>
                     <text x="<?php echo $centerX; ?>" y="<?php echo $baseY + 34; ?>"
-                          class="card-chart-par-label">P<?php echo $par; ?></text>
+                          class="card-chart-par-label">P<?php echo $par; ?><?php echo $stroke > 0 ? ',S' . $stroke : ''; ?></text>
                     <?php endif; ?>
                 </g>
             <?php endforeach; ?>
@@ -219,7 +211,8 @@ ob_start();
 </div>
 <?php
 $content = ob_get_clean();
-$pageHeading  = htmlspecialchars($playerName) . ' — Scorecard';
+$pageHeading   = htmlspecialchars($playerName) . ' — Scorecard';
 $pageStepLabel = '';
+$pageCardTitle = 'Scorecard';
 require __DIR__ . '/../layouts/player-progress.php';
 

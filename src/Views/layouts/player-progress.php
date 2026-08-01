@@ -5,6 +5,7 @@
  * before requiring this file, and set:
  *   $pageHeading    - string, e.g. "Player Progress Selector"
  *   $pageStepLabel  - string, e.g. "Page 1 of 2 — choose a player"
+ *   $pageCardTitle  - optional string, e.g. "Scorecard" (defaults to "Player Progress")
  * $app_title is provided automatically by BaseController::render().
  */
 ?>
@@ -28,7 +29,7 @@
 
     <main>
         <div class="player-progress-card">
-            <h2 class="player-progress-card-title"><?php echo htmlspecialchars($app_title); ?> Player Progress</h2>
+            <h2 class="player-progress-card-title"><?php echo htmlspecialchars($app_title); ?> <?php echo htmlspecialchars($pageCardTitle ?? 'Player Progress'); ?></h2>
             <div class="player-progress-card-body">
                 <div class="section-title-wrap text-center">
                     <h2><?php echo htmlspecialchars($pageHeading ?? 'Player Progress'); ?></h2>

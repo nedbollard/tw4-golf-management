@@ -1853,6 +1853,11 @@ body.page-player-progress {
     padding: 10px 16px;
 }
 
+.card-chart-summary-sep {
+    color: var(--color-muted);
+    font-weight: 700;
+}
+
 .card-chart-legend {
     display: flex;
     flex-wrap: wrap;
@@ -1874,10 +1879,10 @@ body.page-player-progress {
     width: 18px;
 }
 
-.card-chart-swatch-score { background: #2563eb; }
-.card-chart-swatch-shots { background: #fce4ec; border: 1px solid #f9a8d4; }
-.card-chart-swatch-sfp3  { background: #388E3C; }
-.card-chart-swatch-par   { border: 2px dashed #94a3b8; }
+.card-chart-swatch-score  { background: #2563eb; }
+.card-chart-swatch-shots  { background: #ec4899; border-radius: 50%; width: 14px; }
+.card-chart-swatch-points { background: #16a34a; border-radius: 50%; width: 14px; }
+.card-chart-swatch-par    { background: #e2e8f0; border: 1px solid #94a3b8; }
 
 .card-chart-scroll {
     overflow-x: auto;
@@ -1900,17 +1905,22 @@ body.page-player-progress {
     stroke-width: 1.5;
 }
 
-.card-chart-par-outline {
-    fill: none;
+.card-chart-par-block {
+    fill: #e2e8f0;
     stroke: #94a3b8;
-    stroke-dasharray: 5 3;
+    stroke-width: 1;
+}
+
+.card-chart-shot-dot {
+    fill: #ec4899;
+    stroke: #ffffff;
     stroke-width: 1.5;
 }
 
-.card-chart-shot-block {
-    fill: #fce4ec;
-    stroke: #f9a8d4;
-    stroke-width: 1;
+.card-chart-point-dot {
+    fill: #16a34a;
+    stroke: #ffffff;
+    stroke-width: 1.5;
 }
 
 .card-chart-axis-label {

@@ -182,7 +182,7 @@ class SnapshotExportServiceTest extends TestCase
             ->with(
                 $this->callback(static fn(string $sql): bool =>
                     str_contains($sql, 'hr.type_result IN ("Twos", "C_P")')
-                    && str_contains($sql, 'LOWER(TRIM(hr.player_identifier)) <> "not taker"')),
+                    && str_contains($sql, 'REPLACE(LOWER(TRIM(hr.player_identifier)), " ", "") <> "notaker"')),
                 ['25_26', 5]
             )
             ->willReturn([

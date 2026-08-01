@@ -82,6 +82,7 @@ class CardChartQueryService
             $chartHoles[] = [
                 'hole_display' => $courseData ? (int) $courseData['number_hole_course'] : $playedHole,
                 'par' => $courseData ? (int) $courseData['par'] : 0,
+                'stroke' => $courseData ? (int) $courseData['stroke'] : 0,
                 'score' => (int) $hole['score'],
                 'shots' => (int) $hole['shots'],
                 'points' => (int) $hole['points'],
