@@ -1628,9 +1628,10 @@ body.page-player-progress {
 
 .player-progress-summary strong {
     display: block;
-    font-size: 0.78rem;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
 }
 
 .player-progress-alert {
@@ -1734,6 +1735,19 @@ body.page-player-progress {
     fill: #2563eb;
 }
 
+.progress-points-dot {
+    fill: #2563eb;
+    stroke: #f8fffb;
+    stroke-width: 2;
+}
+
+.progress-points-dot-label {
+    fill: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    text-anchor: middle;
+}
+
 .progress-bar-label {
     fill: #ffffff;
     font-size: 12px;
@@ -1755,6 +1769,14 @@ body.page-player-progress {
     fill: var(--color-muted);
     font-size: 10px;
     text-anchor: middle;
+}
+
+.player-progress-subheading {
+    color: var(--color-text-primary);
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0 0 12px 0;
+    text-align: center;
 }
 
 .progress-handicap-circle {
@@ -1786,6 +1808,15 @@ body.page-player-progress {
     stroke: #ffffff;
     stroke-width: 3px;
     text-anchor: middle;
+}
+
+.progress-audit-points-circle {
+    stroke-width: 1.2;
+}
+
+.progress-audit-points-label {
+    font-size: 9px;
+    stroke-width: 2px;
 }
 
 .progress-empty {

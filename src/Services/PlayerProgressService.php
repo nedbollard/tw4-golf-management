@@ -78,6 +78,8 @@ class PlayerProgressService
      *         course_name: string,
      *         score: int,
      *         points: int,
+    *         points_scored: int,
+    *         points_effective: int,
      *         handicap_applied: int,
      *         handicap_updated: int,
      *         handicap_changed: bool,
@@ -114,17 +116,27 @@ class PlayerProgressService
                     hc.score,
                     hc.points,
                     hc.handicap_applied,
-                    hc.handicap_updated
+                    hc.handicap_updated,
+                    ha.points_scored,
+                    ha.points_effective
              FROM TW4_history.round hr
              LEFT JOIN TW4_history.card hc
                 ON hc.season_year = hr.season_year
                AND hc.number_round = hr.number_round
                AND hc.row_id_player = ?
+             LEFT JOIN TW4_base.handicap_audit ha
+                ON ha.row_id = (
+                    SELECT MAX(ha2.row_id)
+                    FROM TW4_base.handicap_audit ha2
+                    WHERE ha2.row_id_player = ?
+                                            AND ha2.season_year = ?
+                      AND ha2.number_round = hr.number_round
+                )
              LEFT JOIN TW4_base.course_played cp
                 ON cp.row_id = hr.course_played_id
              WHERE hr.season_year = ?
              ORDER BY hr.number_round ASC',
-            [$playerId, $seasonYear]
+            [$playerId, $playerId, $seasonYear, $seasonYear]
         );
 
         $rounds = [];
@@ -144,6 +156,8 @@ class PlayerProgressService
                     'course_name' => (string) ($row['course_name'] ?? ''),
                     'score' => 0,
                     'points' => 0,
+                    'points_scored' => 0,
+                    'points_effective' => 0,
                     'handicap_applied' => 0,
                     'handicap_updated' => 0,
                     'handicap_changed' => false,
@@ -156,6 +170,8 @@ class PlayerProgressService
             $handicapApplied = max(0, (int) ($row['handicap_applied'] ?? 0));
             $handicapUpdated = max(0, (int) ($row['handicap_updated'] ?? $handicapApplied));
             $handicapChanged = $handicapApplied !== $handicapUpdated;
+            $pointsScored = max(0, (int) ($row['points_scored'] ?? $row['points'] ?? 0));
+            $pointsEffective = max($pointsScored, (int) ($row['points_effective'] ?? $pointsScored));
 
             $startLevel = $currentLevel;
 
@@ -190,6 +206,8 @@ class PlayerProgressService
                 'course_name' => (string) ($row['course_name'] ?? ''),
                 'score' => (int) ($row['score'] ?? 0),
                 'points' => (int) ($row['points'] ?? 0),
+                'points_scored' => $pointsScored,
+                'points_effective' => $pointsEffective,
                 'handicap_applied' => $handicapApplied,
                 'handicap_updated' => $handicapUpdated,
                 'handicap_changed' => $handicapChanged,
