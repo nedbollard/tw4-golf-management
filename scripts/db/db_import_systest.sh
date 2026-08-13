@@ -6,6 +6,7 @@ LEGACY_COMPOSE_FILE="docker-compose.prod.yml"
 FALLBACK_COMPOSE_FILE="docker-compose.yml"
 COMPOSE_FILE="${COMPOSE_FILE-}"
 DB_NAMES=(TW4_base TW4_live TW4_history TW4_holding)
+MYSQL_WAIT_TIMEOUT="${MYSQL_WAIT_TIMEOUT:-180}"
 
 if [ $# -ne 1 ]; then
   echo "Usage: $0 /path/to/dev_to_oracle_all_tw4_dbs_YYYYmmdd_HHMMSS.sql.gz"
@@ -46,9 +47,18 @@ fi
     echo "[INFO] Ensuring systest db container is up..."
     docker compose -f "$COMPOSE_FILE" up -d db
 
-    echo "[INFO] Waiting for MySQL readiness..."
+    echo "[INFO] Waiting for MySQL readiness (timeout: ${MYSQL_WAIT_TIMEOUT}s)..."
+    START_TS="$(date +%s)"
     until docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
       mysqladmin -h 127.0.0.1 -P 3306 -u root ping --silent >/dev/null 2>&1; do
+      NOW_TS="$(date +%s)"
+      ELAPSED="$((NOW_TS - START_TS))"
+      if [ "$ELAPSED" -ge "$MYSQL_WAIT_TIMEOUT" ]; then
+        echo "[ERROR] Timed out waiting for MySQL after ${MYSQL_WAIT_TIMEOUT}s"
+        docker compose -f "$COMPOSE_FILE" ps db || true
+        docker compose -f "$COMPOSE_FILE" logs --tail=50 db || true
+        exit 1
+      fi
       sleep 2
     done
 
