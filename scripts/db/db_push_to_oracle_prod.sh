@@ -1,7 +1,9 @@
     #!/usr/bin/env bash
     set -euo pipefail
 
-    cd "$(dirname "$0")/.."
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+    REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+    cd "${REPO_ROOT}"
 
     ORACLE_USER="ubuntu"
     ORACLE_HOST="159.13.35.84"
@@ -32,4 +34,4 @@
     echo "     ${REMOTE_DROP_DIR}/${FILE_NAME}.sha256"
     echo
     echo "[NEXT] Restore on Oracle with:"
-    echo "ssh -i ${SSH_KEY} ${ORACLE_USER}@${ORACLE_HOST} \"cd ~/TW4 && ./scripts/db/db_import_syst.sh ${REMOTE_DROP_DIR}/${FILE_NAME}\""
+    echo "ssh -i ${SSH_KEY} ${ORACLE_USER}@${ORACLE_HOST} \"cd ~/TW4 && ./scripts/db/db_import_prod.sh ${REMOTE_DROP_DIR}/${FILE_NAME}\""

@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+cd "${REPO_ROOT}"
 
 TARGET_CHARSET="${TARGET_CHARSET:-utf8mb4}"
 TARGET_COLLATION="${TARGET_COLLATION:-utf8mb4_0900_ai_ci}"

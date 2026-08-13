@@ -3,6 +3,7 @@ set -euo pipefail
 
 PREFERRED_COMPOSE_FILE="docker-compose.systest.yml"
 LEGACY_COMPOSE_FILE="docker-compose.prod.yml"
+FALLBACK_COMPOSE_FILE="docker-compose.yml"
 COMPOSE_FILE="${COMPOSE_FILE-}"
 DB_NAMES=(TW4_base TW4_live TW4_history TW4_holding)
 
@@ -16,7 +17,9 @@ fi
 
   [ -f "$DUMP_GZ" ] || { echo "[ERROR] Dump file not found: $DUMP_GZ"; exit 1; }
 
-cd "$(dirname "$0")/.."
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+cd "${REPO_ROOT}"
 
 if [ -z "$COMPOSE_FILE" ]; then
   if [ -f "$PREFERRED_COMPOSE_FILE" ]; then
@@ -24,12 +27,16 @@ if [ -z "$COMPOSE_FILE" ]; then
   elif [ -f "$LEGACY_COMPOSE_FILE" ]; then
     COMPOSE_FILE="$LEGACY_COMPOSE_FILE"
     echo "[WARN] Using legacy compose file '$LEGACY_COMPOSE_FILE'."
+  elif [ -f "$FALLBACK_COMPOSE_FILE" ]; then
+    COMPOSE_FILE="$FALLBACK_COMPOSE_FILE"
+    echo "[WARN] Using fallback compose file '$FALLBACK_COMPOSE_FILE'."
   else
-    COMPOSE_FILE="$PREFERRED_COMPOSE_FILE"
+    echo "[ERROR] No compose file found: ${PREFERRED_COMPOSE_FILE}, ${LEGACY_COMPOSE_FILE}, or ${FALLBACK_COMPOSE_FILE}"
+    exit 1
   fi
 fi
 
-[ -f "$COMPOSE_FILE" ] || { echo "[ERROR] ${PREFERRED_COMPOSE_FILE} (or legacy ${LEGACY_COMPOSE_FILE}) not found"; exit 1; }
+[ -f "$COMPOSE_FILE" ] || { echo "[ERROR] Compose file not found: $COMPOSE_FILE"; exit 1; }
 
 if [ -z "${DB_PASSWORD-}" ]; then
   DB_PASSWORD="$(awk -F= '/^DB_PASSWORD=/{print substr($0, index($0,"=")+1); exit}' .env)"
