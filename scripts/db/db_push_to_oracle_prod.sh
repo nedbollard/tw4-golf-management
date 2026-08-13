@@ -4,8 +4,8 @@
     cd "$(dirname "$0")/.."
 
     ORACLE_USER="ubuntu"
-    ORACLE_HOST="140.238.200.204"
-    SSH_KEY="/home/ned-bollard/keys/ssh-key-2026-05-11.key"
+    ORACLE_HOST="159.13.35.84"
+    SSH_KEY="/home/ned-bollard/keys/ssh-key-2026-08-10.key"
     REMOTE_DROP_DIR="/tmp/tw4-import"
 
     if [ -f backup/latest_export.txt ]; then
@@ -32,4 +32,4 @@
     echo "     ${REMOTE_DROP_DIR}/${FILE_NAME}.sha256"
     echo
     echo "[NEXT] Restore on Oracle with:"
-    echo "ssh -i ${SSH_KEY} ${ORACLE_USER}@${ORACLE_HOST} \"cd ~/tw4-golf-management && ./scripts/db_import_syst.sh ${REMOTE_DROP_DIR}/${FILE_NAME}\""
+    echo "ssh -i ${SSH_KEY} ${ORACLE_USER}@${ORACLE_HOST} \"cd ~/TW4 && ./scripts/db/db_import_syst.sh ${REMOTE_DROP_DIR}/${FILE_NAME}\""
