@@ -10,7 +10,8 @@ services:
       - tw4_reports:/var/www/html/public/reports   # Isolate generated reports from the repo bind mount
       - tw4_sessions:/tmp   # Added persistent volume for PHP sessions
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - tw4-network
     environment:
@@ -26,6 +27,12 @@ services:
     environment:        
       MYSQL_DATABASE: TW4_base
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+      start_period: 15s
     ports:
       - "3307:3306"
     volumes:

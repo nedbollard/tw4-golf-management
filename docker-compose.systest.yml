@@ -14,7 +14,8 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DEBUG: ${DEBUG:-false}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - tw4_reports:/var/www/html/public/reports
       - tw4_sessions:/tmp
@@ -27,6 +28,12 @@ services:
     environment:
       MYSQL_DATABASE: ${DB_NAME:-TW4_base}
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+      start_period: 15s
     volumes:
       - tw4_data:/var/lib/mysql
     networks:
