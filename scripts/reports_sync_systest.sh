@@ -19,7 +19,7 @@ set -Eeuo pipefail
 #   This compares SHA256 of one known report file between local source and container.
 #
 # Override any of these via environment if needed.
-LOCAL_REPORTS="${LOCAL_REPORTS:-$HOME/TW4/public/reports}"
+LOCAL_REPORTS="${LOCAL_REPORTS:-$HOME/ReportsReadyForProd/reports}"
 REPORTS_SOURCE="${REPORTS_SOURCE:-auto}"   # auto|container|host
 LOCAL_COMPOSE_FILE="${LOCAL_COMPOSE_FILE:-docker-compose.yml}"
 SSH_KEY="${SSH_KEY:-$HOME/keys/ssh-key-2026-05-11.key}"
