@@ -20,6 +20,8 @@ set -Eeuo pipefail
 #
 # Override any of these via environment if needed.
 LOCAL_REPORTS="${LOCAL_REPORTS:-$HOME/ReportsReadyForProd/reports}"
+# Maintain a local host cache of generated reports so the Oracle sync always uses a stable,
+# locally-cached copy of the current app-container reports before transfer.
 REPORTS_SOURCE="${REPORTS_SOURCE:-auto}"   # auto|container|host
 LOCAL_COMPOSE_FILE="${LOCAL_COMPOSE_FILE:-docker-compose.yml}"
 SSH_KEY="${SSH_KEY:-$HOME/keys/ssh-key-2026-05-11.key}"
@@ -91,8 +93,11 @@ prepare_container_source() {
 
   LOCAL_TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/tw4-reports-sync.XXXXXX")"
   docker cp "${cid}:${CONTAINER_REPORTS}/." "$LOCAL_TMP_DIR/"
-  LOCAL_SOURCE_DIR="$LOCAL_TMP_DIR"
-  echo "[INFO] Using local app container reports via ${LOCAL_COMPOSE_FILE}."
+
+  mkdir -p "$LOCAL_REPORTS"
+  rsync -a --delete "$LOCAL_TMP_DIR/" "$LOCAL_REPORTS/"
+  LOCAL_SOURCE_DIR="$LOCAL_REPORTS"
+  echo "[INFO] Cached container reports to ${LOCAL_REPORTS} and using that as the Oracle sync source."
   return 0
 }
 

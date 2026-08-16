@@ -10,17 +10,10 @@ NC='\033[0m'
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PREFERRED_COMPOSE_FILE="$REPO_ROOT/docker-compose.systest.yml"
-LEGACY_COMPOSE_FILE="$REPO_ROOT/docker-compose.prod.yml"
 COMPOSE_FILE="${COMPOSE_FILE-}"
 
 if [ -z "$COMPOSE_FILE" ]; then
-    if [ -f "$PREFERRED_COMPOSE_FILE" ]; then
-        COMPOSE_FILE="$PREFERRED_COMPOSE_FILE"
-    elif [ -f "$LEGACY_COMPOSE_FILE" ]; then
-        COMPOSE_FILE="$LEGACY_COMPOSE_FILE"
-    else
-        COMPOSE_FILE="$PREFERRED_COMPOSE_FILE"
-    fi
+    COMPOSE_FILE="$PREFERRED_COMPOSE_FILE"
 fi
 
 PASS_COUNT=0
@@ -63,9 +56,6 @@ load_db_password() {
 check_compose_file() {
     if [ -f "$COMPOSE_FILE" ]; then
         print_ok "Found system-test compose file at $COMPOSE_FILE"
-        if [ "$COMPOSE_FILE" = "$LEGACY_COMPOSE_FILE" ]; then
-            print_warn "Using legacy compose filename. Prefer docker-compose.systest.yml."
-        fi
     else
         print_fail "Missing system-test compose file: $COMPOSE_FILE"
     fi
