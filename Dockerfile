@@ -22,7 +22,7 @@ RUN composer install
 RUN chown -R www-data:www-data /var/www/html
 
 # Enable Apache modules
-RUN a2enmod rewrite
+RUN a2enmod rewrite headers
 
 # Configure Apache
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
