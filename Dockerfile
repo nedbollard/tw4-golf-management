@@ -30,7 +30,11 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
     /etc/apache2/sites-available/000-default.conf \
     /etc/apache2/apache2.conf \
     && printf '<Directory /var/www/html/public>\n    AllowOverride All\n    Require all granted\n</Directory>\n' > /etc/apache2/conf-available/tw4-public.conf \
-    && a2enconf tw4-public
+    && a2enconf tw4-public \
+    && printf 'expose_php = Off\n' > /usr/local/etc/php/conf.d/expose-php.ini \
+    && printf 'Header always unset X-Powered-By\nHeader always unset Server\nServerTokens Prod\nServerSignature Off\n' > /etc/apache2/conf-available/security-headers.conf \
+    && a2enconf security-headers \
+    && a2enconf x-powered-by
 
 EXPOSE 80
 

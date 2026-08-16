@@ -89,6 +89,20 @@ class Auth
     private function startSession(): void
     {
         if (session_status() === PHP_SESSION_NONE) {
+            $isSecure = (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) === 'on')
+                || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? $_SERVER['HTTP_X_FORWARDED_PROTOCOL'] ?? '') === 'https');
+
+            session_set_cookie_params([
+                'lifetime' => 0,
+                'path' => '/',
+                'domain' => '',
+                'secure' => $isSecure,
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
+            ini_set('session.cookie_secure', $isSecure ? '1' : '0');
+            ini_set('session.cookie_httponly', '1');
+            ini_set('session.cookie_samesite', 'Lax');
             session_start();
         }
     }

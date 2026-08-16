@@ -107,6 +107,14 @@ class DatabaseTest extends TestCase
         $this->assertSame($before + 1, $this->database->count('staff'));
     }
 
+    public function testFindAllRejectsUnsafeOrderByInjection(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Invalid ORDER BY clause');
+
+        $this->database->findAll('staff', [], 'username DESC; DELETE FROM staff --');
+    }
+
     private function staffData(string $suffix): array
     {
         return [

@@ -39,6 +39,47 @@ class Database
         }
     }
 
+    /**
+     * Validate ORDER BY clause to prevent SQL injection.
+     * Allows optional ASC/DESC after a dotted identifier or column name.
+     */
+    private function validateOrderBy(string $orderBy): string
+    {
+        if ($orderBy === '') {
+            return '';
+        }
+
+        $segments = array_map('trim', explode(',', $orderBy));
+        if ($segments === [''] || count(array_filter($segments, static fn (string $segment): bool => $segment !== '')) === 0) {
+            throw new \RuntimeException("Invalid ORDER BY clause: {$orderBy}");
+        }
+
+        $validated = [];
+        foreach ($segments as $segment) {
+            $segment = trim($segment);
+            if ($segment === '') {
+                throw new \RuntimeException("Invalid ORDER BY clause: {$orderBy}");
+            }
+
+            if (preg_match('/[;\"\'`\\(\)]|--/', $segment)) {
+                throw new \RuntimeException("Invalid ORDER BY clause: {$orderBy}");
+            }
+
+            if (!preg_match('/^(?:[a-zA-Z_][a-zA-Z0-9_]*)(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*(?:\s+(?:ASC|DESC))?$/i', $segment)) {
+                throw new \RuntimeException("Invalid ORDER BY clause: {$orderBy}");
+            }
+
+            $identifier = preg_replace('/\s+(?:ASC|DESC)$/i', '', $segment);
+            foreach (explode('.', $identifier) as $part) {
+                $this->validateColumn($part);
+            }
+
+            $validated[] = $segment;
+        }
+
+        return implode(', ', $validated);
+    }
+
     public function getConnection(): \PDO
     {
         if ($this->connection === null) {
@@ -76,16 +117,7 @@ class Database
         }
 
         if (!empty($orderBy)) {
-            // Validate orderBy contains only valid column names
-            $orderByColumns = explode(',', $orderBy);
-            foreach ($orderByColumns as $col) {
-                $col = trim($col);
-                if (strpos($col, ' ') !== false) {
-                    $col = explode(' ', $col)[0]; // Handle "column ASC/DESC"
-                }
-                $this->validateColumn($col);
-            }
-            $orderBy = ' ORDER BY ' . $orderBy;
+            $orderBy = ' ORDER BY ' . $this->validateOrderBy($orderBy);
         }
 
         $sql = "SELECT * FROM {$table}{$whereClause}{$orderBy} LIMIT 1";
@@ -111,16 +143,7 @@ class Database
         }
 
         if (!empty($orderBy)) {
-            // Validate orderBy contains only valid column names
-            $orderByColumns = explode(',', $orderBy);
-            foreach ($orderByColumns as $col) {
-                $col = trim($col);
-                if (strpos($col, ' ') !== false) {
-                    $col = explode(' ', $col)[0]; // Handle "column ASC/DESC"
-                }
-                $this->validateColumn($col);
-            }
-            $orderBy = ' ORDER BY ' . $orderBy;
+            $orderBy = ' ORDER BY ' . $this->validateOrderBy($orderBy);
         }
 
         $sql = "SELECT * FROM {$table}{$whereClause}{$orderBy}";

@@ -77,6 +77,7 @@ abstract class BaseController
     protected function render(string $view, array $data = []): void
     {
         $this->ensureServicesInitialized();
+        $this->applySecurityHeaders();
         $viewPath = $this->app->getConfig()['paths']['views'] . '/' . $view . '.php';
         
         if (!file_exists($viewPath)) {
@@ -120,6 +121,7 @@ abstract class BaseController
 
     protected function json(array $data, int $statusCode = 200): void
     {
+        $this->applySecurityHeaders();
         header('Content-Type: application/json');
         http_response_code($statusCode);
         echo json_encode($data);
@@ -131,6 +133,31 @@ abstract class BaseController
     protected function redirect(string $url, int $statusCode = 302): void
     {
         $this->app->getRouter()->redirect($url, $statusCode);
+    }
+
+    protected function applySecurityHeaders(): void
+    {
+        if (headers_sent()) {
+            return;
+        }
+
+        header_remove('X-Powered-By');
+
+        $policy = "default-src 'self'; "
+            . "base-uri 'self'; "
+            . "object-src 'none'; "
+            . "frame-ancestors 'none'; "
+            . "form-action 'self'; "
+            . "img-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://kit.fontawesome.com; "
+            . "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://kit.fontawesome.com; "
+            . "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+            . "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://kit.fontawesome.com; "
+            . "connect-src 'self'; "
+            . "frame-src 'none'; "
+            . "upgrade-insecure-requests";
+
+        header("Content-Security-Policy: {$policy}");
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
     }
 
     protected function generateCsrfToken(): string
