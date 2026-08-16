@@ -94,8 +94,8 @@
                                             <a href="/staff/edit/<?php echo $member->getStaffId(); ?>" class="btn-action-primary btn-sm">Edit</a>
                                             <?php if ($member->getUsername() !== ($_SESSION['username'] ?? '')): ?>
                                                 <a href="/staff/delete/<?php echo $member->getStaffId(); ?>"
-                                                   class="btn-action-destructive btn-sm"
-                                                   onclick="return confirm('Are you sure you want to delete <?php echo htmlspecialchars($member->getUsername()); ?>? This will retain them for audit purposes.')">
+                                                   class="btn-action-destructive btn-sm confirm-delete-link"
+                                                   data-confirm-message="Are you sure you want to delete <?php echo htmlspecialchars($member->getUsername(), ENT_QUOTES, 'UTF-8'); ?>? This will retain them for audit purposes.">
                                                     Delete
                                                 </a>
                                             <?php endif; ?>
@@ -127,5 +127,15 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <script nonce="<?php echo htmlspecialchars($csp_nonce, ENT_QUOTES, 'UTF-8'); ?>">
+        document.querySelectorAll('.confirm-delete-link').forEach((link) => {
+            link.addEventListener('click', (event) => {
+                const message = link.dataset.confirmMessage || 'Are you sure?';
+                if (!window.confirm(message)) {
+                    event.preventDefault();
+                }
+            });
+        });
+    </script>
 </body>
 </html>

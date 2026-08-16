@@ -21,6 +21,7 @@ abstract class BaseController
     private Logger $baseLogger;
     private bool $servicesInitialized = false;
     private ?ServiceContainer $fallbackServices = null;
+    private string $cspNonce = '';
 
     public function __construct(Application $app)
     {
@@ -77,6 +78,7 @@ abstract class BaseController
     protected function render(string $view, array $data = []): void
     {
         $this->ensureServicesInitialized();
+        $data['csp_nonce'] = $this->generateCspNonce();
         $this->applySecurityHeaders();
         $viewPath = $this->app->getConfig()['paths']['views'] . '/' . $view . '.php';
         
@@ -143,21 +145,35 @@ abstract class BaseController
 
         header_remove('X-Powered-By');
 
-        $policy = "default-src 'self'; "
+        $policy = $this->buildCspPolicy();
+        header("Content-Security-Policy: {$policy}");
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    }
+
+    protected function buildCspPolicy(): string
+    {
+        $nonce = $this->generateCspNonce();
+        return "default-src 'self'; "
             . "base-uri 'self'; "
             . "object-src 'none'; "
             . "frame-ancestors 'none'; "
             . "form-action 'self'; "
             . "img-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://kit.fontawesome.com; "
             . "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://kit.fontawesome.com; "
-            . "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
-            . "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://kit.fontawesome.com; "
+            . "style-src 'self' 'nonce-{$nonce}' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+            . "script-src 'self' 'nonce-{$nonce}' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://kit.fontawesome.com; "
             . "connect-src 'self'; "
             . "frame-src 'none'; "
             . "upgrade-insecure-requests";
+    }
 
-        header("Content-Security-Policy: {$policy}");
-        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    protected function generateCspNonce(): string
+    {
+        if ($this->cspNonce === '') {
+            $this->cspNonce = base64_encode(random_bytes(16));
+        }
+
+        return $this->cspNonce;
     }
 
     protected function generateCsrfToken(): string

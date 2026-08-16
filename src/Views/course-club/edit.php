@@ -138,7 +138,7 @@
         </div>
     </div>
     
-    <style>
+    <style nonce="<?php echo htmlspecialchars($csp_nonce, ENT_QUOTES, 'UTF-8'); ?>">
         .btn-normal {
             padding: 6px 12px !important;
             font-size: 0.875rem !important;
@@ -149,7 +149,7 @@
     </style>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://kit.fontawesome.com/a076d05399.com" crossorigin="anonymous"></script>
-    <script>
+    <script nonce="<?php echo htmlspecialchars($csp_nonce, ENT_QUOTES, 'UTF-8'); ?>">
         // Auto-focus hole name field
         document.getElementById('name_hole').focus();
     </script>

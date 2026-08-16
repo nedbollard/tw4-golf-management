@@ -121,7 +121,7 @@
     </main>
 </div>
 
-<script>
+<script nonce="<?php echo htmlspecialchars($csp_nonce, ENT_QUOTES, 'UTF-8'); ?>">
 (() => {
     const teeSelect = document.getElementById('tee_id');
     const genderInputs = document.querySelectorAll('input[name="gender"]');

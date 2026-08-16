@@ -164,7 +164,7 @@ $sfpTotalClass = static function ($points): string {
         </footer>
     </main>
 </div>
-<script>
+<script nonce="<?php echo htmlspecialchars($csp_nonce, ENT_QUOTES, 'UTF-8'); ?>">
 (() => {
     const form = document.getElementById('score-entry-form');
     const saveButton = document.getElementById('save-button');

@@ -122,7 +122,7 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'scorer');
     </main>
 </div>
 
-<script>
+<script nonce="<?php echo htmlspecialchars($csp_nonce, ENT_QUOTES, 'UTF-8'); ?>">
 (() => {
     const form = document.querySelector('form');
     const saveButton = document.getElementById('save-button');

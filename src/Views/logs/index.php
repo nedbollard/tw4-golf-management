@@ -181,7 +181,7 @@
                                                 <small><?php echo htmlspecialchars($log['ip_address']); ?></small>
                                             </td>
                                             <td>
-                                                <button class="btn btn-sm btn-outline-info" onclick="toggleDetails(<?php echo $log['row_id']; ?>)">
+                                                <button type="button" class="btn btn-sm btn-outline-info toggle-details-btn" data-log-id="<?php echo (int) $log['row_id']; ?>">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
                                             </td>
@@ -250,11 +250,17 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-    <script>
-        function toggleDetails(logId) {
-            const detailsRow = document.getElementById('details-' + logId);
-            detailsRow.style.display = detailsRow.style.display === 'none' ? 'table-row' : 'none';
-        }
+    <script nonce="<?php echo htmlspecialchars($csp_nonce, ENT_QUOTES, 'UTF-8'); ?>">
+        document.querySelectorAll('.toggle-details-btn').forEach((button) => {
+            button.addEventListener('click', () => {
+                const logId = button.dataset.logId;
+                const detailsRow = document.getElementById('details-' + logId);
+                if (!detailsRow) {
+                    return;
+                }
+                detailsRow.style.display = detailsRow.style.display === 'none' ? 'table-row' : 'none';
+            });
+        });
     </script>
 </body>
 </html>

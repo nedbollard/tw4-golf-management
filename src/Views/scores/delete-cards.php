@@ -84,7 +84,7 @@ $confirmMessage = count($cards) === 1
     </main>
 </div>
 
-<script>
+<script nonce="<?php echo htmlspecialchars($csp_nonce, ENT_QUOTES, 'UTF-8'); ?>">
 (() => {
     const form = document.getElementById('delete-cards-form');
     const confirmField = document.getElementById('confirm-delete');
