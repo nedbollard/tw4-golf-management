@@ -3,8 +3,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    user: "33:33"   # www-data in the php:apache image
+    security_opt:
+      - no-new-privileges:true
     ports:
-      - "8084:80"
+      - "127.0.0.1:8084:80"
     volumes:
       - .:/var/www/html
       - tw4_reports:/var/www/html/public/reports   # Isolate generated reports from the repo bind mount
@@ -22,7 +25,10 @@ services:
       AUTOMATION_TOKEN: tw4_automation_dev_12345
 
   db:
-    image: mysql:8.0
+    image: mysql:8.0.40
+    user: "999:999"   # mysql user in the official MySQL image
+    security_opt:
+      - no-new-privileges:true
     restart: always
     environment:        
       MYSQL_DATABASE: TW4_base
@@ -34,17 +40,20 @@ services:
       retries: 60
       start_period: 15s
     ports:
-      - "3307:3306"
+      - "127.0.0.1:3307:3306"
     volumes:
       - tw4_data:/var/lib/mysql
     networks:
       - tw4-network
 
   phpmyadmin:
-    image: phpmyadmin:latest
+    image: phpmyadmin:5.2.2
+    user: "33:33"   # www-data in the phpMyAdmin image
+    security_opt:
+      - no-new-privileges:true
     restart: always
     ports:
-      - "8085:80"
+      - "127.0.0.1:8085:80"
     environment:
       PMA_HOST: db
       PMA_USER: root

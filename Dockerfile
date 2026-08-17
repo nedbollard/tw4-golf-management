@@ -37,4 +37,6 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
 
 EXPOSE 80
 
+USER www-data
+
 CMD ["apache2-foreground"]
