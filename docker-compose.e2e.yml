@@ -32,6 +32,8 @@ services:
       - ./database/baseline/TW4_history_schema.sql:/docker-entrypoint-initdb.d/03-history-schema.sql:ro
       - ./database/baseline/TW4_holding_schema.sql:/docker-entrypoint-initdb.d/04-holding-schema.sql:ro
       - ./tests/fixtures/card-entry-e2e.sql:/docker-entrypoint-initdb.d/05-card-entry-fixture.sql:ro
+      - ./tests/fixtures/e2e-apply-migrations.sh:/docker-entrypoint-initdb.d/06-apply-migrations.sh:ro
+      - ./src/migrations:/migrations:ro
     networks:
       - tw4-e2e-network
 

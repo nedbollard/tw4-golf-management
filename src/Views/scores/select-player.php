@@ -46,9 +46,9 @@
                         No active players found in roster.
                     </div>
                 <?php else: ?>
-                    <form method="GET" action="/scores/enter" onsubmit="return false;">
+                    <form id="select-player-form" method="GET" action="/scores/enter">
                         <label for="player_id" class="select-player-form-label">Select a Player</label>
-                        <select id="player_id" class="select-player-form-select" onchange="if(this.value){window.location='/scores/enter/' + this.value;}">
+                        <select id="player_id" class="select-player-form-select">
                             <option value="">Select a player</option>
                             <?php foreach ($players as $player): ?>
                                 <?php
@@ -81,5 +81,24 @@
         </footer>
     </main>
 </div>
+<script nonce="<?php echo htmlspecialchars($csp_nonce, ENT_QUOTES, 'UTF-8'); ?>">
+    (function () {
+        var form = document.getElementById('select-player-form');
+        var select = document.getElementById('player_id');
+        if (!form || !select) {
+            return;
+        }
+
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+        });
+
+        select.addEventListener('change', function () {
+            if (select.value) {
+                window.location = '/scores/enter/' + encodeURIComponent(select.value);
+            }
+        });
+    })();
+</script>
 </body>
 </html>

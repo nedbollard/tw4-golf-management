@@ -27,5 +27,7 @@ test('scorer calculates and saves a complete card', async ({ page }) => {
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page).toHaveURL(/\/scores\/enter$/);
   await expect(page.getByText('Card saved successfully for E2EPlayer.')).toBeVisible();
-  await expect(page.locator('#player_id option[value="1"]')).toContainText('[saved]');
+  // Scored players are only selectable again once card entry is reopened
+  // (TW4_live.round.card_entry_reopened, migration 042).
+  await expect(page.locator('#player_id option[value="1"]')).toHaveCount(0);
 });
