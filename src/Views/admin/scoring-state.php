@@ -84,7 +84,7 @@
                     <div class="scoring-state-panel mb-3">
                         <h3>Item 1: Unlock Scoring Process</h3>
                         <p class="mb-3">Force release the scorer lock on the current live round.</p>
-                        <form method="POST" action="/admin/scoring-state/unlock" onsubmit="return confirm('Force unlock scoring process for the live round?');">
+                        <form method="POST" action="/admin/scoring-state/unlock" data-confirm="Force unlock scoring process for the live round?">
                             <button type="submit" class="btn-action-primary">Unlock Scoring Process</button>
                         </form>
                     </div>
@@ -93,7 +93,7 @@
                         <h3>Item 2: Reset Results Complete to Cards Entry Open</h3>
                         <p class="mb-2">Moves workflow from <strong>between_rounds</strong> or <strong>results_presented</strong> back to <strong>card_entry_open</strong>.</p>
                         <p class="mb-3">This clears <strong>TW4_live.results</strong> and logs the admin action.</p>
-                        <form method="POST" action="/admin/scoring-state/reset-results" onsubmit="return confirm('Reset from results complete to cards entry open and clear live results?');">
+                        <form method="POST" action="/admin/scoring-state/reset-results" data-confirm="Reset from results complete to cards entry open and clear live results?">
                             <button
                                 type="submit"
                                 class="btn-action-destructive"
@@ -128,5 +128,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/assets/js/confirm-submit.js"></script>
 </body>
 </html>

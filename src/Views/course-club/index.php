@@ -67,7 +67,7 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                                 <a href="/course-club/add-course" class="btn-action-primary btn-compact me-2">
                                     <i class="fas fa-plus"></i> Add Course
                                 </a>
-                                <button type="button" id="applyEditsBtn" class="btn-action-primary btn-compact me-2" style="display: none;">
+                                <button type="button" id="applyEditsBtn" class="btn-action-primary btn-compact me-2 tw-hidden">
                                     <i class="fas fa-check"></i> Apply Edits
                                 </button>
                             </div>
@@ -101,8 +101,8 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                             <i class="fas fa-info-circle"></i> Please select both Club and Gender to view course holes.
                         </div>
 
-                        <div id="courseContent" style="display: none;">
-                            <div id="selectionHeading" class="course-club-alert course-club-alert-success text-center" style="display: none;">
+                        <div id="courseContent" class="tw-hidden">
+                            <div id="selectionHeading" class="course-club-alert course-club-alert-success text-center tw-hidden">
                                 <h5 class="mb-0">
                                     <span id="selectedClubDisplay"></span> - 
                                     <span id="selectedGenderDisplay"></span> Course
@@ -137,9 +137,9 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                                                     foreach ($frontNine as $hole) {
                                                         echo "<tr data-club='" . htmlspecialchars($hole->getNameClub()) . "' data-gender='" . $hole->getGender() . "' data-id='" . $hole->getCourseClubId() . "'>";
                                                         echo "<td><span class='badge bg-primary'>" . $hole->getNumberHole() . "</span></td>";
-                                                        echo "<td><input type='text' class='form-control form-control-sm' data-field='name_hole' value='" . htmlspecialchars($hole->getNameHole()) . "' oninput='trackEdit(" . $hole->getCourseClubId() . ", \"name_hole\", this.value)'></td>";
-                                                        echo "<td><input type='number' class='form-control form-control-sm' data-field='par' value='" . $hole->getPar() . "' min='3' max='5' oninput='trackEdit(" . $hole->getCourseClubId() . ", \"par\", this.value)'></td>";
-                                                        echo "<td><input type='number' class='form-control form-control-sm' data-field='stroke' value='" . $hole->getStroke() . "' min='1' max='18' oninput='trackEdit(" . $hole->getCourseClubId() . ", \"stroke\", this.value)'></td>";
+                                                        echo "<td><input type='text' class='form-control form-control-sm' data-field='name_hole' value='" . htmlspecialchars($hole->getNameHole()) . "'></td>";
+                                                        echo "<td><input type='number' class='form-control form-control-sm' data-field='par' value='" . $hole->getPar() . "' min='3' max='5'></td>";
+                                                        echo "<td><input type='number' class='form-control form-control-sm' data-field='stroke' value='" . $hole->getStroke() . "' min='1' max='18'></td>";
                                                         echo "<td class='text-center'><a href='/course-club/{$hole->getCourseClubId()}/edit' class='btn-action-primary btn-compact' title='Edit'>Edit</a></td>";
                                                         echo "</tr>";
                                                     }
@@ -157,9 +157,9 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                                                     foreach ($backNine as $hole) {
                                                         echo "<tr data-club='" . htmlspecialchars($hole->getNameClub()) . "' data-gender='" . $hole->getGender() . "' data-id='" . $hole->getCourseClubId() . "'>";
                                                         echo "<td><span class='badge bg-primary'>" . $hole->getNumberHole() . "</span></td>";
-                                                        echo "<td><input type='text' class='form-control form-control-sm' data-field='name_hole' value='" . htmlspecialchars($hole->getNameHole()) . "' oninput='trackEdit(" . $hole->getCourseClubId() . ", \"name_hole\", this.value)'></td>";
-                                                        echo "<td><input type='number' class='form-control form-control-sm' data-field='par' value='" . $hole->getPar() . "' min='3' max='5' oninput='trackEdit(" . $hole->getCourseClubId() . ", \"par\", this.value)'></td>";
-                                                        echo "<td><input type='number' class='form-control form-control-sm' data-field='stroke' value='" . $hole->getStroke() . "' min='1' max='18' oninput='trackEdit(" . $hole->getCourseClubId() . ", \"stroke\", this.value)'></td>";
+                                                        echo "<td><input type='text' class='form-control form-control-sm' data-field='name_hole' value='" . htmlspecialchars($hole->getNameHole()) . "'></td>";
+                                                        echo "<td><input type='number' class='form-control form-control-sm' data-field='par' value='" . $hole->getPar() . "' min='3' max='5'></td>";
+                                                        echo "<td><input type='number' class='form-control form-control-sm' data-field='stroke' value='" . $hole->getStroke() . "' min='1' max='18'></td>";
                                                         echo "<td class='text-center'><a href='/course-club/{$hole->getCourseClubId()}/edit' class='btn-action-primary btn-compact' title='Edit'>Edit</a></td>";
                                                         echo "</tr>";
                                                     }
@@ -200,9 +200,9 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                                                     foreach ($frontNine as $hole) {
                                                         echo "<tr data-club='" . htmlspecialchars($hole->getNameClub()) . "' data-gender='" . $hole->getGender() . "' data-id='" . $hole->getCourseClubId() . "'>";
                                                         echo "<td><span class='badge bg-primary'>" . $hole->getNumberHole() . "</span></td>";
-                                                        echo "<td><input type='text' class='form-control form-control-sm' data-field='name_hole' value='" . htmlspecialchars($hole->getNameHole()) . "' oninput='trackEdit(" . $hole->getCourseClubId() . ", \"name_hole\", this.value)'></td>";
-                                                        echo "<td><input type='number' class='form-control form-control-sm' data-field='par' value='" . $hole->getPar() . "' min='3' max='5' oninput='trackEdit(" . $hole->getCourseClubId() . ", \"par\", this.value)'></td>";
-                                                        echo "<td><input type='number' class='form-control form-control-sm' data-field='stroke' value='" . $hole->getStroke() . "' min='1' max='18' oninput='trackEdit(" . $hole->getCourseClubId() . ", \"stroke\", this.value)'></td>";
+                                                        echo "<td><input type='text' class='form-control form-control-sm' data-field='name_hole' value='" . htmlspecialchars($hole->getNameHole()) . "'></td>";
+                                                        echo "<td><input type='number' class='form-control form-control-sm' data-field='par' value='" . $hole->getPar() . "' min='3' max='5'></td>";
+                                                        echo "<td><input type='number' class='form-control form-control-sm' data-field='stroke' value='" . $hole->getStroke() . "' min='1' max='18'></td>";
                                                         echo "<td class='text-center'><a href='/course-club/{$hole->getCourseClubId()}/edit' class='btn-action-primary btn-compact' title='Edit'>Edit</a></td>";
                                                         echo "</tr>";
                                                     }
@@ -220,9 +220,9 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                                                     foreach ($backNine as $hole) {
                                                         echo "<tr data-club='" . htmlspecialchars($hole->getNameClub()) . "' data-gender='" . $hole->getGender() . "' data-id='" . $hole->getCourseClubId() . "'>";
                                                         echo "<td><span class='badge bg-primary'>" . $hole->getNumberHole() . "</span></td>";
-                                                        echo "<td><input type='text' class='form-control form-control-sm' data-field='name_hole' value='" . htmlspecialchars($hole->getNameHole()) . "' oninput='trackEdit(" . $hole->getCourseClubId() . ", \"name_hole\", this.value)'></td>";
-                                                        echo "<td><input type='number' class='form-control form-control-sm' data-field='par' value='" . $hole->getPar() . "' min='3' max='5' oninput='trackEdit(" . $hole->getCourseClubId() . ", \"par\", this.value)'></td>";
-                                                        echo "<td><input type='number' class='form-control form-control-sm' data-field='stroke' value='" . $hole->getStroke() . "' min='1' max='18' oninput='trackEdit(" . $hole->getCourseClubId() . ", \"stroke\", this.value)'></td>";
+                                                        echo "<td><input type='text' class='form-control form-control-sm' data-field='name_hole' value='" . htmlspecialchars($hole->getNameHole()) . "'></td>";
+                                                        echo "<td><input type='number' class='form-control form-control-sm' data-field='par' value='" . $hole->getPar() . "' min='3' max='5'></td>";
+                                                        echo "<td><input type='number' class='form-control form-control-sm' data-field='stroke' value='" . $hole->getStroke() . "' min='1' max='18'></td>";
                                                         echo "<td class='text-center'><a href='/course-club/{$hole->getCourseClubId()}/edit' class='btn-action-primary btn-compact' title='Edit'>Edit</a></td>";
                                                         echo "</tr>";
                                                     }
@@ -444,6 +444,20 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
         document.getElementById('clubFilter').addEventListener('change', updateFilters);
         document.getElementById('genderFilter').addEventListener('change', updateFilters);
         document.getElementById('applyEditsBtn').addEventListener('click', applyEdits);
+
+        document.addEventListener('input', function (event) {
+            const input = event.target;
+            if (!(input instanceof HTMLInputElement) || !input.dataset.field) {
+                return;
+            }
+
+            const row = input.closest('tr[data-id]');
+            if (!row) {
+                return;
+            }
+
+            trackEdit(row.getAttribute('data-id'), input.dataset.field, input.value);
+        });
         
         // Initialize filters on page load
         updateFilters();

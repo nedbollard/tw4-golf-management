@@ -3998,3 +3998,51 @@ body.page-results-archive {
         margin-top: 4px;
     }
 }
+
+/* Utility classes replacing inline style attributes, which the CSP blocks. */
+.tw-hidden {
+    display: none;
+}
+
+.tw-scroll-box {
+    font-size: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.tw-badge-compact {
+    font-size: 12px;
+    padding: 6px;
+}
+
+.tw-col-narrow {
+    width: 4rem;
+}
+
+.tw-col-team {
+    width: 5rem;
+}
+
+.tw-col-hole-number {
+    width: 70px;
+}
+
+.tw-col-hole-name {
+    width: 120px;
+}
+
+.tw-col-par {
+    width: 60px;
+}
+
+.tw-col-stroke {
+    width: 100px;
+}
+
+.tw-col-40 {
+    width: 40%;
+}
+
+.tw-col-60 {
+    width: 60%;
+}
