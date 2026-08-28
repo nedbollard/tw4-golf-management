@@ -23,6 +23,25 @@ TW4 is a complete rewrite of the Twilight golf scoring application using modern 
 2. Install dependencies: `composer install`
 3. Configure web server to point to `public/` directory
 4. Access via: `http://localhost/tw4/public/`
+5. Complete the [Initial admin account](#initial-admin-account) step before exposing the site
+
+## Initial admin account
+
+Migration `src/migrations/008_seed_admin.sql` seeds a single `admin` account whose
+password hash is committed to this public repository. It exists only so that a fresh
+installation can be logged into once. **Anyone who can read this repository knows that
+password**, so before the site is reachable by anyone else:
+
+1. Log in as `admin` and create a real admin account for yourself under Admin → Staff.
+2. Log in as the new account and deactivate the seeded `admin` account (Admin → Staff → Delete).
+3. If you would rather keep the `admin` username, rotate its password instead:
+
+   ```bash
+   docker compose exec app php scripts/set-staff-password.php admin
+   ```
+
+   The script prompts for the new password on stdin, so it is never written to shell
+   history. Do the same for any other seeded account, such as `scorer`.
 
 ## Deployment
 

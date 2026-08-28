@@ -96,6 +96,24 @@ class AuthService
         ];
     }
 
+    /**
+     * The role recorded against the account in the database, ignoring the
+     * session copy. Returns null when not logged in or the account is gone.
+     */
+    public function getStoredRole(): ?string
+    {
+        if (!$this->isLoggedIn()) {
+            return null;
+        }
+
+        $staff = $this->db->fetchOne(
+            'SELECT role FROM staff WHERE row_id = ? AND is_active = 1',
+            [$_SESSION['user_id']]
+        );
+
+        return $staff['role'] ?? null;
+    }
+
     public function hasRole(string $role): bool
     {
         if (!$this->isLoggedIn()) {

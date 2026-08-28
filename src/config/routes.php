@@ -401,21 +401,5 @@ return [
             'controller' => 'App\\Controllers\\AdminController',
             'method' => 'teamHaggleSeriousSave'
         ],
-        // AUTOMATION ONLY: Remove before production
-        '/api/automation/start-round' => [
-            'path' => '/api/automation/start-round',
-            'controller' => 'App\\Controllers\\RoundController',
-            'method' => 'automationStartRound'
-        ],
-        '/api/automation/present-results' => [
-            'path' => '/api/automation/present-results',
-            'controller' => 'App\\Controllers\\RoundController',
-            'method' => 'automationPresentResults'
-        ],
-        '/api/automation/finish-round' => [
-            'path' => '/api/automation/finish-round',
-            'controller' => 'App\\Controllers\\RoundController',
-            'method' => 'automationFinishRound'
-        ],
     ],
 ];

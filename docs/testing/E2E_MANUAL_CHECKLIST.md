@@ -6,7 +6,9 @@ Build/Commit: __________
 
 ## Credentials
 - Admin username: admin
-- Admin password: hash_house
+- Admin password: the seeded install password from `src/migrations/008_seed_admin.sql`, or
+  whatever it was rotated to (`E2E_ADMIN_PASSWORD` for the automated suites). Never record
+  a password in this file.
 
 ## 1. Fresh Database Install
 - [ ] Start containers

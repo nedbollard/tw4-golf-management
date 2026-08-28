@@ -95,6 +95,27 @@ class AuthServiceTest extends TestCase
         $this->assertFalse($this->authService->hasRole('scorer'));
     }
 
+    public function testGetStoredRoleIgnoresSessionRole(): void
+    {
+        $_SESSION['user_id'] = 7;
+        $_SESSION['username'] = 'scorer';
+        $_SESSION['user_role'] = 'admin';
+
+        $this->dbMock->expects($this->once())
+            ->method('fetchOne')
+            ->with($this->stringContains('FROM staff'), [7])
+            ->willReturn(['role' => 'scorer']);
+
+        $this->assertEquals('scorer', $this->authService->getStoredRole());
+    }
+
+    public function testGetStoredRoleWhenNotLoggedIn(): void
+    {
+        $this->dbMock->expects($this->never())->method('fetchOne');
+
+        $this->assertNull($this->authService->getStoredRole());
+    }
+
     public function testValidateStaffData(): void
     {
         $validData = [
