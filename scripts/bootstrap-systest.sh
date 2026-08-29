@@ -114,9 +114,20 @@ print_status "Ensuring the database container is running..."
 docker compose -f "$COMPOSE_FILE" up -d db
 
 print_status "Waiting for MySQL readiness..."
+# Connect over TCP: during image initialisation the entrypoint runs a temporary
+# server that listens on the socket only (port 0), so a socket-based probe
+# succeeds and then the socket disappears when that server is shut down.
+MYSQL_WAIT_SECONDS="${MYSQL_WAIT_SECONDS:-300}"
+mysql_deadline=$((SECONDS + MYSQL_WAIT_SECONDS))
 until docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
-    mysql -u root -e "SELECT 1" >/dev/null 2>&1; do
+    mysql -h 127.0.0.1 -P 3306 --protocol=TCP -u root -e "SELECT 1" >/dev/null 2>&1; do
+    if [ "$SECONDS" -ge "$mysql_deadline" ]; then
+        print_error "Timed out after ${MYSQL_WAIT_SECONDS}s waiting for MySQL."
+        docker compose -f "$COMPOSE_FILE" logs --tail=100 db || true
+        exit 1
+    fi
     echo "Waiting for MySQL..."
+    sleep 1
 done
 
 print_status "Dropping and recreating TW4_base, TW4_live, TW4_history, and TW4_holding..."
