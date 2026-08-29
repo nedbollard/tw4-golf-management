@@ -96,7 +96,7 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                                                 <td><?php echo htmlspecialchars($course['updated_ts']); ?></td>
                                                 <td class="text-center">
                                                     <a href="/course-played/<?php echo (int) $course['row_id']; ?>/edit" class="btn-action-primary btn-sm me-1">Edit</a>
-                                                    <form method="POST" action="/course-played/<?php echo (int) $course['row_id']; ?>/delete" class="d-inline" onsubmit="return confirm('Delete this Course Played and all its hole mappings?');">
+                                                    <form method="POST" action="/course-played/<?php echo (int) $course['row_id']; ?>/delete" class="d-inline" data-confirm="Delete this Course Played and all its hole mappings?">
                                                         <button type="submit" class="btn-action-destructive btn-sm">Delete</button>
                                                     </form>
                                                 </td>
@@ -120,5 +120,6 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
 </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/assets/js/confirm-submit.js"></script>
 </body>
 </html>

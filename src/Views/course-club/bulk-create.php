@@ -24,7 +24,7 @@
                         <h4 class="mb-0">Add Course Holes - <?php echo htmlspecialchars($courseName); ?></h4>
                     </div>
                     <div class="card-body">
-                        <div id="validationMessage" class="alert alert-warning" role="alert" style="display: none;">
+                        <div id="validationMessage" class="alert alert-warning tw-hidden" role="alert">
                             Please complete all required fields for all 18 holes (name, par, stroke) and choose a gender before saving.
                         </div>
 
@@ -86,17 +86,17 @@
                                         <table class="table table-striped table-hover table-sm">
                                             <thead class="table-dark">
                                                 <tr>
-                                                    <th style="width: 70px;">Hole #</th>
-                                                    <th style="width: 120px;">Hole Name *</th>
-                                                    <th style="width: 60px;">Par *</th>
-                                                    <th style="width: 100px;">Stroke *</th>
+                                                    <th class="tw-col-hole-number">Hole #</th>
+                                                    <th class="tw-col-hole-name">Hole Name *</th>
+                                                    <th class="tw-col-par">Par *</th>
+                                                    <th class="tw-col-stroke">Stroke *</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <?php for ($i = 1; $i <= 9; $i++): ?>
                                                     <tr>
                                                         <td>
-                                                            <span class="badge bg-primary" style="font-size: 12px; padding: 6px;"><?php echo $i; ?></span>
+                                                            <span class="badge bg-primary tw-badge-compact"><?php echo $i; ?></span>
                                                             <input type="hidden" name="holes[<?php echo $i; ?>][number]" value="<?php echo $i; ?>">
                                                         </td>
                                                         <td>
@@ -128,17 +128,17 @@
                                         <table class="table table-striped table-hover table-sm">
                                             <thead class="table-dark">
                                                 <tr>
-                                                    <th style="width: 70px;">Hole #</th>
-                                                    <th style="width: 120px;">Hole Name *</th>
-                                                    <th style="width: 60px;">Par *</th>
-                                                    <th style="width: 100px;">Stroke *</th>
+                                                    <th class="tw-col-hole-number">Hole #</th>
+                                                    <th class="tw-col-hole-name">Hole Name *</th>
+                                                    <th class="tw-col-par">Par *</th>
+                                                    <th class="tw-col-stroke">Stroke *</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <?php for ($i = 10; $i <= 18; $i++): ?>
                                                     <tr>
                                                         <td>
-                                                            <span class="badge bg-success" style="font-size: 12px; padding: 6px;"><?php echo $i; ?></span>
+                                                            <span class="badge bg-success tw-badge-compact"><?php echo $i; ?></span>
                                                             <input type="hidden" name="holes[<?php echo $i; ?>][number]" value="<?php echo $i; ?>">
                                                         </td>
                                                         <td>
@@ -188,7 +188,7 @@
             if (!bulkCreateForm.checkValidity()) {
                 event.preventDefault();
                 event.stopPropagation();
-                validationMessage.style.display = 'block';
+                validationMessage.classList.remove('tw-hidden');
 
                 const firstInvalidField = bulkCreateForm.querySelector(':invalid');
                 if (firstInvalidField) {
@@ -198,7 +198,7 @@
                 return;
             }
 
-            validationMessage.style.display = 'none';
+            validationMessage.classList.add('tw-hidden');
         });
     </script>
 </body>
