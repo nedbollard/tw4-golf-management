@@ -372,7 +372,8 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-Token': <?php echo json_encode($csrf_token, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
                 },
                 body: JSON.stringify({
                     course_clubs: editedData
