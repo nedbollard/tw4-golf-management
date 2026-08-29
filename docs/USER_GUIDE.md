@@ -21,6 +21,18 @@ Primary entry points:
 1. Home: /
 2. Login: /login
 
+## First Sign-In After Installation
+A new installation is seeded with a single `admin` account whose password is published in
+the project repository. It is an installation credential, not a usable account.
+
+1. Log in as `admin`.
+2. Create your own admin account under Admin → Staff.
+3. Log in as that account and deactivate the seeded `admin` account (Admin → Staff → Delete),
+   or rotate its password with `docker compose exec app php scripts/set-staff-password.php admin`.
+4. Rotate the password of any other seeded account, such as `scorer`.
+
+Do not leave the site reachable by anyone else until this is done.
+
 ## Roles
 TW4 has two operational roles:
 1. Admin
@@ -158,7 +170,7 @@ Use this sequence for a clean functional pass.
 
 ## Operational Notes
 1. Logout route is /logout.
-2. Role switch helpers exist at /switch/admin and /switch/scorer for authenticated staff.
+2. Role switch helpers exist at /switch/admin and /switch/scorer. A switch is granted only if the account's role in the staff table allows it, so a scorer cannot switch to admin.
 3. Error page route is /error.
 
 ## Troubleshooting

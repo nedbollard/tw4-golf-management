@@ -22,7 +22,6 @@ services:
       DB_NAME: TW4_base
       DB_USER: root
       DB_PASSWORD: ${DB_PASSWORD}
-      AUTOMATION_TOKEN: tw4_automation_dev_12345
 
   db:
     image: mysql:8.0.40
