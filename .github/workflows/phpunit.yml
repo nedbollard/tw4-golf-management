@@ -43,8 +43,13 @@ jobs:
         run: |
           docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
             mysql -u root -e "DROP DATABASE IF EXISTS tw4_test; CREATE DATABASE tw4_test;"
+          # The baseline dump switches to TW4_base, so strip those statements to
+          # keep the objects in tw4_test.
+          sed -e '/^CREATE DATABASE/d' -e '/^USE `TW4_base`/d' database/baseline/TW4_base_schema.sql \
+            | docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+              mysql -u root tw4_test
           docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
-            mysql -u root tw4_test < database/baseline/TW4_base_schema.sql
+            mysql -u root tw4_test < database/baseline/TW4_base_seed.sql
 
       - name: Start application container
         run: docker compose -f "$COMPOSE_FILE" up -d app

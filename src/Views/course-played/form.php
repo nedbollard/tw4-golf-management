@@ -76,8 +76,8 @@
                                         <table class="table table-striped table-sm align-middle">
                                             <thead class="table-dark">
                                                 <tr>
-                                                    <th style="width: 40%;">Selection</th>
-                                                    <th style="width: 60%;">Number Hole</th>
+                                                    <th class="tw-col-40">Selection</th>
+                                                    <th class="tw-col-60">Number Hole</th>
                                                 </tr>
                                             </thead>
                                             <tbody>

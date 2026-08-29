@@ -297,7 +297,7 @@ class CourseClubController extends BaseController
             }
             
             // Update each course club
-            $courseClubService = $this->getCourseClubService();
+            $courseClubService = $this->courseClubService;
             $successCount = 0;
             $totalCount = count($data['course_clubs']);
             
@@ -363,7 +363,7 @@ class CourseClubController extends BaseController
     {
         $this->requireRole('admin');
         
-        $courseClubService = $this->getCourseClubService();
+        $courseClubService = $this->courseClubService;
         $courseClub = $courseClubService->getCourseClubById($id);
         if (!$courseClub) {
             $this->flash->error('Course hole not found');
@@ -389,7 +389,7 @@ class CourseClubController extends BaseController
     {
         $this->requireRole('admin');
         
-        $courseClubService = $this->getCourseClubService();
+        $courseClubService = $this->courseClubService;
         $clubNames = $courseClubService->getUniqueClubNames();
         
         $this->render('course-club/add-course', [
@@ -421,7 +421,7 @@ class CourseClubController extends BaseController
             return;
         }
 
-        $courseClubService = $this->getCourseClubService();
+        $courseClubService = $this->courseClubService;
         $courseName = trim($data['course_name']);
         $gender = trim($data['gender']);
         
@@ -514,7 +514,7 @@ class CourseClubController extends BaseController
         }
 
         // Validate and prepare holes
-        $courseClubService = $this->getCourseClubService();
+        $courseClubService = $this->courseClubService;
         $errors = [];
         $strokes = [];
         $holes = [];

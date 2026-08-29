@@ -14,5 +14,8 @@ cookies.txt
 #public/reports/
 # Database backups and exports (temporary working files)
 backup/
+# Playwright output
+test-results/
+playwright-report/
 # Generated legacy seed output
 database/seeds/generated/*.sql

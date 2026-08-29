@@ -46,6 +46,7 @@ class LeaderboardViewTest extends TestCase
         $viewPath = __DIR__ . '/../../src/Views/scores/leaderboard.php';
 
         $app_title = 'TW4 Test';
+        $csp_nonce = 'test-nonce';
         $round = [
             'round_number' => 9,
             'workflow_step' => 'card_entry_open',

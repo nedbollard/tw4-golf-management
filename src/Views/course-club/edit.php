@@ -41,7 +41,7 @@
                         <?php if (!empty($_SESSION['debug'])): ?>
                             <div class="alert alert-warning">
                                 <strong>Debug Information:</strong>
-                                <pre style="font-size: 12px; max-height: 200px; overflow-y: auto;"><?php 
+                                <pre class="tw-scroll-box"><?php 
                                     echo htmlspecialchars(json_encode($_SESSION['debug'], JSON_PRETTY_PRINT)); 
                                     unset($_SESSION['debug']);
                                 ?></pre>

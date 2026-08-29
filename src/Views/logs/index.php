@@ -186,7 +186,7 @@
                                                 </button>
                                             </td>
                                         </tr>
-                                        <tr id="details-<?php echo $log['row_id']; ?>" style="display: none;">
+                                        <tr id="details-<?php echo $log['row_id']; ?>" class="tw-hidden">
                                             <td colspan="7">
                                                 <div class="alert alert-light">
                                                     <strong>Full Details:</strong><br>
@@ -258,7 +258,7 @@
                 if (!detailsRow) {
                     return;
                 }
-                detailsRow.style.display = detailsRow.style.display === 'none' ? 'table-row' : 'none';
+                detailsRow.classList.toggle('tw-hidden');
             });
         });
     </script>

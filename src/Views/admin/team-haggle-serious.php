@@ -80,7 +80,7 @@
                         <table class="table table-striped table-sm align-middle">
                             <thead>
                                 <tr>
-                                    <th style="width:5rem">Team</th>
+                                    <th class="tw-col-team">Team</th>
                                     <th>Player</th>
                                     <th>Rounds</th>
                                     <th>Points</th>
@@ -114,8 +114,7 @@
                                                 maxlength="2"
                                                 name="<?php echo $plIsMakeup ? '' : 'team_assignments[' . htmlspecialchars($plIdentifier) . ']'; ?>"
                                                 value="<?php echo htmlspecialchars($plInputValue); ?>"
-                                                class="form-control form-control-sm<?php echo $plIsMakeup ? ' bg-light text-muted' : ' team-input'; ?>"
-                                                style="width:4rem"
+                                                class="form-control form-control-sm tw-col-narrow<?php echo $plIsMakeup ? ' bg-light text-muted' : ' team-input'; ?>"
                                                 <?php echo $plIsMakeup ? 'disabled' : ''; ?>
                                                 aria-label="Team for <?php echo htmlspecialchars((string) ($plRow['display_name'] ?? $plIdentifier)); ?>"
                                             >
