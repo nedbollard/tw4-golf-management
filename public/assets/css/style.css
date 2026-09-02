@@ -58,6 +58,14 @@ body {
     margin-bottom: 1rem;
 }
 
+/* Icons inside controls follow the label they sit next to. */
+.card .btn i,
+.card button i,
+.card a i {
+    font-size: inherit;
+    margin-bottom: 0;
+}
+
 .btn {
     border-radius: 25px;
     padding: 10px 20px;
