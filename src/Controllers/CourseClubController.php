@@ -437,14 +437,14 @@ class CourseClubController extends BaseController
         $_SESSION['newCourseAdded'] = $courseName;
         $this->flash->success("Course '{$courseName}' selected for {$gender}. You can now add all 18 holes.");
         
-        // Redirect to bulk create form with course and gender preselected.
-        $this->redirect('/course-club/bulk-create?course=' . urlencode($courseName) . '&gender=' . urlencode($gender));
+        // Redirect to the hole-entry form with course and gender preselected.
+        $this->redirect('/course-club/add-holes?course=' . urlencode($courseName) . '&gender=' . urlencode($gender));
     }
 
     /**
-     * Display bulk create form for 18 holes
+     * Display the 18-hole entry form
      */
-    public function bulkCreate(): void
+    public function addHoles(): void
     {
         $this->requireRole('admin');
         
@@ -462,7 +462,7 @@ class CourseClubController extends BaseController
             unset($_SESSION['newCourseAdded']);
         }
         
-        $this->render('course-club/bulk-create', [
+        $this->render('course-club/add-holes', [
             'courseName' => $courseName,
             'selectedGender' => $selectedGender,
             'user' => $this->authService->getUser()
@@ -472,7 +472,7 @@ class CourseClubController extends BaseController
     /**
      * Store all 18 holes at once
      */
-    public function bulkStore(): void
+    public function storeHoles(): void
     {
         $this->requireRole('admin');
         
@@ -482,7 +482,7 @@ class CourseClubController extends BaseController
                 'gender' => trim($_POST['gender'] ?? ''),
                 'holes' => $_POST['holes'] ?? []
             ]);
-            $this->redirect('/course-club/bulk-create?course=' . urlencode(trim($_POST['club_name'] ?? '')));
+            $this->redirect('/course-club/add-holes?course=' . urlencode(trim($_POST['club_name'] ?? '')));
             return;
         }
 
@@ -498,7 +498,7 @@ class CourseClubController extends BaseController
                 'gender' => $gender,
                 'holes' => $holesData
             ]);
-            $this->redirect('/course-club/bulk-create?course=' . urlencode($courseName));
+            $this->redirect('/course-club/add-holes?course=' . urlencode($courseName));
             return;
         }
 
@@ -509,7 +509,7 @@ class CourseClubController extends BaseController
                 'gender' => $gender,
                 'holes' => $holesData
             ]);
-            $this->redirect('/course-club/bulk-create?course=' . urlencode($courseName));
+            $this->redirect('/course-club/add-holes?course=' . urlencode($courseName));
             return;
         }
 
@@ -575,7 +575,7 @@ class CourseClubController extends BaseController
                 'gender' => $gender,
                 'holes' => $holesData
             ]);
-            $this->redirect('/course-club/bulk-create?course=' . urlencode($courseName));
+            $this->redirect('/course-club/add-holes?course=' . urlencode($courseName));
             return;
         }
 
@@ -609,7 +609,7 @@ class CourseClubController extends BaseController
                 'gender' => $gender,
                 'holes' => $holesData
             ]);
-            $this->redirect('/course-club/bulk-create?course=' . urlencode($courseName));
+            $this->redirect('/course-club/add-holes?course=' . urlencode($courseName));
         }
     }
 
