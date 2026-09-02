@@ -149,7 +149,6 @@
                                         <th>Event</th>
                                         <th>Message</th>
                                         <th>User</th>
-                                        <th>IP Address</th>
                                         <th>Details</th>
                                     </tr>
                                 </thead>
@@ -179,18 +178,16 @@
                                                 <?php echo $log['username'] ? '<span class="badge bg-info">' . htmlspecialchars($log['username']) . '</span>' : '-'; ?>
                                             </td>
                                             <td>
-                                                <small><?php echo htmlspecialchars($log['ip_address']); ?></small>
-                                            </td>
-                                            <td>
                                                 <button type="button" class="btn btn-sm btn-outline-info toggle-details-btn" data-log-id="<?php echo (int) $log['row_id']; ?>">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
                                             </td>
                                         </tr>
                                         <tr id="details-<?php echo $log['row_id']; ?>" class="tw-hidden">
-                                            <td colspan="7">
+                                            <td colspan="6">
                                                 <div class="alert alert-light">
                                                     <strong>Full Details:</strong><br>
+                                                    <strong>IP Address:</strong> <?php echo htmlspecialchars($log['ip_address'] ?? 'N/A'); ?><br>
                                                     <strong>User Agent:</strong> <?php echo htmlspecialchars($log['user_agent'] ?? 'N/A'); ?><br>
                                                     <?php if (!empty($log['context']) && is_array($log['context'])): ?>
                                                         <strong>Context:</strong><br>

@@ -39,7 +39,7 @@ class LogController extends BaseController
         $search = $_GET['search'] ?? '';
         $order = $_GET['order'] ?? 'DESC';
         $page = max(1, (int)($_GET['page'] ?? 1));
-        $limit = 50;
+        $limit = 20;
         $offset = ($page - 1) * $limit;
 
         $logs = [];
