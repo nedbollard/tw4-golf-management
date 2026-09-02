@@ -54,7 +54,7 @@
                             </div>
                         <?php endif; ?>
 
-                        <form method="POST" action="/course-club/bulk-store" id="bulkCreateForm">
+                        <form method="POST" action="/course-club/bulk-store" id="bulkCreateForm" novalidate>
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                             <!-- Header Section -->
                             <div class="row mb-4">
