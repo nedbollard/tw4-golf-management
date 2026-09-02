@@ -43,10 +43,10 @@ return [
             'controller' => 'App\Controllers\CourseClubController',
             'method' => 'addCourse'
         ],
-        '/course-club/bulk-create' => [
-            'path' => '/course-club/bulk-create',
+        '/course-club/add-holes' => [
+            'path' => '/course-club/add-holes',
             'controller' => 'App\Controllers\CourseClubController',
-            'method' => 'bulkCreate'
+            'method' => 'addHoles'
         ],
         '/course-played' => [
             'path' => '/course-played',
@@ -351,10 +351,10 @@ return [
             'controller' => 'App\Controllers\CourseClubController',
             'method' => 'storeCourse'
         ],
-        '/course-club/bulk-store' => [
-            'path' => '/course-club/bulk-store',
+        '/course-club/store-holes' => [
+            'path' => '/course-club/store-holes',
             'controller' => 'App\Controllers\CourseClubController',
-            'method' => 'bulkStore'
+            'method' => 'storeHoles'
         ],
         '/course-played/store' => [
             'path' => '/course-played/store',

@@ -54,7 +54,7 @@
                             </div>
                         <?php endif; ?>
 
-                        <form method="POST" action="/course-club/bulk-store" id="bulkCreateForm" novalidate>
+                        <form method="POST" action="/course-club/store-holes" id="addHolesForm" novalidate>
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                             <!-- Header Section -->
                             <div class="row mb-4">
@@ -181,16 +181,16 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script nonce="<?php echo htmlspecialchars($csp_nonce, ENT_QUOTES, 'UTF-8'); ?>">
-        const bulkCreateForm = document.getElementById('bulkCreateForm');
+        const addHolesForm = document.getElementById('addHolesForm');
         const validationMessage = document.getElementById('validationMessage');
 
-        bulkCreateForm.addEventListener('submit', function (event) {
-            if (!bulkCreateForm.checkValidity()) {
+        addHolesForm.addEventListener('submit', function (event) {
+            if (!addHolesForm.checkValidity()) {
                 event.preventDefault();
                 event.stopPropagation();
                 validationMessage.classList.remove('tw-hidden');
 
-                const firstInvalidField = bulkCreateForm.querySelector(':invalid');
+                const firstInvalidField = addHolesForm.querySelector(':invalid');
                 if (firstInvalidField) {
                     firstInvalidField.focus();
                 }
