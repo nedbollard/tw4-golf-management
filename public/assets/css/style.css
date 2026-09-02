@@ -4054,3 +4054,33 @@ body.page-results-archive {
 .tw-col-60 {
     width: 60%;
 }
+
+body.page-logs .tw-table-wrap .table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+body.page-logs .tw-table-wrap .table th,
+body.page-logs .tw-table-wrap .table td {
+    overflow-wrap: anywhere;
+    padding: 0.5rem;
+}
+
+body.page-logs .tw-table-wrap .table th:nth-child(1),
+body.page-logs .tw-table-wrap .table td:nth-child(1) {
+    width: 6.5rem;
+}
+
+body.page-logs .tw-table-wrap .table th:nth-child(2),
+body.page-logs .tw-table-wrap .table td:nth-child(2),
+body.page-logs .tw-table-wrap .table th:nth-child(3),
+body.page-logs .tw-table-wrap .table td:nth-child(3),
+body.page-logs .tw-table-wrap .table th:nth-child(5),
+body.page-logs .tw-table-wrap .table td:nth-child(5) {
+    width: 5.5rem;
+}
+
+body.page-logs .tw-table-wrap .table th:nth-child(6),
+body.page-logs .tw-table-wrap .table td:nth-child(6) {
+    width: 4.5rem;
+}
