@@ -266,7 +266,26 @@ class ScoreController extends BaseController
             'resultsData' => $resultsData,
             'notice' => $notice,
             'showPublishedResultsNudge' => $showPublishedResultsNudge,
+            'fromScorerMenu' => $this->trackScorerMenuOrigin(),
         ]);
+    }
+
+    /**
+     * Remembers whether the leaderboard was opened from the scorer menu so the
+     * return link survives navigation to a player scorecard and auto-refreshes.
+     */
+    private function trackScorerMenuOrigin(): bool
+    {
+        $this->ensureServicesInitialized();
+        $referer = (string) ($_SERVER['HTTP_REFERER'] ?? '');
+
+        if (str_contains($referer, '/scorer/menu')) {
+            $_SESSION['leaderboard_from_scorer_menu'] = true;
+        } elseif (!str_contains($referer, '/leaderboard')) {
+            unset($_SESSION['leaderboard_from_scorer_menu']);
+        }
+
+        return !empty($_SESSION['leaderboard_from_scorer_menu']);
     }
 
     public function leaderboardCard(int $playerId): void
