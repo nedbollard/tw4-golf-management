@@ -87,6 +87,12 @@ class ScorerController extends BaseController
             return;
         }
 
+        if (empty($active['card_entry_reopened'])) {
+            $this->flash->error('Cards can only be deleted after an admin has reset the round to card entry.');
+            $this->redirect('/scorer/menu');
+            return;
+        }
+
         $roundId = (int) ($active['round_id'] ?? 0);
         $staffId = (int) ($user['user_id'] ?? 0);
 
@@ -133,6 +139,12 @@ class ScorerController extends BaseController
 
         if (!$active || (string) ($active['workflow_step'] ?? '') !== 'card_entry_open') {
             $this->flash->error('Cards can only be deleted while the round is open for card entry.');
+            $this->redirect('/scorer/menu');
+            return;
+        }
+
+        if (empty($active['card_entry_reopened'])) {
+            $this->flash->error('Cards can only be deleted after an admin has reset the round to card entry.');
             $this->redirect('/scorer/menu');
             return;
         }
