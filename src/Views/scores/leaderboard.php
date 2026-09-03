@@ -18,7 +18,7 @@ $workflowStep = (string) ($round['workflow_step'] ?? 'between_rounds');
 $workflowLabel = in_array($workflowStep, ['between_rounds', 'not_started'], true)
     ? 'finished'
     : $workflowStep;
-$fromScorerMenu = strpos($_SERVER['HTTP_REFERER'] ?? '', '/scorer/menu') !== false;
+$fromScorerMenu = !empty($fromScorerMenu);
 ?>
 
 <div class="leaderboard-layout">
