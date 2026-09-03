@@ -42,7 +42,10 @@ $isBetweenRounds = in_array($activeStep, ['between_rounds', 'not_started'], true
 $displayRound = $activeRound && (((int) ($activeRound['round_number'] ?? 0)) > 0 || !$isBetweenRounds)
     ? $activeRound
     : null;
-$showDeleteCards = $displayRound && $activeStep === 'card_entry_open' && $cardCount > 0;
+$showDeleteCards = $displayRound
+    && $activeStep === 'card_entry_open'
+    && !empty($activeRound['card_entry_reopened'])
+    && $cardCount > 0;
 ?>
 
 <div class="scorer-layout">

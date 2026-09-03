@@ -23,6 +23,7 @@ class RoundStateService
                     r.course_played_id,
                     r.workflow_step,
                     r.card_count,
+                    r.card_entry_reopened,
                     r.locked_by_staff_id,
                     r.lock_acquired_at,
                     r.lock_expires_at,
@@ -55,6 +56,7 @@ class RoundStateService
                     r.course_played_id,
                     r.workflow_step,
                     r.card_count,
+                    r.card_entry_reopened,
                     r.locked_by_staff_id,
                     r.lock_acquired_at,
                     r.lock_expires_at,
@@ -141,7 +143,7 @@ class RoundStateService
         }
 
         $round = $this->db->fetchOne(
-            'SELECT row_id AS round_id, season_year, number_round AS round_number, round_date, course_played_id, workflow_step, card_count
+            'SELECT row_id AS round_id, season_year, number_round AS round_number, round_date, course_played_id, workflow_step, card_count, card_entry_reopened
              FROM TW4_live.round WHERE row_id = ?',
             [$roundId]
         );
