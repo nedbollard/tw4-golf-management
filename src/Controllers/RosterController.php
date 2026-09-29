@@ -24,7 +24,7 @@ class RosterController extends BaseController
         $this->requireRole('scorer');
         
         try {
-            $roster = $this->rosterService->getAllPlayers();
+            $roster = $this->rosterService->getAllPlayersIncludingInactive();
             
             $this->render('roster/index', [
                 'title' => 'Players - TW4 Golf Management',

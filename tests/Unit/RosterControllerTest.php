@@ -105,4 +105,39 @@ class RosterControllerTest extends TestCase
         $this->assertInstanceOf(RosterService::class, $service);
         $this->assertSame($this->mockRosterService, $service);
     }
+
+    public function testIndexLoadsInactivePlayersForRosterManagement(): void
+    {
+        $roster = [[
+            'row_id' => 1,
+            'player_identifier' => 'JohnD',
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'status' => 'inactive',
+        ]];
+
+        $this->mockRosterService
+            ->expects($this->once())
+            ->method('getAllPlayersIncludingInactive')
+            ->willReturn($roster);
+
+        $controller = new class($this->mockApplication, $this->mockRosterService) extends RosterController {
+            public array $renderedData = [];
+
+            public function render(string $view, array $data = []): void
+            {
+                $this->renderedData = $data;
+            }
+
+            protected function requireRole(string $role): void
+            {
+                // no-op for unit test
+            }
+        };
+
+        $controller->index();
+
+        $this->assertSame('Players - TW4 Golf Management', $controller->renderedData['title']);
+        $this->assertSame($roster, $controller->renderedData['roster']);
+    }
 }
