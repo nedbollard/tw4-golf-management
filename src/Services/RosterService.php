@@ -76,7 +76,7 @@ class RosterService
     {
         $data = $this->normalizeOptionalFields($data);
         $actor = $this->resolveActorUsername();
-        $currentPlayer = $this->getPlayer($playerId);
+        $currentPlayer = $this->getPlayerIncludingInactive($playerId);
         if (!$currentPlayer) {
             return false;
         }
@@ -110,7 +110,7 @@ class RosterService
 
         // Validate player_identifier uniqueness if provided and date_first_played is null
         if (isset($data['player_identifier']) && !empty($data['player_identifier'])) {
-            $currentPlayer = $this->getPlayer($playerId);
+            $currentPlayer = $this->getPlayerIncludingInactive($playerId);
             if ($currentPlayer && empty($currentPlayer['date_first_played'])) {
                 // Only allow player_identifier change if date_first_played is null
                 if (!$this->isPlayerIdentifierAvailable($data['player_identifier'], $playerId)) {
@@ -162,6 +162,14 @@ class RosterService
         return $this->db->fetchOne(
             'SELECT * FROM roster WHERE row_id = ? AND status IN (?, ?)',
             [$playerId, ...self::NON_INACTIVE_STATUSES]
+        );
+    }
+
+    public function getPlayerIncludingInactive(int $playerId): ?array
+    {
+        return $this->db->fetchOne(
+            'SELECT * FROM roster WHERE row_id = ?',
+            [$playerId]
         );
     }
 

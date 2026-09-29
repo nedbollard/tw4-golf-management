@@ -140,4 +140,40 @@ class RosterControllerTest extends TestCase
         $this->assertSame('Players - TW4 Golf Management', $controller->renderedData['title']);
         $this->assertSame($roster, $controller->renderedData['roster']);
     }
+
+    public function testShowUsesInactivePlayerLookupForRosterManagement(): void
+    {
+        $player = [
+            'row_id' => 1,
+            'player_identifier' => 'JohnD',
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'status' => 'inactive',
+        ];
+
+        $this->mockRosterService
+            ->expects($this->once())
+            ->method('getPlayerIncludingInactive')
+            ->with(1)
+            ->willReturn($player);
+
+        $controller = new class($this->mockApplication, $this->mockRosterService) extends RosterController {
+            public array $renderedData = [];
+
+            public function render(string $view, array $data = []): void
+            {
+                $this->renderedData = $data;
+            }
+
+            protected function requireAuth(): void
+            {
+                // no-op for unit test
+            }
+        };
+
+        $controller->show(1);
+
+        $this->assertSame('Player Details - ' . $this->mockRosterService->getDisplayName($player), $controller->renderedData['title']);
+        $this->assertSame($player, $controller->renderedData['player']);
+    }
 }

@@ -48,7 +48,7 @@ class RosterController extends BaseController
     {
         $this->requireAuth();
         
-        $player = $this->rosterService->getPlayer($playerId);
+        $player = $this->rosterService->getPlayerIncludingInactive($playerId);
         
         if (!$player) {
             $this->redirect('/roster');
@@ -112,7 +112,7 @@ class RosterController extends BaseController
     {
         $this->requireAuth();
         
-        $player = $this->rosterService->getPlayer($playerId);
+        $player = $this->rosterService->getPlayerIncludingInactive($playerId);
         
         if (!$player) {
             $this->redirect('/roster');
@@ -170,7 +170,7 @@ class RosterController extends BaseController
     {
         $this->requireAuth();
         
-        $player = $this->rosterService->getPlayer($playerId);
+        $player = $this->rosterService->getPlayerIncludingInactive($playerId);
         
         if (!$player) {
             $this->redirect('/roster');
