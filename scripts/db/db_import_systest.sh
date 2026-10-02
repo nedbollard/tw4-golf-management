@@ -5,6 +5,7 @@ PREFERRED_COMPOSE_FILE="docker-compose.systest.yml"
 LEGACY_COMPOSE_FILE="docker-compose.prod.yml"
 FALLBACK_COMPOSE_FILE="docker-compose.yml"
 COMPOSE_FILE="${COMPOSE_FILE-}"
+RESTORE_TARGET="${RESTORE_TARGET:-systest}"
 DB_NAMES=(TW4_base TW4_live TW4_history TW4_holding)
 MYSQL_WAIT_TIMEOUT="${MYSQL_WAIT_TIMEOUT:-180}"
 
@@ -44,7 +45,7 @@ if [ -z "${DB_PASSWORD-}" ]; then
 fi
 : "${DB_PASSWORD:?DB_PASSWORD is required}"
 
-    echo "[INFO] Ensuring systest db container is up..."
+    echo "[INFO] Ensuring ${RESTORE_TARGET} db container is up..."
     docker compose -f "$COMPOSE_FILE" up -d db
 
     echo "[INFO] Waiting for MySQL readiness (timeout: ${MYSQL_WAIT_TIMEOUT}s)..."
@@ -76,9 +77,9 @@ fi
 
     TS="$(date +%Y%m%d_%H%M%S)"
     mkdir -p backup
-    PRE_BACKUP="backup/oracle_pre_restore_${TS}.sql.gz"
+    PRE_BACKUP="backup/${RESTORE_TARGET}_pre_restore_${TS}.sql.gz"
 
-    echo "[INFO] Taking Oracle safety backup: ${PRE_BACKUP}"
+    echo "[INFO] Taking ${RESTORE_TARGET} safety backup: ${PRE_BACKUP}"
     docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
       mysqldump -h 127.0.0.1 -P 3306 -u root \
       --single-transaction \

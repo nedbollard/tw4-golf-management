@@ -36,4 +36,4 @@ CREATE TABLE IF NOT EXISTS best_five_team_member_audit (
     KEY idx_best_five_team_member_audit_round (season_year, number_round, serious_revision),
     KEY idx_best_five_team_member_audit_team_slot (team_number, slot_number),
     KEY idx_best_five_team_member_audit_action (action_type)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

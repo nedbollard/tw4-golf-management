@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS card (
     INDEX idx_card_player (row_id_player),
     CONSTRAINT fk_card_round FOREIGN KEY (row_id_round)
         REFERENCES round (row_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS card_by_hole (
     row_id INT NOT NULL AUTO_INCREMENT,
@@ -34,4 +34,4 @@ CREATE TABLE IF NOT EXISTS card_by_hole (
     INDEX idx_card_by_hole_card (row_id_card),
     CONSTRAINT fk_card_by_hole_card FOREIGN KEY (row_id_card)
         REFERENCES card (row_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

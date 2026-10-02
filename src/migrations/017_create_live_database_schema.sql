@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS live_rounds (
     INDEX idx_lock_expires     (lock_expires_at),
     INDEX idx_round_date       (round_date),
     INDEX idx_transfer_status  (transfer_status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS live_score_cards (
     INDEX idx_lsc_round    (round_id),
     INDEX idx_lsc_player   (player_id),
     INDEX idx_lsc_status   (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -127,4 +127,4 @@ CREATE TABLE IF NOT EXISTS live_hole_scores (
     CONSTRAINT  fk_lhs_card  FOREIGN KEY (card_id)
         REFERENCES live_score_cards (card_id) ON DELETE CASCADE,
     INDEX idx_lhs_card (card_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

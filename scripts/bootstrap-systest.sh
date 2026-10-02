@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS application_log (
     KEY idx_level (level),
     KEY idx_event_type (event_type),
     KEY idx_username (username)
-);
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 SQL
 }
 
@@ -132,7 +132,7 @@ done
 
 print_status "Dropping and recreating TW4_base, TW4_live, TW4_history, and TW4_holding..."
 docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
-    mysql -u root -e "DROP DATABASE IF EXISTS TW4_base; DROP DATABASE IF EXISTS TW4_live; DROP DATABASE IF EXISTS TW4_history; DROP DATABASE IF EXISTS TW4_holding; CREATE DATABASE TW4_base; CREATE DATABASE TW4_live; CREATE DATABASE TW4_history; CREATE DATABASE TW4_holding;"
+    mysql -u root -e "DROP DATABASE IF EXISTS TW4_base; DROP DATABASE IF EXISTS TW4_live; DROP DATABASE IF EXISTS TW4_history; DROP DATABASE IF EXISTS TW4_holding; CREATE DATABASE TW4_base CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci; CREATE DATABASE TW4_live CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci; CREATE DATABASE TW4_history CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci; CREATE DATABASE TW4_holding CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
 
 print_status "Importing TW4_base schema..."
 docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
@@ -346,4 +346,3 @@ print_status "  1. Access the application at: http://localhost:8084 (dev) or htt
 print_status "  2. Log in as: admin / admin"
 print_status "  3. Start Round will default to Round 1 for season 25/26"
 print_status "  4. Create a new round and proceed with card entry"
-

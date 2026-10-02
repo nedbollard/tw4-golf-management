@@ -41,7 +41,7 @@ BEGIN
         PRIMARY KEY (row_id),
         INDEX idx_results_type_result (type_result),
         INDEX idx_results_player_identifier (player_identifier)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
     SELECT COUNT(*) INTO v_ident_player_exists
     FROM information_schema.COLUMNS

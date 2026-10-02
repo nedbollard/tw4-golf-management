@@ -23,12 +23,12 @@ CREATE TABLE `card` (
   `score` int NOT NULL,
   `points` int NOT NULL,
   `handicap_updated` int DEFAULT NULL,
-  `updated_by` varchar(32) COLLATE utf8mb4_general_ci NOT NULL,
+  `updated_by` varchar(32) COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `updated_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`row_id`),
   UNIQUE KEY `uk_card_player` (`row_id_player`),
   KEY `idx_card_player` (`row_id_player`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `card_by_hole`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -40,36 +40,36 @@ CREATE TABLE `card_by_hole` (
   `score` int NOT NULL,
   `shots` int NOT NULL,
   `points` int NOT NULL,
-  `updated_by` varchar(32) COLLATE utf8mb4_general_ci NOT NULL,
+  `updated_by` varchar(32) COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `updated_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`row_id`),
   UNIQUE KEY `uk_card_hole` (`row_id_card`,`hole`),
   KEY `idx_card_by_hole_card` (`row_id_card`),
   CONSTRAINT `fk_card_by_hole_card` FOREIGN KEY (`row_id_card`) REFERENCES `card` (`row_id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=82 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=82 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `results`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `results` (
   `row_id` int NOT NULL AUTO_INCREMENT,
-  `type_result` varchar(16) COLLATE utf8mb4_general_ci NOT NULL,
+  `type_result` varchar(16) COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `number_result` int NOT NULL,
-  `player_identifier` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `player_identifier` varchar(50) COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `value_result` int NOT NULL,
-  `updated_by` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `updated_by` varchar(100) COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `updated_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`row_id`),
   KEY `idx_results_type_result` (`type_result`),
   KEY `idx_results_player_identifier` (`player_identifier`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `best_five_scores`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `best_five_scores` (
   `row_id` int NOT NULL AUTO_INCREMENT,
-  `season_year` char(5) COLLATE utf8mb4_general_ci NOT NULL,
+  `season_year` char(5) COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `row_id_player` int NOT NULL,
   `number_round_movement` int NOT NULL DEFAULT '0',
   `points_total` int NOT NULL DEFAULT '0',
@@ -84,21 +84,21 @@ CREATE TABLE `best_five_scores` (
   `round_best_4` int NOT NULL DEFAULT '0',
   `round_best_5` int NOT NULL DEFAULT '0',
   `points_movement` int NOT NULL DEFAULT '0',
-  `updated_by` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `updated_by` varchar(100) COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `updated_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`row_id`),
   UNIQUE KEY `uk_best_five_scores_season_player` (`season_year`,`row_id_player`),
   KEY `idx_best_five_scores_player` (`row_id_player`),
   KEY `idx_best_five_scores_season` (`season_year`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `eclectic_scores`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `eclectic_scores` (
   `row_id` int NOT NULL AUTO_INCREMENT,
-  `ident_eclectic` varchar(16) COLLATE utf8mb4_general_ci NOT NULL,
-  `season_year` char(5) COLLATE utf8mb4_general_ci NOT NULL,
+  `ident_eclectic` varchar(16) COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `season_year` char(5) COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `row_id_player` int NOT NULL,
   `number_round_movement` int NOT NULL DEFAULT '0',
   `score_total` int NOT NULL DEFAULT '0',
@@ -111,14 +111,14 @@ CREATE TABLE `eclectic_scores` (
   `score_hole_7` int NOT NULL DEFAULT '0',
   `score_hole_8` int NOT NULL DEFAULT '0',
   `score_hole_9` int NOT NULL DEFAULT '0',
-  `updated_by` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `updated_by` varchar(100) COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `updated_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`row_id`),
   UNIQUE KEY `uk_eclectic_scores_season_ident_player` (`season_year`,`ident_eclectic`,`row_id_player`),
   KEY `idx_eclectic_scores_player` (`row_id_player`),
   KEY `idx_eclectic_scores_season` (`season_year`),
   KEY `idx_eclectic_scores_ident` (`ident_eclectic`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `round`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

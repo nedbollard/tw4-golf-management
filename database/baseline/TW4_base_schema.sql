@@ -114,36 +114,36 @@ CREATE TABLE `course_played_hole` (
   `course_played_id` int NOT NULL,
   `number_hole_course` int NOT NULL,
   `number_hole_played` int NOT NULL,
-  `updated_by` varchar(32) COLLATE utf8mb4_general_ci NOT NULL,
+  `updated_by` varchar(32) COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `updated_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`row_id`),
   UNIQUE KEY `unique_course_played_number_hole_course` (`course_played_id`,`number_hole_course`),
   UNIQUE KEY `unique_course_played_number_hole_played` (`course_played_id`,`number_hole_played`),
   CONSTRAINT `fk_course_played_hole_course_played` FOREIGN KEY (`course_played_id`) REFERENCES `course_played` (`row_id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT=' ';
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT=' ';
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `handicap_audit`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `handicap_audit` (
   `row_id` int NOT NULL AUTO_INCREMENT,
-  `season_year` char(5) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Season the card was played, e.g. 25_26',
+  `season_year` char(5) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'Season the card was played, e.g. 25_26',
   `number_round` int DEFAULT NULL COMMENT 'Round number within that season',
   `row_id_player` int NOT NULL,
   `points_scored` int DEFAULT NULL COMMENT 'Raw Stableford points scored on the card',
   `points_effective` int DEFAULT NULL COMMENT 'Points used for handicap change calculation',
   `handicap_previous` int NOT NULL COMMENT 'Handicap before this change',
   `handicap_new` int NOT NULL COMMENT 'Handicap after this change',
-  `handicap_source` enum('card_scoring','admin_adjustment','system_import') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'admin_adjustment',
-  `reason` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Why was this changed (for admin adjustments)',
-  `updated_by` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `handicap_source` enum('card_scoring','admin_adjustment','system_import') COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'admin_adjustment',
+  `reason` varchar(255) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'Why was this changed (for admin adjustments)',
+  `updated_by` varchar(100) COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `updated_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`row_id`),
   KEY `idx_player` (`row_id_player`),
   KEY `idx_source` (`handicap_source`),
   KEY `idx_updated_ts` (`updated_ts`),
   CONSTRAINT `handicap_audit_ibfk_1` FOREIGN KEY (`row_id_player`) REFERENCES `roster` (`row_id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `roster`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

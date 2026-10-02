@@ -3,16 +3,14 @@ use App\Services\PlayerProgressService;
 
 $rounds = (array) ($progress['rounds'] ?? []);
 $player = $selectedPlayer ?? null;
-$playerName = $player ? htmlspecialchars((string) ($player['alias'] ?? $player['player_identifier'] ?? 'Unknown player')) : 'Unknown player';
-$seasonYear = (string) ($seasonYear ?? ($progress['season_year'] ?? ''));
+$playerLabel = trim((string) ($player['alias'] ?? ''));
+$playerName = htmlspecialchars($playerLabel !== '' ? $playerLabel : (string) ($player['player_identifier'] ?? 'Unknown player'));
+$seasonLabels = array_map(static fn(string $season): string => str_replace('_', '/', $season), (array) ($progress['seasons'] ?? []));
 $playedRounds = array_values(array_filter($rounds, static fn(array $round): bool => (bool) ($round['played'] ?? true)));
 $roundCount = count($playedRounds);
 $pointsTotal = array_sum(array_map(static fn(array $round): int => (int) ($round['points'] ?? 0), $playedRounds));
 $latestRound = $playedRounds !== [] ? $playedRounds[array_key_last($playedRounds)] : null;
 $latestHandicap = (int) ($latestRound['handicap_updated'] ?? ($player['handicap'] ?? 0));
-$startingRound = $playedRounds !== [] ? $playedRounds[0] : null;
-$startingHandicap = $startingRound !== null ? (int) ($startingRound['handicap_applied'] ?? 0) : null;
-
 $maxHandicapValue = 0;
 foreach ($playedRounds as $playedRound) {
     $maxHandicapValue = max(
@@ -23,25 +21,48 @@ foreach ($playedRounds as $playedRound) {
 }
 $chartMax = max(PlayerProgressService::POINTS_MAX, (int) (ceil($maxHandicapValue / 9) * 9));
 $referenceLevel = PlayerProgressService::HANDICAP_BASELINE_LEVEL;
-$plotBaselineLevel = (float) ($startingHandicap ?? $referenceLevel);
 $plotHeight = 280;
-$plotTop = 30;
+$plotTop = 54;
 $baseY = $plotTop + $plotHeight;
 $scale = $plotHeight / $chartMax;
 $groupWidth = 68;
 $barWidth = 26;
 $leftMargin = 72;
-$chartWidth = max(780, $leftMargin + max(1, count($rounds)) * $groupWidth + 54);
-$chartHeight = 380;
+$seasonGap = 28;
+$seasonSections = [];
+$roundPositions = [];
+$nextSectionX = $leftMargin;
+foreach ($rounds as $index => $round) {
+    $season = (string) $round['season_year'];
+    if (!isset($seasonSections[$season])) {
+        if ($seasonSections !== []) {
+            $previousSection = $seasonSections[array_key_last($seasonSections)];
+            $nextSectionX = $previousSection['x'] + $previousSection['width'] + $seasonGap;
+        }
+        $seasonSections[$season] = [
+            'x' => $nextSectionX,
+            'width' => 160,
+            'count' => 0,
+            'baseline' => null,
+        ];
+    }
+    $section = &$seasonSections[$season];
+    $roundPositions[$index] = $section['x'] + $section['count'] * $groupWidth;
+    $section['count']++;
+    $section['width'] = max(160, $section['count'] * $groupWidth);
+    if ($section['baseline'] === null && (bool) ($round['played'] ?? true)) {
+        $section['baseline'] = (int) $round['handicap_applied'];
+    }
+    unset($section);
+}
+$lastSection = $seasonSections !== [] ? $seasonSections[array_key_last($seasonSections)] : null;
+$chartWidth = max(780, $lastSection !== null ? $lastSection['x'] + $lastSection['width'] + 54 : 780);
+$chartHeight = 404;
 
 // Handicap markers are plotted on the same numeric axis as points so baseline
 // and movement align with chart graduations.
 $handicapRadius = 9;
 $handicapRoundXOffset = 7;
-$baselineY = $baseY - (int) round($plotBaselineLevel * $scale);
-$handicapTopLimit = $plotTop + $handicapRadius + 4;
-// Keep handicap labels away from the x-axis region where bar labels render.
-$handicapBottomLimit = $baseY - ($handicapRadius + 22);
 $legendItems = [
     ['class' => 'legend-points', 'label' => 'Points (Stableford)'],
     ['class' => 'legend-handicap-start', 'label' => 'Starting handicap'],
@@ -53,9 +74,9 @@ ob_start();
 <div class="player-progress-panel player-progress-panel-controls">
     <h3 class="player-progress-subheading">Player: <?php echo $playerName; ?></h3>
     <div class="player-progress-summary">
-        <div><strong>Season</strong> <?php echo htmlspecialchars($seasonYear !== '' ? $seasonYear : '—'); ?></div>
-        <div><strong>Rounds</strong> <?php echo $roundCount; ?></div>
-        <div><strong>Total Points</strong> <?php echo $pointsTotal; ?></div>
+        <div><strong>Seasons shown</strong> <?php echo htmlspecialchars(implode(', ', $seasonLabels)); ?></div>
+        <div><strong>Rounds (all seasons)</strong> <?php echo $roundCount; ?></div>
+        <div><strong>Total Points (all seasons)</strong> <?php echo $pointsTotal; ?></div>
         <div><strong>Latest Handicap</strong> <?php echo $latestHandicap; ?></div>
     </div>
 
@@ -74,13 +95,15 @@ ob_start();
     </div>
 
     <div class="progress-chart-scroll">
-        <?php if ($player && $seasonYear !== ''): ?>
+        <?php if ($player && $rounds !== []): ?>
             <?php
             // First pass: bars + collect raw handicap marker levels (in chart order).
             $bars = [];
             $rawMarkers = [];
             foreach ($rounds as $index => $round) {
-                $x = $leftMargin + ($index * $groupWidth);
+                $season = (string) $round['season_year'];
+                $plotBaselineLevel = (float) ($seasonSections[$season]['baseline'] ?? $referenceLevel);
+                $x = $roundPositions[$index];
                 $centerX = $x + (int) floor($barWidth / 2);
                 $played = (bool) ($round['played'] ?? true);
                 $points = max(0, (int) ($round['points'] ?? 0));
@@ -103,6 +126,7 @@ ob_start();
                     $absoluteLevel = $plotBaselineLevel + ($relativeLevel - $referenceLevel);
                     $rawMarkers[] = [
                         'x' => $centerX,
+                        'season' => $season,
                         // Convert schematic marker levels from the internal reference
                         // frame into a chart frame anchored at the player's real start.
                         'level' => $absoluteLevel,
@@ -131,6 +155,7 @@ ob_start();
                 $markerPoints[] = [
                     'x' => $x,
                     'y' => $y,
+                    'season' => $marker['season'],
                     'type' => (string) ($marker['type'] ?? 'end'),
                     'value' => (int) ($marker['value'] ?? 0),
                 ];
@@ -140,16 +165,26 @@ ob_start();
 
             // Trend line follows the displayed marker sequence so it always passes
             // through the rendered circles and labels.
-            $trendPoints = array_map(
-                static fn(array $p): array => ['x' => (int) ($p['x'] ?? 0), 'y' => (int) ($p['y'] ?? 0)],
-                $markerPoints
-            );
+            $trendPointsBySeason = [];
+            foreach ($markerPoints as $point) {
+                $trendPointsBySeason[$point['season']][] = ['x' => $point['x'], 'y' => $point['y']];
+            }
             ?>
-            <svg class="progress-chart" viewBox="0 0 <?php echo $chartWidth; ?> <?php echo $chartHeight; ?>" role="img" aria-labelledby="progress-chart-title progress-chart-desc" xmlns="http://www.w3.org/2000/svg">
-                <title id="progress-chart-title"><?php echo htmlspecialchars($playerName); ?> season progress</title>
-                <desc id="progress-chart-desc">Blue bars show Stableford points per round. A black open circle marks the starting handicap at the player's season baseline; white open circles mark subsequent handicap changes, moved up or down from that baseline.</desc>
+            <svg class="progress-chart" width="<?php echo $chartWidth; ?>" height="<?php echo $chartHeight; ?>" viewBox="0 0 <?php echo $chartWidth; ?> <?php echo $chartHeight; ?>" role="img" aria-labelledby="progress-chart-title progress-chart-desc" xmlns="http://www.w3.org/2000/svg">
+                <title id="progress-chart-title"><?php echo $playerName; ?> progress across seasons <?php echo htmlspecialchars(implode(', ', $seasonLabels)); ?></title>
+                <desc id="progress-chart-desc">Blue bars show Stableford points per archived round. Labelled sections separate seasons; gaps indicate missed rounds. Black open circles show starting handicaps and white open circles show adjusted handicaps. Each season starts at its first recorded applied handicap; trend lines do not connect across seasons. Unfinished live rounds are excluded.</desc>
 
                 <rect x="0" y="0" width="<?php echo $chartWidth; ?>" height="<?php echo $chartHeight; ?>" rx="16" fill="#f8fffb" stroke="#d1fae5" />
+
+                <?php $sectionIndex = 0; ?>
+                <?php foreach ($seasonSections as $season => $section): ?>
+                    <rect x="<?php echo $section['x'] - 10; ?>" y="8" width="<?php echo $section['width']; ?>" height="<?php echo $chartHeight - 16; ?>" rx="8" fill="<?php echo $sectionIndex % 2 === 0 ? '#ecfdf5' : '#eff6ff'; ?>" />
+                    <text x="<?php echo $section['x']; ?>" y="28" class="progress-season-label">Season <?php echo htmlspecialchars(str_replace('_', '/', $season)); ?></text>
+                    <?php if ($sectionIndex > 0): ?>
+                        <line x1="<?php echo $section['x'] - 24; ?>" y1="8" x2="<?php echo $section['x'] - 24; ?>" y2="<?php echo $chartHeight - 16; ?>" class="progress-season-separator" />
+                    <?php endif; ?>
+                    <?php $sectionIndex++; ?>
+                <?php endforeach; ?>
 
                 <?php for ($grid = 0; $grid <= $chartMax; $grid += 9): ?>
                     <?php $gridY = $baseY - (int) round($grid * $scale); ?>
@@ -173,6 +208,11 @@ ob_start();
                     $handicapUpdated = (int) ($round['handicap_updated'] ?? $handicapApplied);
                     $roundLabel = 'R' . (int) ($round['number_round'] ?? 0);
                     $roundDate = $round['round_date'] !== '' ? date('d/m', strtotime((string) $round['round_date'])) : '';
+                    $fullRoundDate = $round['round_date'] !== '' ? date('d/m/Y', strtotime((string) $round['round_date'])) : '';
+                    $roundContext = 'Season ' . str_replace('_', '/', (string) $round['season_year']) . ' | ' . $roundLabel;
+                    if ($fullRoundDate !== '') {
+                        $roundContext .= ' | ' . $fullRoundDate;
+                    }
                     $courseName = trim((string) ($round['course_name'] ?? ''));
                     ?>
                     <g>
@@ -191,20 +231,22 @@ ob_start();
                             <text x="<?php echo $bar['centerX']; ?>" y="<?php echo $baseY + 38; ?>" class="progress-round-date"><?php echo htmlspecialchars($roundDate); ?></text>
                         <?php endif; ?>
                         <?php if (!$bar['played']): ?>
-                            <title>Missed round<?php echo $courseName !== '' ? ' | ' . htmlspecialchars($courseName) : ''; ?></title>
+                            <title><?php echo htmlspecialchars($roundContext); ?> | Missed round<?php echo $courseName !== '' ? ' | ' . htmlspecialchars($courseName) : ''; ?></title>
                         <?php elseif ($courseName !== ''): ?>
-                            <title><?php echo htmlspecialchars($courseName); ?> | Score <?php echo $score; ?> | Points <?php echo $bar['points']; ?> | Effective <?php echo $pointsEffective; ?> | Handicap <?php echo $handicapApplied; ?> → <?php echo $handicapUpdated; ?></title>
+                            <title><?php echo htmlspecialchars($roundContext); ?> | <?php echo htmlspecialchars($courseName); ?> | Score <?php echo $score; ?> | Points <?php echo $bar['points']; ?> | Effective <?php echo $pointsEffective; ?> | Handicap <?php echo $handicapApplied; ?> → <?php echo $handicapUpdated; ?></title>
                         <?php else: ?>
-                            <title>Score <?php echo $score; ?> | Points <?php echo $bar['points']; ?> | Effective <?php echo $pointsEffective; ?> | Handicap <?php echo $handicapApplied; ?> → <?php echo $handicapUpdated; ?></title>
+                            <title><?php echo htmlspecialchars($roundContext); ?> | Score <?php echo $score; ?> | Points <?php echo $bar['points']; ?> | Effective <?php echo $pointsEffective; ?> | Handicap <?php echo $handicapApplied; ?> → <?php echo $handicapUpdated; ?></title>
                         <?php endif; ?>
                     </g>
                 <?php endforeach; ?>
 
-                <?php if (count($trendPoints) > 1): ?>
-                    <polyline
-                    points="<?php echo implode(' ', array_map(static fn(array $p): string => $p['x'] . ',' . $p['y'], $trendPoints)); ?>"
-                        class="progress-handicap-trend-line" />
-                <?php endif; ?>
+                <?php foreach ($trendPointsBySeason as $trendPoints): ?>
+                    <?php if (count($trendPoints) > 1): ?>
+                        <polyline
+                            points="<?php echo implode(' ', array_map(static fn(array $p): string => $p['x'] . ',' . $p['y'], $trendPoints)); ?>"
+                            class="progress-handicap-trend-line" />
+                    <?php endif; ?>
+                <?php endforeach; ?>
 
                 <?php foreach ($markerPoints as $marker): ?>
                     <?php $markerClass = $marker['type'] === 'start' ? 'progress-handicap-start' : 'progress-handicap-change'; ?>
@@ -213,7 +255,7 @@ ob_start();
                 <?php endforeach; ?>
             </svg>
         <?php else: ?>
-            <div class="progress-empty">Select a player to load their progress chart.</div>
+            <div class="progress-empty">No recorded round history is available for this player.</div>
         <?php endif; ?>
     </div>
 

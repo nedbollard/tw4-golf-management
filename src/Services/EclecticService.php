@@ -18,7 +18,7 @@ class EclecticService
         $this->db->query(
             "CREATE DATABASE IF NOT EXISTS TW4_holding
              CHARACTER SET utf8mb4
-             COLLATE utf8mb4_general_ci"
+             COLLATE utf8mb4_0900_ai_ci"
         );
 
         $tableDdl = "
@@ -45,7 +45,7 @@ class EclecticService
                 KEY idx_eclectic_scores_player (row_id_player),
                 KEY idx_eclectic_scores_season (season_year),
                 KEY idx_eclectic_scores_ident (ident_eclectic)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
         ";
 
         $this->db->query(sprintf($tableDdl, 'TW4_live'));
@@ -76,7 +76,7 @@ class EclecticService
                 UNIQUE KEY uk_history_eclectic_scores_movement_ident_player (ident_eclectic, season_year, number_round_movement, row_id_player),
                 KEY idx_history_eclectic_scores_movement_ident (ident_eclectic, season_year, number_round_movement),
                 KEY idx_history_eclectic_scores_player (row_id_player)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
         );
     }
 

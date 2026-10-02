@@ -202,6 +202,107 @@ docker compose -f docker-compose.systest.yml exec -T -e MYSQL_PWD="$DB_PASSWORD"
 
 4. Open the site in a browser and confirm `/` loads the main menu and `/login` loads the login page.
 
+## Refresh Lower Environments From Production
+
+From the local development checkout, with SSH aliases `tw4-oracle-prod` and
+`tw4-oracle-systest` configured, run one of:
+
+```bash
+./scripts/db/db_pull_from_oracle_prod.sh development --yes
+./scripts/db/db_pull_from_oracle_prod.sh systest --yes
+./scripts/db/db_pull_from_oracle_prod.sh both --yes
+```
+
+This takes one snapshot of `TW4_base`, `TW4_live`, `TW4_history`, and
+`TW4_holding` from production (`~/TW4`), saves it in the local ignored `backup/`
+directory with a checksum, then replaces only the selected target databases.
+The system-test checkout is `~/tw4-golf-management`; development uses the local
+checkout's `docker-compose.yml`. Both targets take a pre-restore backup in their
+own `backup/` directory before dropping their databases. The existing import
+scripts print the backup location for recovery. Production is never imported into.
+If a target fails, the script stops; the saved production snapshot can be reused
+with the appropriate `db_import_systest.sh` script after resolving the failure.
+
+Treat snapshots and pre-restore backups as production data: keep access limited,
+do not commit or distribute them, and remove them when no longer needed. This
+copies databases only, not report files, uploaded files, or environment settings.
+The SSH aliases can be overridden with `TW4_PROD_SSH` and `TW4_SYSTEST_SSH`.
+
+## Standardising MySQL 8 Collations
+
+Application schemas use `utf8mb4` / `utf8mb4_0900_ai_ci` for database defaults,
+table defaults and ordinary character columns. JSON's internal binary comparison
+is managed by MySQL and is not a character-column exception. Canonical baselines,
+incremental SQL definitions and runtime table creation use the same standard.
+
+For an existing installation, use the non-destructive
+[collation normalizer](../../scripts/db/db_normalize_collations.sh).
+**Do not run bootstrap or import a development dump into production to make this
+change.** Apply the normalizer to production's own current data, on its host.
+
+1. Run a read-only inventory/preflight with the explicit deployment Compose file:
+
+   ```bash
+   bash scripts/db/db_normalize_collations.sh --compose-file docker-compose.systest.yml
+   ```
+
+   Development uses `docker-compose.yml`; use the actual Compose file on the
+   production host. Without an explicit file, the script defaults to development.
+   The four required schemas are `TW4_base`, `TW4_live`, `TW4_history` and
+   `TW4_holding`; the separate PHPUnit database is not included.
+
+2. Rehearse against a restored backup in an isolated MySQL 8 instance. The script
+   checks unique keys (including compound/prefix indexes) under the target rules,
+   rejects text foreign keys requiring a coordinated migration, and refuses
+   non-InnoDB tables or functional unique indexes needing manual review.
+
+3. Schedule maintenance between rounds. Stop the app and any other database
+   writers; keep the database service running. Coordinate the interruption with
+   users. If phpMyAdmin or external jobs can write, stop or restrict them too.
+
+4. Apply:
+
+   ```bash
+   bash scripts/db/db_normalize_collations.sh \
+     --compose-file docker-compose.systest.yml --apply --maintenance-window
+   ```
+
+   `--maintenance-window` acknowledges that writers are stopped; it does not
+   stop them automatically. Before DDL, the script creates a restricted-access
+   `backup/collation_<timestamp>_<suffix>/` directory containing a complete
+   compressed backup with checksum, the exact SQL plan, and data-dump hashes.
+   It converts tables with mismatched defaults **or individual column overrides**,
+   verifies every character column/default, and checks that the ordered data dump
+   is byte-for-byte unchanged. Re-running after success performs no conversion.
+
+5. Restart the app only after success. Check player progress, archived results,
+   authentication, roster lookups and the next normal scoring workflow.
+   If an ALTER fails, leave writers stopped: DDL auto-commits and is not rolled
+   back automatically. Inspect the reported error and saved plan; either resolve
+   the issue and rerun, or restore the pre-change backup while still in maintenance.
+   The backup contains `CREATE DATABASE` defaults and table definitions/data.
+   Verify its checksum before using the deployment's backup-restore procedure,
+   then verify the app again before reopening access. A restore must recreate
+   the target schemas or explicitly restore their original database defaults:
+   importing `CREATE DATABASE IF NOT EXISTS` alone does not reset existing defaults.
+
+No row values, round state or report files are deliberately changed. Table
+rebuilds and index ordering can change. Collation affects comparison/sorting,
+including unique-key equality and trailing-space semantics; it is not simply a
+cosmetic setting. Treat all backup files as sensitive production data, keep them
+outside version control, and retain them through deployment verification.
+
+The migration's database-backed regression test must target an isolated MySQL
+Compose instance:
+
+```bash
+DB_PASSWORD=... bash tests/Integration/collation-normalization.sh \
+  --compose-file /path/to/isolated-mysql-compose.yml
+```
+
+It creates/removes uniquely prefixed fixture schemas only. `--schema-prefix`
+on the normalizer is available for similarly isolated rehearsal schemas.
+
 ## Deployment Notes
 
 1. `CADDY_EMAIL` must be a real email address you control. Placeholder addresses such as `you@example.com` will cause ACME registration to fail and HTTPS will not come up.

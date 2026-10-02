@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS best_five_team (
     PRIMARY KEY (row_id),
     UNIQUE KEY uk_best_five_team_number (team_number),
     KEY idx_best_five_team_points (team_points_total)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS best_five_team_member (
     row_id INT NOT NULL AUTO_INCREMENT,
@@ -69,4 +69,4 @@ CREATE TABLE IF NOT EXISTS best_five_team_member (
     PRIMARY KEY (row_id),
     KEY idx_best_five_team_member_team (team_number),
     KEY idx_best_five_team_member_player (player_identifier)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

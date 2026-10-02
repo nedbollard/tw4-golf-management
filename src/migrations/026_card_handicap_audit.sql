@@ -86,7 +86,7 @@ BEGIN
         INDEX idx_player (row_id_player),
         INDEX idx_source (handicap_source),
         INDEX idx_updated_ts (updated_ts)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 END $$
 

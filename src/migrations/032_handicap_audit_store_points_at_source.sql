@@ -26,7 +26,7 @@ BEGIN
         INNER JOIN TW4_history.card_by_hole cbh ON cbh.row_id_card = hc.row_id
         GROUP BY hc.season_year, hc.number_round, hc.row_id_player
     ) pts
-      ON pts.season_year COLLATE utf8mb4_general_ci = ha.season_year
+      ON pts.season_year COLLATE utf8mb4_0900_ai_ci = ha.season_year
      AND pts.number_round = ha.number_round
      AND pts.row_id_player = ha.row_id_player
     SET ha.points_scored = COALESCE(pts.points_scored, 0),

@@ -24,10 +24,7 @@ class PlayerProgressController extends BaseController
 
     public function index(): void
     {
-        $seasonYear = $this->playerProgressService->getCurrentSeasonYear();
-        $playerOptions = $seasonYear !== null
-            ? $this->playerProgressService->getEligiblePlayersWithHistory($seasonYear)
-            : [];
+        $playerOptions = $this->playerProgressService->getEligiblePlayersWithHistory();
 
         $selectedPlayerId = (int) ($_GET['player_id'] ?? 0);
         if ($selectedPlayerId < 1 && !empty($playerOptions)) {
@@ -35,30 +32,24 @@ class PlayerProgressController extends BaseController
         }
 
         $notice = null;
-        if ($seasonYear === null) {
-            $notice = 'No season context is available yet.';
-        } elseif (empty($playerOptions)) {
-            $notice = 'No active players with season history are available.';
+        if (empty($playerOptions)) {
+            $notice = 'No active players with recorded history are available.';
         }
 
         $this->render('player-progress/index', [
             'title' => 'Player Progress - TW4 Golf Management',
             'playerOptions' => $playerOptions,
             'selectedPlayerId' => $selectedPlayerId,
-            'seasonYear' => $seasonYear,
             'notice' => $notice,
         ]);
     }
 
     public function chart(): void
     {
-        $seasonYear = $this->playerProgressService->getCurrentSeasonYear();
-        $playerOptions = $seasonYear !== null
-            ? $this->playerProgressService->getEligiblePlayersWithHistory($seasonYear)
-            : [];
+        $playerOptions = $this->playerProgressService->getEligiblePlayersWithHistory();
 
-        if ($seasonYear === null || empty($playerOptions)) {
-            $this->flash->error('No active players with season history are available.');
+        if (empty($playerOptions)) {
+            $this->flash->error('No active players with recorded history are available.');
             $this->redirect('/player-progress');
             return;
         }
@@ -81,16 +72,10 @@ class PlayerProgressController extends BaseController
             $selectedPlayerId = (int) ($selectedPlayer['row_id'] ?? 0);
         }
 
-        $progress = [
-            'player' => $selectedPlayer,
-            'season_year' => $seasonYear,
-            'rounds' => [],
-        ];
-
         $notice = null;
-        $progress = $this->playerProgressService->getPlayerProgress($selectedPlayerId, $seasonYear);
+        $progress = $this->playerProgressService->getPlayerProgress($selectedPlayerId);
         if (empty($progress['rounds'])) {
-            $notice = 'No round history is available for this player in the current season yet.';
+            $notice = 'No recorded round history is available for this player.';
         }
 
         $this->render('player-progress/chart', [
@@ -98,7 +83,6 @@ class PlayerProgressController extends BaseController
             'playerOptions' => $playerOptions,
             'selectedPlayer' => $selectedPlayer,
             'selectedPlayerId' => $selectedPlayerId,
-            'seasonYear' => $seasonYear,
             'progress' => $progress,
             'notice' => $notice,
         ]);

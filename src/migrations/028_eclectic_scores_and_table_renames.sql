@@ -145,7 +145,7 @@ CREATE TABLE IF NOT EXISTS TW4_live.eclectic_scores (
     KEY idx_eclectic_scores_player (row_id_player),
     KEY idx_eclectic_scores_season (season_year),
     KEY idx_eclectic_scores_ident (ident_eclectic)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS TW4_holding.eclectic_scores (
     row_id INT NOT NULL AUTO_INCREMENT,
@@ -170,7 +170,7 @@ CREATE TABLE IF NOT EXISTS TW4_holding.eclectic_scores (
     KEY idx_eclectic_scores_player (row_id_player),
     KEY idx_eclectic_scores_season (season_year),
     KEY idx_eclectic_scores_ident (ident_eclectic)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS TW4_history.eclectic_scores (
     row_id INT NOT NULL AUTO_INCREMENT,
@@ -198,4 +198,4 @@ CREATE TABLE IF NOT EXISTS TW4_history.eclectic_scores (
     KEY idx_history_eclectic_scores_snapshot (season_year, number_round_snapshot),
     KEY idx_history_eclectic_scores_player (row_id_player),
     KEY idx_history_eclectic_scores_ident (ident_eclectic)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

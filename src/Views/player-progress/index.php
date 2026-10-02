@@ -1,5 +1,4 @@
 <?php
-$seasonYear = (string) ($seasonYear ?? '');
 ob_start();
 ?>
 <div class="player-progress-panel player-progress-panel-controls">
@@ -26,7 +25,7 @@ ob_start();
     </form>
 
     <div class="player-progress-summary">
-        <div><strong>Season</strong> <?php echo htmlspecialchars($seasonYear !== '' ? $seasonYear : '—'); ?></div>
+        <div><strong>History</strong> All recorded seasons</div>
         <div><strong>Eligible Players</strong> <?php echo count($playerOptions); ?></div>
     </div>
 
@@ -43,5 +42,5 @@ ob_start();
 <?php
 $content = ob_get_clean();
 $pageHeading = 'Player Progress Selector';
-$pageStepLabel = 'Choose a player, then open their chart.';
+$pageStepLabel = 'Choose an active player to view their recorded history across all seasons. Unfinished live rounds are not included.';
 require __DIR__ . '/../layouts/player-progress.php';

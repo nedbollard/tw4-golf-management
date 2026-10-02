@@ -21,35 +21,10 @@ class PlayerProgressService
         $this->db = $db;
     }
 
-    public function getCurrentSeasonYear(): ?string
-    {
-        $row = $this->db->fetchOne(
-            'SELECT season_year
-             FROM TW4_live.round
-             ORDER BY row_id ASC
-             LIMIT 1'
-        );
-
-        $seasonYear = trim((string) ($row['season_year'] ?? ''));
-        if ($seasonYear !== '') {
-            return $seasonYear;
-        }
-
-        $row = $this->db->fetchOne(
-            'SELECT season_year
-             FROM TW4_history.round
-             ORDER BY season_year DESC, number_round DESC
-             LIMIT 1'
-        );
-
-        $seasonYear = trim((string) ($row['season_year'] ?? ''));
-        return $seasonYear !== '' ? $seasonYear : null;
-    }
-
     /**
      * @return list<array{row_id: int|string, player_identifier: string, alias: string|null, handicap: int|string}>
      */
-    public function getEligiblePlayersWithHistory(string $seasonYear): array
+    public function getEligiblePlayersWithHistory(): array
     {
         return $this->db->fetchAll(
             'SELECT r.row_id,
@@ -58,28 +33,31 @@ class PlayerProgressService
                     r.handicap
              FROM TW4_base.roster r
              INNER JOIN (
-                 SELECT DISTINCT row_id_player
-                 FROM TW4_history.card
-                 WHERE season_year = ?
+                 SELECT DISTINCT hc.row_id_player
+                 FROM TW4_history.card hc
+                 INNER JOIN TW4_history.round hr
+                    ON hr.season_year = hc.season_year
+                   AND hr.number_round = hc.number_round
+                 WHERE hc.points IS NOT NULL
              ) hc ON hc.row_id_player = r.row_id
              WHERE r.status = "active"
-             ORDER BY COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", r.row_id)) ASC',
-            [$seasonYear]
+             ORDER BY COALESCE(NULLIF(TRIM(r.alias), ""), r.player_identifier, CONCAT("player_", r.row_id)) ASC'
         );
     }
 
     /**
      * @return array{
      *     player: array<string, mixed>|null,
-     *     season_year: string,
+     *     seasons: list<string>,
      *     rounds: list<array{
+     *         season_year: string,
      *         number_round: int,
      *         round_date: string,
      *         course_name: string,
      *         score: int,
      *         points: int,
-    *         points_scored: int,
-    *         points_effective: int,
+     *         points_scored: int,
+     *         points_effective: int,
      *         handicap_applied: int,
      *         handicap_updated: int,
      *         handicap_changed: bool,
@@ -88,12 +66,12 @@ class PlayerProgressService
      *     }>
      * }
      */
-    public function getPlayerProgress(int $playerId, string $seasonYear): array
+    public function getPlayerProgress(int $playerId): array
     {
         $player = $this->db->fetchOne(
             'SELECT row_id, player_identifier, alias, handicap, status
              FROM TW4_base.roster
-             WHERE row_id = ?
+             WHERE row_id = ? AND status = "active"
              LIMIT 1',
             [$playerId]
         );
@@ -101,16 +79,16 @@ class PlayerProgressService
         if (!$player) {
             return [
                 'player' => null,
-                'season_year' => $seasonYear,
+                'seasons' => [],
                 'rounds' => [],
             ];
         }
 
-        // Every round played this season is included (left join), even ones the
-        // selected player missed, so the chart can show a gap instead of silently
-        // skipping that round number.
+        // History is archived at Finish Round. Include missed-round slots only
+        // within seasons where this player has recorded results.
         $roundRows = $this->db->fetchAll(
-            'SELECT hr.number_round,
+            'SELECT hr.season_year,
+                    hr.number_round,
                     hr.round_date,
                     COALESCE(cp.name_course, "") AS course_name,
                     hc.score,
@@ -129,28 +107,45 @@ class PlayerProgressService
                     SELECT MAX(ha2.row_id)
                     FROM TW4_base.handicap_audit ha2
                     WHERE ha2.row_id_player = ?
-                                            AND ha2.season_year = ?
+                      AND ha2.season_year = hr.season_year COLLATE utf8mb4_0900_ai_ci
                       AND ha2.number_round = hr.number_round
                 )
              LEFT JOIN TW4_base.course_played cp
                 ON cp.row_id = hr.course_played_id
-             WHERE hr.season_year = ?
-             ORDER BY hr.number_round ASC',
-            [$playerId, $playerId, $seasonYear, $seasonYear]
+             WHERE EXISTS (
+                 SELECT 1
+                 FROM TW4_history.card season_card
+                 INNER JOIN TW4_history.round season_round
+                    ON season_round.season_year = season_card.season_year
+                   AND season_round.number_round = season_card.number_round
+                 WHERE season_card.row_id_player = ?
+                   AND season_card.season_year = hr.season_year
+                   AND season_card.points IS NOT NULL
+             )
+             ORDER BY hr.season_year ASC, hr.number_round ASC',
+            [$playerId, $playerId, $playerId]
         );
 
         $rounds = [];
-        // Round 1's starting handicap is always fixed at the baseline level; every
-        // following round's starting marker carries on from wherever the previous
-        // round's handicap ended up (which is the same level if it didn't change).
+        $seasons = [];
+        // Each season's first recorded handicap starts at the reference level;
+        // subsequent rounds carry forward that season's handicap movement.
         $currentLevel = self::HANDICAP_BASELINE_LEVEL;
+        $previousSeason = null;
         foreach ($roundRows as $row) {
+            $seasonYear = (string) $row['season_year'];
+            if ($seasonYear !== $previousSeason) {
+                $seasons[] = $seasonYear;
+                $currentLevel = self::HANDICAP_BASELINE_LEVEL;
+                $previousSeason = $seasonYear;
+            }
             $played = $row['points'] !== null;
 
             if (!$played) {
                 // Player missed this round: show its slot on the chart with no bar and
                 // no handicap markers, and leave the running handicap level untouched.
                 $rounds[] = [
+                    'season_year' => $seasonYear,
                     'number_round' => (int) ($row['number_round'] ?? 0),
                     'round_date' => (string) ($row['round_date'] ?? ''),
                     'course_name' => (string) ($row['course_name'] ?? ''),
@@ -201,6 +196,7 @@ class PlayerProgressService
             }
 
             $rounds[] = [
+                'season_year' => $seasonYear,
                 'number_round' => (int) ($row['number_round'] ?? 0),
                 'round_date' => (string) ($row['round_date'] ?? ''),
                 'course_name' => (string) ($row['course_name'] ?? ''),
@@ -218,7 +214,7 @@ class PlayerProgressService
 
         return [
             'player' => $player,
-            'season_year' => $seasonYear,
+            'seasons' => $seasons,
             'rounds' => $rounds,
         ];
     }

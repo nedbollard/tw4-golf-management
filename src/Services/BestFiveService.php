@@ -18,7 +18,7 @@ class BestFiveService
         $this->db->query(
             "CREATE DATABASE IF NOT EXISTS TW4_holding
              CHARACTER SET utf8mb4
-             COLLATE utf8mb4_general_ci"
+             COLLATE utf8mb4_0900_ai_ci"
         );
 
         $tableDdl = "
@@ -45,7 +45,7 @@ class BestFiveService
                 UNIQUE KEY uk_best_five_scores_season_player (season_year, row_id_player),
                 KEY idx_best_five_scores_player (row_id_player),
                 KEY idx_best_five_scores_season (season_year)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
         ";
 
         $this->db->query(sprintf($tableDdl, 'TW4_live'));
@@ -77,7 +77,7 @@ class BestFiveService
                 UNIQUE KEY uk_history_best_five_scores_movement_player (season_year, number_round_movement, row_id_player),
                 KEY idx_history_best_five_scores_movement (season_year, number_round_movement),
                 KEY idx_history_best_five_scores_player (row_id_player)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
         );
     }
 

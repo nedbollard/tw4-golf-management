@@ -1717,6 +1717,18 @@ body.page-player-progress {
     stroke-width: 1;
 }
 
+.progress-season-label {
+    fill: var(--color-text-primary);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.progress-season-separator {
+    stroke: #94a3b8;
+    stroke-dasharray: 5 4;
+    stroke-width: 1;
+}
+
 .progress-base-line {
     stroke: #86efac;
     stroke-width: 2;

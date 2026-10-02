@@ -1089,7 +1089,7 @@ class SnapshotExportService
                         FROM TW4_history.eclectic_scores curr
                                                 WHERE curr.season_year = ?
                           AND curr.row_id_player = es.row_id_player
-                                                    AND curr.ident_eclectic COLLATE utf8mb4_general_ci = CAST(? AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci
+                                                    AND curr.ident_eclectic COLLATE utf8mb4_0900_ai_ci = CAST(? AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci
                           AND curr.number_round_movement = es.number_round_movement
                         LIMIT 1
                     ) - (
@@ -1097,13 +1097,13 @@ class SnapshotExportService
                         FROM TW4_history.eclectic_scores prev
                                                 WHERE prev.season_year = ?
                           AND prev.row_id_player = es.row_id_player
-                                                    AND prev.ident_eclectic COLLATE utf8mb4_general_ci = CAST(? AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci
+                                                    AND prev.ident_eclectic COLLATE utf8mb4_0900_ai_ci = CAST(? AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci
                           AND prev.number_round_movement = (
                               SELECT MAX(prev2.number_round_movement)
                               FROM TW4_history.eclectic_scores prev2
                                                             WHERE prev2.season_year = ?
                                 AND prev2.row_id_player = es.row_id_player
-                                                                AND prev2.ident_eclectic COLLATE utf8mb4_general_ci = CAST(? AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci
+                                                                AND prev2.ident_eclectic COLLATE utf8mb4_0900_ai_ci = CAST(? AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci
                                 AND prev2.number_round_movement < es.number_round_movement
                           )
                         LIMIT 1

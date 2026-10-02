@@ -21,6 +21,24 @@ Primary entry points:
 1. Home: /
 2. Login: /login
 
+## Player Progress
+From Home, choose **View Player Progress** (`/player-progress`), select a player,
+then choose **Open Chart**.
+
+- The selector includes only currently active players with recorded results in
+  at least one season, including players with previous-season history only.
+- The chart shows all their available archived round history, oldest season first.
+  Unfinished live-round data is not included; history is archived at Finish Round.
+- Each season has a labelled section, with shading and a separator between seasons.
+  Scroll horizontally to see the full history. Round numbers restart per season,
+  and tooltips identify the season, round and full date.
+- Missed rounds remain visible as gaps within seasons where the player has results.
+- Handicap movement starts from each season's first recorded applied handicap.
+  Trend lines do not connect across season boundaries.
+- Rounds and points totals cover all displayed seasons. Latest handicap is from
+  the latest recorded round. Players are shown by alias or player identifier,
+  never by their real name.
+
 ## First Sign-In After Installation
 A new installation is seeded with a single `admin` account whose password is published in
 the project repository. It is an installation credential, not a usable account.
