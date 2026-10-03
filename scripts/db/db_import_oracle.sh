@@ -2,6 +2,7 @@
 set -euo pipefail
 
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.oracle.yml}"
+RESTORE_TARGET="${RESTORE_TARGET:-oracle}"
 DB_NAMES=(TW4_base TW4_live TW4_history TW4_holding)
 MYSQL_WAIT_TIMEOUT="${MYSQL_WAIT_TIMEOUT:-180}"
 
@@ -9,6 +10,11 @@ if [ $# -ne 1 ]; then
   echo "Usage: $0 /path/to/dev_to_oracle_all_tw4_dbs_YYYYmmdd_HHMMSS.sql.gz"
   exit 1
 fi
+
+[[ "$RESTORE_TARGET" =~ ^[a-zA-Z0-9_-]+$ ]] || {
+  echo "[ERROR] Invalid RESTORE_TARGET label: $RESTORE_TARGET" >&2
+  exit 1
+}
 
   DUMP_GZ="$1"
   SUM_FILE="${DUMP_GZ}.sha256"
@@ -26,7 +32,7 @@ if [ -z "${DB_PASSWORD-}" ]; then
 fi
 : "${DB_PASSWORD:?DB_PASSWORD is required}"
 
-    echo "[INFO] Ensuring prod db container is up..."
+    echo "[INFO] Ensuring ${RESTORE_TARGET} db container is up..."
     docker compose -f "$COMPOSE_FILE" up -d db
 
     echo "[INFO] Waiting for MySQL readiness (timeout: ${MYSQL_WAIT_TIMEOUT}s)..."
@@ -58,9 +64,9 @@ fi
 
     TS="$(date +%Y%m%d_%H%M%S)"
     mkdir -p backup
-    PRE_BACKUP="backup/oracle_pre_restore_${TS}.sql.gz"
+    PRE_BACKUP="backup/${RESTORE_TARGET}_pre_restore_${TS}.sql.gz"
 
-    echo "[INFO] Taking Oracle safety backup: ${PRE_BACKUP}"
+    echo "[INFO] Taking ${RESTORE_TARGET} safety backup: ${PRE_BACKUP}"
     docker compose -f "$COMPOSE_FILE" exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
       mysqldump -h 127.0.0.1 -P 3306 -u root \
       --single-transaction \

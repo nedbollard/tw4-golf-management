@@ -20,7 +20,7 @@ class ComposeHealthcheckTest extends TestCase
     {
         $root = __DIR__ . '/../..';
         $this->assertFileExists($root . '/docker-compose.oracle.yml');
-        foreach (['bootstrap-systest.sh', 'db/db_import_prod.sh', 'db/db_import_systest.sh',
+        foreach (['bootstrap-systest.sh', 'db/db_import_oracle.sh',
             'reports_sync_prod.sh', 'reports_sync_systest.sh'] as $name) {
             $script = file_get_contents($root . '/scripts/' . $name);
             $this->assertStringContainsString('COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.oracle.yml}"', $script);

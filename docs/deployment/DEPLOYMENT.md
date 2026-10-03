@@ -223,9 +223,9 @@ From the local development checkout, with SSH aliases `tw4-oracle-prod` and
 `tw4-oracle-systest` configured, run one of:
 
 ```bash
-./scripts/db/db_pull_from_oracle_prod.sh development --yes
-./scripts/db/db_pull_from_oracle_prod.sh systest --yes
-./scripts/db/db_pull_from_oracle_prod.sh both --yes
+./scripts/db/db_pull_from_oracle.sh development --yes
+./scripts/db/db_pull_from_oracle.sh systest --yes
+./scripts/db/db_pull_from_oracle.sh both --yes
 ```
 
 This takes one snapshot of `TW4_base`, `TW4_live`, `TW4_history`, and
@@ -234,14 +234,47 @@ directory with a checksum, then replaces only the selected target databases.
 The system-test checkout is `~/tw4-golf-management`; development uses the local
 checkout's `docker-compose-development.yml`. Both targets take a pre-restore backup in their
 own `backup/` directory before dropping their databases. The existing import
-scripts print the backup location for recovery. Production is never imported into.
+script prints the backup location for recovery. Production is never imported into.
 If a target fails, the script stops; the saved production snapshot can be reused
-with the appropriate `db_import_systest.sh` script after resolving the failure.
+with `db_import_oracle.sh` after resolving the failure, explicitly selecting
+`COMPOSE_FILE=docker-compose-development.yml RESTORE_TARGET=development` for a
+local development restore.
 
 Treat snapshots and pre-restore backups as production data: keep access limited,
 do not commit or distribute them, and remove them when no longer needed. This
 copies databases only, not report files, uploaded files, or environment settings.
 The SSH aliases can be overridden with `TW4_PROD_SSH` and `TW4_SYSTEST_SSH`.
+
+## Oracle Database Uploads and Restores
+
+Both Oracle environments use the same scripts; the host and checkout remain
+different and must not be inferred from the shared Compose filename.
+
+```bash
+./scripts/db/db_export_dev.sh
+./scripts/db/db_push_to_oracle.sh systest
+./scripts/db/db_push_to_oracle.sh prod
+```
+
+The upload script requires an explicit target, uses the corresponding SSH alias
+above, and optionally accepts a dump path as its second argument. Otherwise it
+uses the latest development export. It validates gzip/checksum, uploads only,
+and prints a restore command for the selected host and checkout. Configure SSH
+keys/users in the aliases rather than hard-coding local key paths in scripts.
+
+On the selected Oracle host, after reviewing the dump and stopping writers:
+
+```bash
+RESTORE_TARGET=systest ./scripts/db/db_import_oracle.sh /tmp/tw4-import/dump.sql.gz
+# On production, use RESTORE_TARGET=prod instead.
+```
+
+The import defaults to `docker-compose.oracle.yml`, backs up the current four
+schemas, then replaces them with the dump. `RESTORE_TARGET` is a log/backup label,
+not a host selector. The import must be run in the intended host's checkout.
+The renamed pull script still reads **only production** and restores only the
+explicitly selected lower environments; it does not offer a production restore.
+Deploy the consolidated scripts to Oracle hosts before using upload/pull commands.
 
 ## Standardising MySQL 8 Collations
 

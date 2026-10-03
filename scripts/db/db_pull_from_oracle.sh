@@ -61,12 +61,12 @@ if [ "$TARGET" = systest ] || [ "$TARGET" = both ]; then
   ssh "$SYSTEST_SSH" "mkdir -p ${REMOTE_DROP_DIR}"
   scp "$DUMP" "${DUMP}.sha256" "${SYSTEST_SSH}:${REMOTE_DROP_DIR}/"
   echo "[INFO] Restoring system test..."
-  ssh "$SYSTEST_SSH" "cd ~/tw4-golf-management && ./scripts/db/db_import_systest.sh ${REMOTE_DROP_DIR}/${BASE}.sql.gz"
+  ssh "$SYSTEST_SSH" "cd ~/tw4-golf-management && RESTORE_TARGET=systest ./scripts/db/db_import_oracle.sh ${REMOTE_DROP_DIR}/${BASE}.sql.gz"
   echo "[OK] System test restored."
 fi
 
 if [ "$TARGET" = development ] || [ "$TARGET" = both ]; then
   echo "[INFO] Restoring local development..."
-  COMPOSE_FILE=docker-compose-development.yml RESTORE_TARGET=development "${SCRIPT_DIR}/db_import_systest.sh" "$DUMP"
+  COMPOSE_FILE=docker-compose-development.yml RESTORE_TARGET=development "${SCRIPT_DIR}/db_import_oracle.sh" "$DUMP"
   echo "[OK] Development restored."
 fi
