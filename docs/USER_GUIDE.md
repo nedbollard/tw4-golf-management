@@ -151,6 +151,11 @@ Route: /scores/enter
 
 Use this to capture card-level and hole-level scores.
 
+Enter all hole scores, then click **Calculate** (or press Enter when it is
+focused). **Save** remains disabled until calculation succeeds. Focus then moves
+to **Save**, with a red outline; press Enter or click it to save the card.
+Changing any score disables Save again until you recalculate.
+
 ### Present Results
 Route: /scores/present-results
 

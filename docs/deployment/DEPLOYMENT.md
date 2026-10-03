@@ -259,7 +259,9 @@ change.** Apply the normalizer to production's own current data, on its host.
 3. Schedule maintenance between rounds. Stop the app and any other database
    writers; keep the database service running. Coordinate the interruption with
    users. If phpMyAdmin or external jobs can write, stop or restrict them too.
-
+   
+  [ stop app & phpmyadmin: docker compose -f docker-compose.yml stop app phpmyadmin ]
+  
 4. Apply:
 
    ```bash

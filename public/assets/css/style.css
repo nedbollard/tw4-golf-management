@@ -3252,6 +3252,11 @@ body.page-enter-card {
     cursor: not-allowed;
 }
 
+.enter-card-actions button:focus:not(:disabled) {
+    outline: 2px solid #dc2626;
+    outline-offset: 3px;
+}
+
 .enter-card-footer {
     color: var(--color-muted);
     font-size: 0.85rem;

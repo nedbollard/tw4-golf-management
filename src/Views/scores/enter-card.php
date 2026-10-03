@@ -8,12 +8,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
-    <link href="/assets/css/style.css" rel="stylesheet">
+    <link href="/assets/css/style.css?v=<?php echo urlencode((string) filemtime(__DIR__ . '/../../../public/assets/css/style.css')); ?>" rel="stylesheet">
 </head>
 <body class="page-enter-card">
 <?php
 $roundNumber = (int) ($round['round_number'] ?? 0);
 $player = $entry['player'] ?? [];
+$canSave = !empty($calculationComplete) && empty($errors);
 $playerDisplay = trim((string) (($player['first_name'] ?? '') . ' ' . ($player['last_name'] ?? '')));
 $playerIdentifier = (string) ($player['alias'] ?? '');
 if ($playerIdentifier === '') {
@@ -153,7 +154,7 @@ $sfpTotalClass = static function ($points): string {
 
                     <div class="enter-card-actions">
                         <button type="button" id="calculate-button">Calculate</button>
-                        <button type="button" id="save-button">Save</button>
+                        <button type="button" id="save-button" <?php echo $canSave ? '' : 'disabled'; ?>>Save</button>
                     </div>
                 </form>
             </div>
@@ -207,6 +208,7 @@ $sfpTotalClass = static function ($points): string {
 
     scoreInputs.forEach((input, index) => {
         input.addEventListener('input', () => {
+            saveButton.disabled = true;
             const normalized = normalizeScoreInput(input);
             if (normalized === '') {
                 return;
@@ -224,26 +226,29 @@ $sfpTotalClass = static function ($points): string {
             input.select();
             input.setCustomValidity('');
         });
+
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                (saveButton.disabled ? calculateButton : saveButton).click();
+            }
+        });
     });
 
-    if (scoreInputs.length > 0) {
+    if (!saveButton.disabled) {
+        saveButton.focus();
+    } else if (scoreInputs.length > 0) {
         scoreInputs[0].focus();
         scoreInputs[0].select();
     }
 
-    const submitForm = (action) => {
-        actionField.value = action;
-
-        scoreInputs.forEach((input) => {
-            normalizeScoreInput(input);
-        });
-
-        if (!form.reportValidity()) {
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (form.dataset.saveLocked === 'true') {
             return;
         }
-
-        form.submit();
-    };
+        (saveButton.disabled ? calculateButton : saveButton).click();
+    });
 
     calculateButton.addEventListener('click', () => {
         if (form.dataset.saveLocked === 'true') {
@@ -266,9 +271,7 @@ $sfpTotalClass = static function ($points): string {
         calculateButton.style.opacity = '1';
         calculateButton.setAttribute('aria-disabled', 'true');
 
-        saveButton.style.pointerEvents = 'none';
-        saveButton.style.opacity = '0.65';
-        saveButton.setAttribute('aria-disabled', 'true');
+        saveButton.disabled = true;
 
         window.setTimeout(() => {
             form.submit();
@@ -276,7 +279,7 @@ $sfpTotalClass = static function ($points): string {
     });
 
     saveButton.addEventListener('click', () => {
-        if (form.dataset.saveLocked === 'true') {
+        if (saveButton.disabled || form.dataset.saveLocked === 'true') {
             return;
         }
 

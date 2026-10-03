@@ -171,6 +171,7 @@ class ScoreController extends BaseController
             'round' => $active,
             'entry' => $calculated,
             'errors' => [],
+            'calculationComplete' => true,
         ]);
     }
 
