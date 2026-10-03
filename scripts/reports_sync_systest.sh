@@ -23,14 +23,12 @@ LOCAL_REPORTS="${LOCAL_REPORTS:-$HOME/ReportsReadyForProd/reports}"
 # Maintain a local host cache of generated reports so the Oracle sync always uses a stable,
 # locally-cached copy of the current app-container reports before transfer.
 REPORTS_SOURCE="${REPORTS_SOURCE:-auto}"   # auto|container|host
-LOCAL_COMPOSE_FILE="${LOCAL_COMPOSE_FILE:-docker-compose.yml}"
+LOCAL_COMPOSE_FILE="${LOCAL_COMPOSE_FILE:-docker-compose-development.yml}"
 SSH_KEY="${SSH_KEY:-$HOME/keys/ssh-key-2026-05-11.key}"
 ORACLE_USER="${ORACLE_USER:-ubuntu}"
 ORACLE_HOST="${ORACLE_HOST:-140.238.200.204}"
 REMOTE_PROJECT="${REMOTE_PROJECT:-/home/ubuntu/tw4-golf-management}"
-PREFERRED_COMPOSE_FILE="docker-compose.systest.yml"
-LEGACY_COMPOSE_FILE="docker-compose.prod.yml"
-COMPOSE_FILE="${COMPOSE_FILE:-}"
+COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.oracle.yml}"
 REMOTE_STAGE="${REMOTE_STAGE:-/tmp/tw4-reports-sync}"
 CONTAINER_REPORTS="/var/www/html/public/reports"
 VERIFY_SAMPLE_REL="${VERIFY_SAMPLE_REL:-}"
@@ -40,10 +38,6 @@ cd "$(dirname "$0")/.."
 MIRROR=0
 if [ "${1:-}" = "--mirror" ]; then
   MIRROR=1
-fi
-
-if [ -z "$COMPOSE_FILE" ]; then
-  COMPOSE_FILE="$PREFERRED_COMPOSE_FILE"
 fi
 
 [ -f "$SSH_KEY" ]       || { echo "[ERROR] SSH key not found: $SSH_KEY" >&2; exit 1; }
@@ -175,22 +169,15 @@ REMOTE
 
 echo "[3/5] Copying project reports into the app container and fixing permissions"
 retry_cmd "copy reports into container" \
-  "${SSH[@]}" "${ORACLE_USER}@${ORACLE_HOST}" bash -s -- "$REMOTE_PROJECT" "$COMPOSE_FILE" "$PREFERRED_COMPOSE_FILE" "$LEGACY_COMPOSE_FILE" "$CONTAINER_REPORTS" "$MIRROR" <<'REMOTE'
+  "${SSH[@]}" "${ORACLE_USER}@${ORACLE_HOST}" bash -s -- "$REMOTE_PROJECT" "$COMPOSE_FILE" "$CONTAINER_REPORTS" "$MIRROR" <<'REMOTE'
 set -Eeuo pipefail
-PROJECT="$1"; COMPOSE="$2"; PREFERRED_COMPOSE="$3"; LEGACY_COMPOSE="$4"; DEST="$5"; MIRROR="$6"
+PROJECT="$1"; COMPOSE="$2"; DEST="$3"; MIRROR="$4"
 cd "$PROJECT"
 PROJECT_REPORTS="${PROJECT}/public/reports"
 
 if [ ! -f "$COMPOSE" ]; then
-  if [ -f "$PREFERRED_COMPOSE" ]; then
-    COMPOSE="$PREFERRED_COMPOSE"
-  elif [ -f "$LEGACY_COMPOSE" ]; then
-    COMPOSE="$LEGACY_COMPOSE"
-    echo "  [WARN] Using legacy compose file: $LEGACY_COMPOSE"
-  else
-    echo "[ERROR] Compose file not found: $COMPOSE (preferred: $PREFERRED_COMPOSE; legacy: $LEGACY_COMPOSE)" >&2
-    exit 1
-  fi
+  echo "[ERROR] Compose file not found: $COMPOSE" >&2
+  exit 1
 fi
 
 CID="$(docker compose -f "$COMPOSE" ps -q app)"
@@ -210,20 +197,14 @@ REMOTE
 
 echo "[4/5] Verifying HTML count in container"
 retry_cmd "verify HTML count in container" \
-  "${SSH[@]}" "${ORACLE_USER}@${ORACLE_HOST}" bash -s -- "$REMOTE_PROJECT" "$COMPOSE_FILE" "$PREFERRED_COMPOSE_FILE" "$LEGACY_COMPOSE_FILE" "$CONTAINER_REPORTS" "$VERIFY_SAMPLE_REL" "$LOCAL_SAMPLE_HASH" <<'REMOTE'
+  "${SSH[@]}" "${ORACLE_USER}@${ORACLE_HOST}" bash -s -- "$REMOTE_PROJECT" "$COMPOSE_FILE" "$CONTAINER_REPORTS" "$VERIFY_SAMPLE_REL" "$LOCAL_SAMPLE_HASH" <<'REMOTE'
 set -Eeuo pipefail
-PROJECT="$1"; COMPOSE="$2"; PREFERRED_COMPOSE="$3"; LEGACY_COMPOSE="$4"; DEST="$5"; SAMPLE_REL="${6-}"; LOCAL_HASH="${7-}"
+PROJECT="$1"; COMPOSE="$2"; DEST="$3"; SAMPLE_REL="${4-}"; LOCAL_HASH="${5-}"
 cd "$PROJECT"
 
 if [ ! -f "$COMPOSE" ]; then
-  if [ -f "$PREFERRED_COMPOSE" ]; then
-    COMPOSE="$PREFERRED_COMPOSE"
-  elif [ -f "$LEGACY_COMPOSE" ]; then
-    COMPOSE="$LEGACY_COMPOSE"
-  else
-    echo "[ERROR] Compose file not found for verification." >&2
-    exit 1
-  fi
+  echo "[ERROR] Compose file not found for verification: $COMPOSE" >&2
+  exit 1
 fi
 
 CID="$(docker compose -f "$COMPOSE" ps -q app)"

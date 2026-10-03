@@ -20,16 +20,16 @@
     OUT_SHA="${OUT_GZ}.sha256"
 
     echo "[INFO] Ensuring local db container is up..."
-    docker compose up -d db
+    docker compose -f docker-compose-development.yml up -d db
 
     echo "[INFO] Waiting for MySQL readiness..."
-    until docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    until docker compose -f docker-compose-development.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
       mysqladmin -h 127.0.0.1 -P 3306 -u root ping --silent >/dev/null 2>&1; do
       sleep 2
     done
 
     echo "[INFO] Creating dump: ${OUT_SQL}"
-    docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+    docker compose -f docker-compose-development.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
       mysqldump -h 127.0.0.1 -P 3306 -u root \
       --single-transaction \
       --routines --triggers --events \

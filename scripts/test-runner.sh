@@ -61,7 +61,7 @@ check_directory() {
 
 # Check if Docker containers are running
 check_docker() {
-    if ! docker compose ps | grep -q "Up"; then
+    if ! docker compose -f docker-compose-development.yml ps | grep -q "Up"; then
         print_warning "Docker containers are not running. Starting them..."
         "$SCRIPT_DIR/tw4-manage.sh" start
         sleep 5
@@ -70,7 +70,7 @@ check_docker() {
 
 # Validate DB credentials before running setup or parity checks.
 validate_db_connection() {
-    if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "SELECT 1;" >/dev/null 2>&1; then
+    if ! docker compose -f docker-compose-development.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "SELECT 1;" >/dev/null 2>&1; then
         print_error "Cannot connect to MySQL with the provided DB_PASSWORD."
         print_error "Set DB_PASSWORD in .env (or export it) to match docker-compose MySQL credentials."
         return 1
@@ -81,13 +81,13 @@ validate_db_connection() {
 # Ensure TW4_base has schema when running against a freshly recreated volume.
 ensure_reference_database_schema() {
     local table_count
-    table_count=$(docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -N -s -u root -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='TW4_base' AND table_type='BASE TABLE';" 2>/dev/null)
+    table_count=$(docker compose -f docker-compose-development.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -N -s -u root -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='TW4_base' AND table_type='BASE TABLE';" 2>/dev/null)
 
     if [ "$table_count" = "0" ]; then
         print_status "TW4_base is empty; applying baseline migrations..."
         for migration in $(ls src/migrations/*.sql | grep -v '017_create_live_database_schema.sql' | grep -v '018_seed_live_round.sql' | grep -v '019_round_workflow_and_lock.sql' | grep -v '021_live_round_start_defaults.sql' | grep -v '022_live_card_tables.sql' | grep -v '042_card_entry_reopened.sql' | grep -v '999_current_schema.sql' | sort); do
             print_status "Applying $(basename "$migration") to TW4_base..."
-            if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root TW4_base < "$migration"; then
+            if ! docker compose -f docker-compose-development.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root TW4_base < "$migration"; then
                 print_error "Failed applying $(basename "$migration") to TW4_base."
                 return 1
             fi
@@ -103,7 +103,7 @@ check_test_database() {
 
     # Always recreate test DB to avoid stale schema from prior runs.
     print_status "Recreating test database..."
-    if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "DROP DATABASE IF EXISTS tw4_test; CREATE DATABASE tw4_test;"; then
+    if ! docker compose -f docker-compose-development.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "DROP DATABASE IF EXISTS tw4_test; CREATE DATABASE tw4_test;"; then
         print_error "Failed to recreate tw4_test database."
         print_error "Check DB_PASSWORD in .env or export DB_PASSWORD before running tests."
         return 1
@@ -114,7 +114,7 @@ check_test_database() {
     # base snapshot with only its schema qualifier redirected to tw4_test.
     print_status "Importing canonical base schema into tw4_test..."
     if ! sed 's/`TW4_base`/`tw4_test`/g' database/baseline/TW4_base_schema.sql \
-        | docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root; then
+        | docker compose -f docker-compose-development.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root; then
         print_error "Failed importing the canonical schema into tw4_test."
         return 1
     fi
@@ -127,7 +127,7 @@ run_unit_tests() {
     print_status "Running Unit Tests..."
     echo ""
     
-    docker compose exec -T app ./vendor/bin/phpunit --testsuite Unit --color=always
+    docker compose -f docker-compose-development.yml exec -T app ./vendor/bin/phpunit --testsuite Unit --color=always
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}Unit Tests: PASSED${NC}"
@@ -143,7 +143,7 @@ run_integration_tests() {
     print_status "Running Integration Tests..."
     echo ""
     
-    docker compose exec -T app ./vendor/bin/phpunit --testsuite Integration --color=always
+    docker compose -f docker-compose-development.yml exec -T app ./vendor/bin/phpunit --testsuite Integration --color=always
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}Integration Tests: PASSED${NC}"
@@ -159,7 +159,7 @@ run_all_tests() {
     print_status "Running All Tests..."
     echo ""
     
-    docker compose exec -T app ./vendor/bin/phpunit --color=always
+    docker compose -f docker-compose-development.yml exec -T app ./vendor/bin/phpunit --color=always
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}All Tests: PASSED${NC}"
@@ -175,7 +175,7 @@ run_tests_with_coverage() {
     print_status "Running Tests with Coverage..."
     echo ""
     
-    docker compose exec -T app ./vendor/bin/phpunit --color=always --coverage-html=coverage
+    docker compose -f docker-compose-development.yml exec -T app ./vendor/bin/phpunit --color=always --coverage-html=coverage
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}Tests with Coverage: PASSED${NC}"
@@ -199,7 +199,7 @@ run_specific_test() {
     print_status "Running specific test: $test_file"
     echo ""
     
-    docker compose exec -T app ./vendor/bin/phpunit "$test_file" --color=always
+    docker compose -f docker-compose-development.yml exec -T app ./vendor/bin/phpunit "$test_file" --color=always
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}Test: PASSED${NC}"
@@ -266,7 +266,7 @@ run_migration_schema_test() {
     test_schema=$(mktemp)
 
     # Ensure temp DB exists fresh
-    if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "DROP DATABASE IF EXISTS ${temp_db}; CREATE DATABASE ${temp_db};" >/dev/null 2>&1; then
+    if ! docker compose -f docker-compose-development.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "DROP DATABASE IF EXISTS ${temp_db}; CREATE DATABASE ${temp_db};" >/dev/null 2>&1; then
         print_error "Failed to create temporary database ${temp_db}."
         print_error "Check DB_PASSWORD in .env or export DB_PASSWORD before running tests."
         rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
@@ -277,7 +277,7 @@ run_migration_schema_test() {
     # TW4_history, and TW4_holding. Replay the canonical base snapshot into the
     # temporary schema rather than redirecting cross-schema migration effects.
     if ! sed "s/\`TW4_base\`/\`${temp_db}\`/g" database/baseline/TW4_base_schema.sql \
-        | docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root \
+        | docker compose -f docker-compose-development.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root \
             >> "$migrate_log" 2>&1; then
         print_error "Canonical schema replay failed for ${temp_db}."
         cat "$migrate_log"
@@ -286,13 +286,13 @@ run_migration_schema_test() {
     fi
 
     # Compare table sets
-    if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "USE TW4_base; SHOW TABLES;" | tail -n +2 | sort > "$tw4_tables"; then
+    if ! docker compose -f docker-compose-development.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "USE TW4_base; SHOW TABLES;" | tail -n +2 | sort > "$tw4_tables"; then
         print_error "Failed to read TW4_base table list."
         rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
         return 1
     fi
 
-    if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "USE ${temp_db}; SHOW TABLES;" | tail -n +2 | sort > "$test_tables"; then
+    if ! docker compose -f docker-compose-development.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "USE ${temp_db}; SHOW TABLES;" | tail -n +2 | sort > "$test_tables"; then
         print_error "Failed to read ${temp_db} table list."
         rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
         return 1
@@ -307,14 +307,14 @@ run_migration_schema_test() {
 
     # Compare full CREATE TABLE output while normalizing AUTO_INCREMENT drift
     while IFS= read -r table_name; do
-        if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "USE TW4_base; SHOW CREATE TABLE ${table_name};" \
+        if ! docker compose -f docker-compose-development.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "USE TW4_base; SHOW CREATE TABLE ${table_name};" \
             | sed -E 's/ AUTO_INCREMENT=[0-9]+//g' >> "$tw4_schema"; then
             print_error "Failed to read SHOW CREATE TABLE for TW4_base.${table_name}"
             rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
             return 1
         fi
 
-        if ! docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "USE ${temp_db}; SHOW CREATE TABLE ${table_name};" \
+        if ! docker compose -f docker-compose-development.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root -e "USE ${temp_db}; SHOW CREATE TABLE ${table_name};" \
             | sed -E 's/ AUTO_INCREMENT=[0-9]+//g' >> "$test_schema"; then
             print_error "Failed to read SHOW CREATE TABLE for ${temp_db}.${table_name}"
             rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
@@ -331,7 +331,7 @@ run_migration_schema_test() {
 
     print_status "Canonical schema replay/parity test passed"
 
-    docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root \
+    docker compose -f docker-compose-development.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root \
         -e "DROP DATABASE IF EXISTS ${temp_db};" >/dev/null 2>&1
     rm -f "$migrate_log" "$tw4_tables" "$test_tables" "$tw4_schema" "$test_schema"
     return 0

@@ -12,4 +12,4 @@ database="$1"
 shift
 query="$*"
 
-docker compose exec -T db sh -lc 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" -E "$1" -e "$2"' -- "$database" "$query"
+docker compose -f docker-compose-development.yml exec -T db sh -lc 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" -E "$1" -e "$2"' -- "$database" "$query"

@@ -2,6 +2,21 @@
 
 TW4 is a good fit for a small VPS running Docker Compose. That keeps the app close to its current Docker-based development setup and preserves the persistent state it needs for scoring.
 
+## Compose Configuration
+
+- [docker-compose.oracle.yml](../../docker-compose.oracle.yml) is shared by Oracle
+  production and system test. Each environment retains its own checkout, `.env`,
+  Compose project identity and persistent volumes.
+- [docker-compose-development.yml](../../docker-compose-development.yml) is for
+  local development. Always include `-f` when invoking Compose directly.
+- The separate browser-test configuration remains unchanged.
+
+Deploy the renamed file and updated scripts together. Keep the same project
+directory and any existing `COMPOSE_PROJECT_NAME`/`-p` setting; changing the
+configuration filename alone does not change the stack identity. Update external
+jobs, aliases and deployment commands outside this repository to use the new
+filenames too. Do not run `down -v` or bootstrap to perform this rename.
+
 ## Recommended Hosting Shape
 
 Use a VPS such as DigitalOcean, Hetzner, or AWS Lightsail.
@@ -29,7 +44,7 @@ What to use there:
 
 1. One Ubuntu VM instance.
 2. Docker Engine and Docker Compose plugin.
-3. The system-test stack in [docker-compose.systest.yml](../../docker-compose.systest.yml).
+3. The system-test stack in [docker-compose.oracle.yml](../../docker-compose.oracle.yml).
 4. [Caddyfile](../../Caddyfile) for HTTPS termination.
 
 Oracle Cloud is the best free option here because TW4 is stateful and container-friendly, but not a good fit for shared free PHP hosting.
@@ -45,7 +60,7 @@ Use this path if you want the free option with the least friction:
 5. Copy `.env.example` to `.env`.
 6. Set `DB_PASSWORD`, `CADDY_DOMAIN`, and `CADDY_EMAIL` in `.env`.
 7. Run `./scripts/bootstrap-systest.sh`.
-8. Start the system-test stack with `docker compose -f docker-compose.systest.yml up -d --build`.
+8. Start the system-test stack with `docker compose -f docker-compose.oracle.yml up -d --build`.
 9. Visit the HTTPS domain and verify the scorer menu loads.
 10. Run a smoke test as scorer and admin before sharing the URL.
 
@@ -64,7 +79,7 @@ Use this while you are actually creating the Oracle instance:
 9. Clone this TW4 repository onto the VM.
 10. Copy `.env.example` to `.env` and set `DB_PASSWORD`, `CADDY_DOMAIN`, and `CADDY_EMAIL`.
 11. Run `./scripts/bootstrap-systest.sh`.
-12. Start the stack with `docker compose -f docker-compose.systest.yml up -d --build`.
+12. Start the stack with `docker compose -f docker-compose.oracle.yml up -d --build`.
 13. Wait for Caddy to obtain TLS certificates.
 14. Open the HTTPS URL in a browser and confirm the scorer menu loads.
 15. Log in as scorer and admin and run a quick smoke test.
@@ -105,7 +120,7 @@ The current Docker setup already models most of this, so the smallest environmen
 4. Copy the repository to the server.
 5. Create a system-test `.env` with real values for `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, and `DEBUG=false`.
 6. Set `CADDY_DOMAIN` and `CADDY_EMAIL` in `.env`.
-7. Bring up the system-test stack with `docker compose -f docker-compose.systest.yml up -d --build`.
+7. Bring up the system-test stack with `docker compose -f docker-compose.oracle.yml up -d --build`.
 8. Let Caddy issue TLS certificates and serve the public domain.
 9. Keep MySQL private to the Docker network and do not expose it publicly.
 10. phpMyAdmin in system testing is bound to `127.0.0.1:8085` only. Reach it through an SSH tunnel such as `ssh -L 18085:127.0.0.1:8085 tw4-oracle`, then open `http://127.0.0.1:18085` locally.
@@ -142,13 +157,13 @@ Typical launch sequence:
 cp .env.example .env
 # edit .env with real DB_PASSWORD, CADDY_DOMAIN, and CADDY_EMAIL
 ./scripts/bootstrap-systest.sh
-docker compose -f docker-compose.systest.yml up -d --build
+docker compose -f docker-compose.oracle.yml up -d --build
 ```
 
 To follow the logs:
 
 ```bash
-docker compose -f docker-compose.systest.yml logs -f
+docker compose -f docker-compose.oracle.yml logs -f
 ```
 
 The bootstrap script will start the database container, rebuild the `TW4_base`,
@@ -164,7 +179,7 @@ If you are setting this up on a fresh VPS, follow this sequence:
 3. Create `.env` from `.env.example`.
 4. Set `DB_PASSWORD`, `CADDY_DOMAIN`, and `CADDY_EMAIL` in `.env`.
 5. Run `./scripts/bootstrap-systest.sh`.
-6. Start the stack with `docker compose -f docker-compose.systest.yml up -d --build`.
+6. Start the stack with `docker compose -f docker-compose.oracle.yml up -d --build`.
 7. Open the site in a browser and confirm the scorer menu loads.
 8. Log in as scorer and admin and run a short smoke test.
 9. Share the HTTPS URL with your tester.
@@ -172,7 +187,7 @@ If you are setting this up on a fresh VPS, follow this sequence:
 If anything fails during step 5 or 6, check the logs with:
 
 ```bash
-docker compose -f docker-compose.systest.yml logs -f
+docker compose -f docker-compose.oracle.yml logs -f
 ```
 
 ## Post-Bootstrap Smoke Checklist
@@ -182,7 +197,7 @@ After a system-test deploy or rebuild, run these checks in order:
 1. Confirm the system-test containers are the ones serving traffic:
 
 ```bash
-docker compose -f docker-compose.systest.yml ps
+docker compose -f docker-compose.oracle.yml ps
 ```
 
 2. Confirm the public site responds to real GET requests. Do not use `curl -I` for router verification, because the application only defines `GET` and `POST` routes and may return 404 for `HEAD`.
@@ -196,7 +211,7 @@ curl -k -s -o /dev/null -w "LOGIN %{http_code}\n" https://your-domain/login
 
 ```bash
 DB_PASSWORD=$(awk -F= '/^DB_PASSWORD=/{print substr($0, index($0,"=")+1); exit}' .env)
-docker compose -f docker-compose.systest.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+docker compose -f docker-compose.oracle.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
 	mysql -u root -N -s -e "SHOW DATABASES LIKE 'TW4_base'; SHOW DATABASES LIKE 'TW4_live'; SHOW DATABASES LIKE 'TW4_history';"
 ```
 
@@ -217,7 +232,7 @@ This takes one snapshot of `TW4_base`, `TW4_live`, `TW4_history`, and
 `TW4_holding` from production (`~/TW4`), saves it in the local ignored `backup/`
 directory with a checksum, then replaces only the selected target databases.
 The system-test checkout is `~/tw4-golf-management`; development uses the local
-checkout's `docker-compose.yml`. Both targets take a pre-restore backup in their
+checkout's `docker-compose-development.yml`. Both targets take a pre-restore backup in their
 own `backup/` directory before dropping their databases. The existing import
 scripts print the backup location for recovery. Production is never imported into.
 If a target fails, the script stops; the saved production snapshot can be reused
@@ -243,10 +258,10 @@ change.** Apply the normalizer to production's own current data, on its host.
 1. Run a read-only inventory/preflight with the explicit deployment Compose file:
 
    ```bash
-   bash scripts/db/db_normalize_collations.sh --compose-file docker-compose.systest.yml
+   bash scripts/db/db_normalize_collations.sh --compose-file docker-compose.oracle.yml
    ```
 
-   Development uses `docker-compose.yml`; use the actual Compose file on the
+   Development uses `docker-compose-development.yml`; use the actual Compose file on the
    production host. Without an explicit file, the script defaults to development.
    The four required schemas are `TW4_base`, `TW4_live`, `TW4_history` and
    `TW4_holding`; the separate PHPUnit database is not included.
@@ -260,13 +275,13 @@ change.** Apply the normalizer to production's own current data, on its host.
    writers; keep the database service running. Coordinate the interruption with
    users. If phpMyAdmin or external jobs can write, stop or restrict them too.
    
-  [ stop app & phpmyadmin: docker compose -f docker-compose.yml stop app phpmyadmin ]
+  [ stop app & phpmyadmin: docker compose -f docker-compose-development.yml stop app phpmyadmin ]
   
 4. Apply:
 
    ```bash
    bash scripts/db/db_normalize_collations.sh \
-     --compose-file docker-compose.systest.yml --apply --maintenance-window
+     --compose-file docker-compose.oracle.yml --apply --maintenance-window
    ```
 
    `--maintenance-window` acknowledges that writers are stopped; it does not
@@ -308,7 +323,7 @@ on the normalizer is available for similarly isolated rehearsal schemas.
 ## Deployment Notes
 
 1. `CADDY_EMAIL` must be a real email address you control. Placeholder addresses such as `you@example.com` will cause ACME registration to fail and HTTPS will not come up.
-2. If `docker compose -f docker-compose.systest.yml up` reports port 80 or 443 already in use, check for a host-level `caddy` service before assuming Docker is at fault.
+2. If `docker compose -f docker-compose.oracle.yml up` reports port 80 or 443 already in use, check for a host-level `caddy` service before assuming Docker is at fault.
 3. If the compose run warns about orphan containers, inspect them before removing them. A leftover phpMyAdmin container may be harmless, but an old frontend container on 80 or 443 will block the intended stack.
 
 ## What Not To Use

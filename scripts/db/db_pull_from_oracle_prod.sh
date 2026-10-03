@@ -45,7 +45,7 @@ cd ~/TW4
 DB_PASSWORD="$(awk -F= '/^DB_PASSWORD=/{print substr($0, index($0,"=")+1); exit}' .env)"
 : "${DB_PASSWORD:?DB_PASSWORD is required on production}"
 export DB_PASSWORD
-docker compose -f docker-compose.prod.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+docker compose -f docker-compose.oracle.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
   mysqldump -h 127.0.0.1 -P 3306 -u root --single-transaction \
   --routines --triggers --events --set-gtid-purged=OFF \
   --databases TW4_base TW4_live TW4_history TW4_holding | gzip -c
@@ -67,6 +67,6 @@ fi
 
 if [ "$TARGET" = development ] || [ "$TARGET" = both ]; then
   echo "[INFO] Restoring local development..."
-  COMPOSE_FILE=docker-compose.yml RESTORE_TARGET=development "${SCRIPT_DIR}/db_import_systest.sh" "$DUMP"
+  COMPOSE_FILE=docker-compose-development.yml RESTORE_TARGET=development "${SCRIPT_DIR}/db_import_systest.sh" "$DUMP"
   echo "[OK] Development restored."
 fi

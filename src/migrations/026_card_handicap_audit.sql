@@ -6,8 +6,8 @@
 --  4. Create handicap_audit table in TW4_base for independent admin handicap adjustments
 --
 -- Run against TW4_live first, then TW4_base:
---   docker compose exec -e MYSQL_PWD=${DB_PASSWORD} db mysql -u root TW4_live < src/migrations/026_card_handicap_audit.sql
---   docker compose exec -e MYSQL_PWD=${DB_PASSWORD} db mysql -u root TW4_base < src/migrations/026_card_handicap_audit.sql
+--   docker compose -f docker-compose-development.yml exec -e MYSQL_PWD=${DB_PASSWORD} db mysql -u root TW4_live < src/migrations/026_card_handicap_audit.sql
+--   docker compose -f docker-compose-development.yml exec -e MYSQL_PWD=${DB_PASSWORD} db mysql -u root TW4_base < src/migrations/026_card_handicap_audit.sql
 
 USE TW4_live;
 

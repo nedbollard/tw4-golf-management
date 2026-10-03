@@ -34,8 +34,8 @@ print_warning() {
 }
 
 # Check if we're in the right directory
-if [ ! -f "docker-compose.yml" ]; then
-    print_error "docker-compose.yml not found. Please run from project root."
+if [ ! -f "docker-compose-development.yml" ]; then
+    print_error "docker-compose-development.yml not found. Please run from project root."
     exit 1
 fi
 

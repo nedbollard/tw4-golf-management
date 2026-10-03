@@ -10,7 +10,7 @@
  *   php scripts/reexport-round-snapshots.php 25_26 16 17 18
  *
  * Run via docker compose:
- *   docker compose -f docker-compose.systest.yml exec app \
+ *   docker compose -f docker-compose.oracle.yml exec app \
  *       php scripts/reexport-round-snapshots.php 25_26 16 17 18
  */
 

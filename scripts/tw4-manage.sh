@@ -49,8 +49,8 @@ print_header() {
 
 # Check if we're in the right directory
 check_directory() {
-    if [ ! -f "docker-compose.yml" ]; then
-        print_error "docker-compose.yml not found. Please run from project root."
+    if [ ! -f "docker-compose-development.yml" ]; then
+        print_error "docker-compose-development.yml not found. Please run from project root."
         exit 1
     fi
 }
@@ -79,13 +79,13 @@ start_app() {
     check_directory
     
     # Check if containers are already running
-    if docker compose ps | grep -q "Up"; then
+    if docker compose -f docker-compose-development.yml ps | grep -q "Up"; then
         print_warning "Containers are already running!"
         return
     fi
     
     # Start containers
-    docker compose up -d
+    docker compose -f docker-compose-development.yml up -d
     
     if [ $? -eq 0 ]; then
         print_status "✅ TW4 application started successfully!"
@@ -112,7 +112,7 @@ stop_app() {
     print_status "Stopping TW4 application..."
     check_directory
     
-    docker compose down
+    docker compose -f docker-compose-development.yml down
     
     if [ $? -eq 0 ]; then
         print_status "✅ TW4 application stopped successfully!"
@@ -136,23 +136,23 @@ show_status() {
     check_directory
     
     echo ""
-    docker compose ps
+    docker compose -f docker-compose-development.yml ps
     echo ""
     
     # Check if main services are running
-    if docker compose ps | grep -q "app.*Up"; then
+    if docker compose -f docker-compose-development.yml ps | grep -q "app.*Up"; then
         echo -e "${GREEN}✅ Web Application: Running${NC}"
     else
         echo -e "${RED}❌ Web Application: Stopped${NC}"
     fi
     
-    if docker compose ps | grep -q "db.*Up"; then
+    if docker compose -f docker-compose-development.yml ps | grep -q "db.*Up"; then
         echo -e "${GREEN}✅ Database: Running${NC}"
     else
         echo -e "${RED}❌ Database: Stopped${NC}"
     fi
     
-    if docker compose ps | grep -q "phpmyadmin.*Up"; then
+    if docker compose -f docker-compose-development.yml ps | grep -q "phpmyadmin.*Up"; then
         echo -e "${GREEN}✅ phpMyAdmin: Running${NC}"
     else
         echo -e "${YELLOW}⚠️  phpMyAdmin: Stopped${NC}"
@@ -166,7 +166,7 @@ show_logs() {
     
     echo -e "${CYAN}Press Ctrl+C to exit logs${NC}"
     echo ""
-    docker compose logs -f app
+    docker compose -f docker-compose-development.yml logs -f app
 }
 
 # Run tests
@@ -175,14 +175,14 @@ run_tests() {
     check_directory
     
     # Ensure containers are running
-    if ! docker compose ps | grep -q "app.*Up"; then
+    if ! docker compose -f docker-compose-development.yml ps | grep -q "app.*Up"; then
         print_warning "Starting containers for testing..."
-        docker compose up -d
+        docker compose -f docker-compose-development.yml up -d
         sleep 5
     fi
     
     # Run tests
-    docker compose exec app ./vendor/bin/phpunit
+    docker compose -f docker-compose-development.yml exec app ./vendor/bin/phpunit
     
     if [ $? -eq 0 ]; then
         print_status "✅ All tests passed!"
@@ -211,14 +211,14 @@ connect_db() {
     check_directory
     
     # Ensure database container is running
-    if ! docker compose ps | grep -q "db.*Up"; then
+    if ! docker compose -f docker-compose-development.yml ps | grep -q "db.*Up"; then
         print_warning "Starting database container..."
-        docker compose up -d db
+        docker compose -f docker-compose-development.yml up -d db
         sleep 5
     fi
     
     echo -e "${CYAN}Connecting to MySQL database...${NC}"
-    docker compose exec -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root TW4_base
+    docker compose -f docker-compose-development.yml exec -e MYSQL_PWD="$DB_PASSWORD" db mysql -u root TW4_base
 }
 
 # Clean up
@@ -227,7 +227,7 @@ clean_up() {
     check_directory
     
     echo -e "${YELLOW}Stopping and removing containers...${NC}"
-    docker compose down -v --remove-orphans
+    docker compose -f docker-compose-development.yml down -v --remove-orphans
     
     echo -e "${YELLOW}Removing unused Docker images...${NC}"
     docker image prune -f
@@ -249,9 +249,9 @@ create_backup() {
     check_directory
     
     # Ensure database is running
-    if ! docker compose ps | grep -q "db.*Up"; then
+    if ! docker compose -f docker-compose-development.yml ps | grep -q "db.*Up"; then
         print_warning "Starting database for backup..."
-        docker compose up -d db
+        docker compose -f docker-compose-development.yml up -d db
         sleep 5
     fi
     
@@ -262,7 +262,7 @@ create_backup() {
     mkdir -p backup
     
     # Create backup
-    docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysqldump -u root TW4_base > "$BACKUP_FILE"
+    docker compose -f docker-compose-development.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db mysqldump -u root TW4_base > "$BACKUP_FILE"
     
     if [ $? -eq 0 ]; then
         print_status "✅ Backup created: $BACKUP_FILE"

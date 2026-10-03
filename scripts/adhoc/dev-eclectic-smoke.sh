@@ -86,7 +86,7 @@ fi
 
 run_mysql_scalar() {
   local sql="$1"
-  docker compose exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
+  docker compose -f docker-compose-development.yml exec -T -e MYSQL_PWD="$DB_PASSWORD" db \
     mysql -u root -N -B -e "$sql"
 }
 

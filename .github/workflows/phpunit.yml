@@ -15,7 +15,7 @@ jobs:
         suite: [Unit, Integration]
     env:
       DB_PASSWORD: tw4_ci_password
-      COMPOSE_FILE: docker-compose.systest.yml
+      COMPOSE_FILE: docker-compose.oracle.yml
 
     steps:
       - name: Checkout

@@ -9,7 +9,7 @@ NC='\033[0m'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-PREFERRED_COMPOSE_FILE="$REPO_ROOT/docker-compose.systest.yml"
+PREFERRED_COMPOSE_FILE="$REPO_ROOT/docker-compose.oracle.yml"
 COMPOSE_FILE="${COMPOSE_FILE-}"
 
 if [ -z "$COMPOSE_FILE" ]; then

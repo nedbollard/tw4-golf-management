@@ -26,24 +26,10 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-PREFERRED_COMPOSE_FILE="docker-compose.systest.yml"
-LEGACY_COMPOSE_FILE="docker-compose.prod.yml"
-
-if [ -n "${COMPOSE_FILE-}" ]; then
-    SELECTED_COMPOSE_FILE="$COMPOSE_FILE"
-elif [ -f "$PREFERRED_COMPOSE_FILE" ]; then
-    SELECTED_COMPOSE_FILE="$PREFERRED_COMPOSE_FILE"
-elif [ -f "$LEGACY_COMPOSE_FILE" ]; then
-    SELECTED_COMPOSE_FILE="$LEGACY_COMPOSE_FILE"
-    print_warn "Using legacy compose file '$LEGACY_COMPOSE_FILE'. Rename path to '$PREFERRED_COMPOSE_FILE' when convenient."
-else
-    SELECTED_COMPOSE_FILE="$PREFERRED_COMPOSE_FILE"
-fi
-
-COMPOSE_FILE="$SELECTED_COMPOSE_FILE"
+COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.oracle.yml}"
 
 if [ ! -f "$COMPOSE_FILE" ]; then
-    print_error "$PREFERRED_COMPOSE_FILE (or legacy $LEGACY_COMPOSE_FILE) not found. Run from the TW4 project root."
+    print_error "Compose file not found: $COMPOSE_FILE. Run from the TW4 project root."
     exit 1
 fi
 

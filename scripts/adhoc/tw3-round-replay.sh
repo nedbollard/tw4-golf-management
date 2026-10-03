@@ -21,7 +21,7 @@ mysql_query() {
     local database="$1"
     local sql="$2"
 
-    docker compose exec -T db sh -lc \
+    docker compose -f docker-compose-development.yml exec -T db sh -lc \
         'mysql -u root -p"$MYSQL_ROOT_PASSWORD" --batch --raw --skip-column-names "$1" -e "$2"' \
         -- "$database" "$sql"
 }

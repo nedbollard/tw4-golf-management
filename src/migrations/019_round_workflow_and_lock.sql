@@ -2,7 +2,7 @@
 -- Run against TW4_live database
 --
 -- Example:
---   docker compose exec -e MYSQL_PWD=${DB_PASSWORD} db mysql -u root TW4_live < src/migrations/019_round_workflow_and_lock.sql
+--   docker compose -f docker-compose-development.yml exec -e MYSQL_PWD=${DB_PASSWORD} db mysql -u root TW4_live < src/migrations/019_round_workflow_and_lock.sql
 
 USE TW4_live;
 

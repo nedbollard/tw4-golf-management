@@ -37,7 +37,7 @@ password**, so before the site is reachable by anyone else:
 3. If you would rather keep the `admin` username, rotate its password instead:
 
    ```bash
-   docker compose exec app php scripts/set-staff-password.php admin
+   docker compose -f docker-compose-development.yml exec app php scripts/set-staff-password.php admin
    ```
 
    The script prompts for the new password on stdin, so it is never written to shell
@@ -55,12 +55,21 @@ The complete documentation index is available in [docs/README.md](docs/README.md
 
 ## Docker Development
 
+Compose files are selected explicitly:
+- [docker-compose-development.yml](docker-compose-development.yml): local development.
+- [docker-compose.oracle.yml](docker-compose.oracle.yml): Oracle production and system test.
+- [docker-compose.e2e.yml](docker-compose.e2e.yml): isolated browser-test stack.
+
+Run commands from the repository root with `docker compose -f <file> ...`.
+The Oracle environments share a configuration file, not databases or volumes:
+keep each environment's existing checkout/project name and its own `.env`.
+
 ### Quick Start
 ```bash
 cd TW4
 cp .env.example .env
 # Edit .env and set DB_PASSWORD
-docker-compose up --build
+docker compose -f docker-compose-development.yml up --build
 ```
 
 ### Access Points

@@ -44,7 +44,7 @@ fi
 
 printf 'Refreshing Docker replay source %s from %s...\n' "$TARGET_DATABASE" "$SOURCE_DATABASE"
 
-docker compose exec -T db sh -lc \
+docker compose -f docker-compose-development.yml exec -T db sh -lc \
     'mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS \`$1\`; CREATE DATABASE \`$1\` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"' \
     -- "$TARGET_DATABASE"
 
@@ -57,10 +57,10 @@ mariadb-dump \
     --no-tablespaces \
     "$SOURCE_DATABASE" \
     "${REPLAY_TABLES[@]}" \
-| docker compose exec -T db sh -lc \
+| docker compose -f docker-compose-development.yml exec -T db sh -lc \
     'mysql -u root -p"$MYSQL_ROOT_PASSWORD" "$1"' \
     -- "$TARGET_DATABASE"
 
-docker compose exec -T db sh -lc \
+docker compose -f docker-compose-development.yml exec -T db sh -lc \
     'mysql -u root -p"$MYSQL_ROOT_PASSWORD" --batch --skip-column-names "$1" -e "SELECT CONCAT(COUNT(*), '\'' tables imported'\'') FROM information_schema.TABLES WHERE TABLE_SCHEMA = '\''$1'\''"' \
     -- "$TARGET_DATABASE"

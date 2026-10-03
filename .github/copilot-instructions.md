@@ -7,9 +7,9 @@ This file helps Copilot-style assistants (and future contributors) quickly under
 ## Build / Run
 - Local deps: `composer install`
 - Docker (development): from repository root:
-  - `docker-compose up --build` (app on http://localhost:8084, phpMyAdmin on http://localhost:8085, MySQL on host:3307)
+  - `docker compose -f docker-compose-development.yml up --build` (app on http://localhost:8084, phpMyAdmin on http://localhost:8085, MySQL on host:3307)
 - To run commands INSIDE app container (useful when vendor/ is not present locally):
-  - `docker compose exec app bash` then run commands (e.g. `./vendor/bin/phpunit`)
+  - `docker compose -f docker-compose-development.yml exec app bash` then run commands (e.g. `./vendor/bin/phpunit`)
 
 ## Tests
 - PHPUnit is used. Bootstrap: `vendor/autoload.php` (see phpunit.xml).
@@ -25,8 +25,8 @@ This file helps Copilot-style assistants (and future contributors) quickly under
   - `./vendor/bin/phpunit --coverage-html coverage`
 - Test DB / env (see phpunit.xml): DB_NAME=tw4_test, DB_HOST=db, DB_USER=root, DB_PASSWORD=${DB_PASSWORD}
 - To create the test database via docker:
-  - `docker compose exec -e MYSQL_PWD=${DB_PASSWORD} db mysql -u root -e "CREATE DATABASE tw4_test;"`
-  - Migrations: `docker compose exec -e MYSQL_PWD=${DB_PASSWORD} db mysql -u root tw4_test < src/migrations/001_create_tables.sql`
+  - `docker compose -f docker-compose-development.yml exec -e MYSQL_PWD=${DB_PASSWORD} db mysql -u root -e "CREATE DATABASE tw4_test;"`
+  - Migrations: `docker compose -f docker-compose-development.yml exec -e MYSQL_PWD=${DB_PASSWORD} db mysql -u root tw4_test < src/migrations/001_create_tables.sql`
 
 ## Linting / Static analysis
 - No repository-provided linter or static-analysis configuration detected (no scripts in composer.json). Add PHPCS/PHPMD/PSALM if desired. Do not assume a linter is present.
@@ -37,7 +37,7 @@ This file helps Copilot-style assistants (and future contributors) quickly under
 - Entry point / router: `public/index.php` — routing is query-parameter based (e.g. `?controller=auth&action=login`).
 - Autoload mapping (composer.json): App\\Controllers\\ -> src/Controllers/, App\\Models\\ -> src/Models/, App\\Core\\ -> src/Core/, App\\Services\\ -> src/Services/ etc.
 - Persistence: MySQL (docker-compose defines a `db` service). Migrations live under `src/migrations/`.
-- Sessions: docker-compose uses a persistent volume `tw4_sessions` (see docker-compose.yml).
+- Sessions: docker-compose uses a persistent volume `tw4_sessions` (see docker-compose-development.yml).
 - Tests: organized into `tests/Unit` and `tests/Integration` and configured via phpunit.xml (testsuites named Unit and Integration).
 
 ## Key repository conventions (non-obvious)

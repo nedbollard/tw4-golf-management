@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PREFERRED_COMPOSE_FILE="docker-compose.systest.yml"
-LEGACY_COMPOSE_FILE="docker-compose.prod.yml"
-FALLBACK_COMPOSE_FILE="docker-compose.yml"
-COMPOSE_FILE="${COMPOSE_FILE-}"
+COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.oracle.yml}"
 RESTORE_TARGET="${RESTORE_TARGET:-systest}"
 DB_NAMES=(TW4_base TW4_live TW4_history TW4_holding)
 MYSQL_WAIT_TIMEOUT="${MYSQL_WAIT_TIMEOUT:-180}"
@@ -22,21 +19,6 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 cd "${REPO_ROOT}"
-
-if [ -z "$COMPOSE_FILE" ]; then
-  if [ -f "$PREFERRED_COMPOSE_FILE" ]; then
-    COMPOSE_FILE="$PREFERRED_COMPOSE_FILE"
-  elif [ -f "$LEGACY_COMPOSE_FILE" ]; then
-    COMPOSE_FILE="$LEGACY_COMPOSE_FILE"
-    echo "[WARN] Using legacy compose file '$LEGACY_COMPOSE_FILE'."
-  elif [ -f "$FALLBACK_COMPOSE_FILE" ]; then
-    COMPOSE_FILE="$FALLBACK_COMPOSE_FILE"
-    echo "[WARN] Using fallback compose file '$FALLBACK_COMPOSE_FILE'."
-  else
-    echo "[ERROR] No compose file found: ${PREFERRED_COMPOSE_FILE}, ${LEGACY_COMPOSE_FILE}, or ${FALLBACK_COMPOSE_FILE}"
-    exit 1
-  fi
-fi
 
 [ -f "$COMPOSE_FILE" ] || { echo "[ERROR] Compose file not found: $COMPOSE_FILE"; exit 1; }
 
