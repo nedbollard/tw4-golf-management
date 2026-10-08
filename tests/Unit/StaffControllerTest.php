@@ -48,6 +48,19 @@ class StaffControllerTest extends TestCase
         }
     }
 
+    public function testDuplicateUsernameDatabaseErrorIsRecognized(): void
+    {
+        $pdoException = new \PDOException(
+            "SQLSTATE[23000]: Integrity constraint violation: Duplicate entry 'staff' for key 'username'",
+            23000
+        );
+        $exception = new \RuntimeException('Database query failed', 0, $pdoException);
+        $method = new \ReflectionMethod(StaffController::class, 'isDuplicateUsernameError');
+
+        $this->assertTrue($method->invoke($this->staffController, $exception));
+        $this->assertFalse($method->invoke($this->staffController, new \RuntimeException('Unrelated error')));
+    }
+
     public function testConstructorRequiresApplicationAndLogger(): void
     {
         $reflection = new \ReflectionClass(StaffController::class);

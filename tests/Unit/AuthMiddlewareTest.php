@@ -44,7 +44,7 @@ class AuthMiddlewareTest extends TestCase
         $this->db->expects($this->once())
             ->method('fetchOne')
             ->with(
-                $this->equalTo('SELECT row_id, username, role FROM staff WHERE row_id = ?'),
+                $this->equalTo('SELECT row_id, username, role FROM staff WHERE row_id = ? AND is_active = 1'),
                 $this->equalTo([1])
             )
             ->willReturn($expectedUser);
@@ -72,7 +72,7 @@ class AuthMiddlewareTest extends TestCase
         $this->db->expects($this->once())
             ->method('fetchOne')
             ->with(
-                $this->equalTo('SELECT row_id, username, role, password_hash FROM staff WHERE username = ?'),
+                $this->equalTo('SELECT row_id, username, role, password_hash FROM staff WHERE username = ? AND is_active = 1'),
                 $this->equalTo([$username])
             )
             ->willReturn($mockUser);
@@ -101,7 +101,7 @@ class AuthMiddlewareTest extends TestCase
         $this->db->expects($this->once())
             ->method('fetchOne')
             ->with(
-                $this->equalTo('SELECT row_id, username, role, password_hash FROM staff WHERE username = ?'),
+                $this->equalTo('SELECT row_id, username, role, password_hash FROM staff WHERE username = ? AND is_active = 1'),
                 $this->equalTo([$username])
             )
             ->willReturn($mockUser);
@@ -120,7 +120,7 @@ class AuthMiddlewareTest extends TestCase
         $this->db->expects($this->once())
             ->method('fetchOne')
             ->with(
-                $this->equalTo('SELECT row_id, username, role, password_hash FROM staff WHERE username = ?'),
+                $this->equalTo('SELECT row_id, username, role, password_hash FROM staff WHERE username = ? AND is_active = 1'),
                 $this->equalTo([$username])
             )
             ->willReturn(null);

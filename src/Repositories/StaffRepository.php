@@ -14,7 +14,7 @@ class StaffRepository
     public function findById(int $staffId): ?Staff
     {
         $data = $this->db->fetchOne(
-            'SELECT * FROM staff WHERE row_id = ? AND is_active = TRUE',
+            'SELECT * FROM staff WHERE row_id = ?',
             [$staffId]
         );
 
@@ -24,7 +24,7 @@ class StaffRepository
     public function findByUsername(string $username): ?Staff
     {
         $data = $this->db->fetchOne(
-            'SELECT * FROM staff WHERE username = ? AND is_active = TRUE',
+            'SELECT * FROM staff WHERE username = ?',
             [$username]
         );
 
@@ -33,7 +33,7 @@ class StaffRepository
 
     public function findAll(): array
     {
-        $data = $this->db->fetchAll('SELECT * FROM staff WHERE is_active = TRUE ORDER BY row_id');
+        $data = $this->db->fetchAll('SELECT * FROM staff ORDER BY row_id');
         return array_map([Staff::class, 'fromArray'], $data);
     }
 

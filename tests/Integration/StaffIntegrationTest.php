@@ -140,9 +140,10 @@ class StaffIntegrationTest extends TestCase
         $activeStaff->deactivate();
         $this->staffRepository->save($activeStaff);
 
-        // Verify deactivated
+        // Inactive staff remains retrievable for management.
         $deactivatedStaff = $this->staffRepository->findById($id);
-        $this->assertNull($deactivatedStaff);
+        $this->assertNotNull($deactivatedStaff);
+        $this->assertFalse($deactivatedStaff->isActive());
     }
 
     public function testFindAllStaff(): void

@@ -93,7 +93,7 @@
                                         </td>
                                         <td>
                                             <a href="/staff/edit/<?php echo $member->getStaffId(); ?>" class="btn-action-primary btn-sm">Edit</a>
-                                            <?php if ($member->getUsername() !== ($_SESSION['username'] ?? '')): ?>
+                                            <?php if ($member->isActive() && $member->getUsername() !== ($_SESSION['username'] ?? '')): ?>
                                                 <a href="/staff/delete/<?php echo $member->getStaffId(); ?>"
                                                    class="btn-action-destructive btn-sm confirm-delete-link"
                                                    data-confirm-message="Are you sure you want to delete <?php echo htmlspecialchars($member->getUsername(), ENT_QUOTES, 'UTF-8'); ?>? This will retain them for audit purposes.">

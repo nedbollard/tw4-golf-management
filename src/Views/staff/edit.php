@@ -106,7 +106,16 @@ $sessionRole = (string) ($_SESSION['role'] ?? 'admin');
                                 <div class="text-danger small"><?php echo htmlspecialchars($errors['role']); ?></div>
                             <?php endif; ?>
                         </div>
-                        <div class="col-md-6">&nbsp;</div>
+                        <div class="col-md-6">
+                            <label for="is_active" class="form-label">Status</label>
+                            <select class="form-select" id="is_active" name="is_active" required>
+                                <option value="1" <?php echo ((string) ($old['is_active'] ?? (int) $staff->isActive()) === '1') ? 'selected' : ''; ?>>Active</option>
+                                <option value="0" <?php echo ((string) ($old['is_active'] ?? (int) $staff->isActive()) === '0') ? 'selected' : ''; ?>>Inactive</option>
+                            </select>
+                            <?php if (isset($errors['is_active'])): ?>
+                                <div class="text-danger small"><?php echo htmlspecialchars($errors['is_active']); ?></div>
+                            <?php endif; ?>
+                        </div>
                     </div>
 
                     <div class="mb-3">

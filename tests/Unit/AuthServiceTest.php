@@ -30,6 +30,10 @@ class AuthServiceTest extends TestCase
         $_SESSION['user_id'] = 1;
         $_SESSION['username'] = 'admin';
         $_SESSION['user_role'] = 'admin';
+        $this->dbMock->expects($this->once())
+            ->method('fetchOne')
+            ->with('SELECT role FROM staff WHERE row_id = ? AND is_active = 1', [1])
+            ->willReturn(['role' => 'admin']);
 
         $this->assertTrue($this->authService->isLoggedIn());
         $this->assertEquals('admin', $_SESSION['username']);
@@ -42,6 +46,9 @@ class AuthServiceTest extends TestCase
         $_SESSION['user_id'] = 1;
         $_SESSION['username'] = 'admin';
         $_SESSION['user_role'] = 'admin';
+        $this->dbMock->expects($this->once())
+            ->method('fetchOne')
+            ->willReturn(['role' => 'admin']);
 
         $this->assertTrue($this->authService->isLoggedIn());
 
@@ -58,6 +65,9 @@ class AuthServiceTest extends TestCase
         $_SESSION['user_id'] = 1;
         $_SESSION['username'] = 'admin';
         $_SESSION['user_role'] = 'admin';
+        $this->dbMock->expects($this->once())
+            ->method('fetchOne')
+            ->willReturn(['role' => 'admin']);
 
         $user = $this->authService->getUser();
 
@@ -79,6 +89,14 @@ class AuthServiceTest extends TestCase
         $_SESSION['user_id'] = 1;
         $_SESSION['username'] = 'admin';
         $_SESSION['user_role'] = 'admin';
+        $this->dbMock->expects($this->exactly(4))
+            ->method('fetchOne')
+            ->willReturnOnConsecutiveCalls(
+                ['role' => 'admin'],
+                ['role' => 'admin'],
+                ['role' => 'scorer'],
+                ['role' => 'scorer']
+            );
 
         $this->assertTrue($this->authService->hasRole('admin'));
         $this->assertFalse($this->authService->hasRole('scorer'));
@@ -87,6 +105,55 @@ class AuthServiceTest extends TestCase
         $_SESSION['user_role'] = 'scorer';
         $this->assertTrue($this->authService->hasRole('scorer'));
         $this->assertFalse($this->authService->hasRole('admin'));
+    }
+
+    public function testInactiveAccountCannotLogIn(): void
+    {
+        $this->dbMock->expects($this->once())
+            ->method('fetchOne')
+            ->with(
+                'SELECT row_id, username, password_hash, role FROM staff WHERE username = ? AND is_active = 1',
+                ['inactive']
+            )
+            ->willReturn(null);
+
+        $this->assertFalse($this->authService->login('inactive', 'password123'));
+        $this->assertEmpty($_SESSION);
+    }
+
+    public function testActiveAccountCanLogIn(): void
+    {
+        $passwordHash = password_hash('password123', PASSWORD_DEFAULT);
+        $this->dbMock->expects($this->once())
+            ->method('fetchOne')
+            ->with(
+                'SELECT row_id, username, password_hash, role FROM staff WHERE username = ? AND is_active = 1',
+                ['active']
+            )
+            ->willReturn([
+                'row_id' => 12,
+                'username' => 'active',
+                'password_hash' => $passwordHash,
+                'role' => 'scorer',
+            ]);
+
+        $this->assertTrue($this->authService->login('active', 'password123'));
+        $this->assertSame(12, $_SESSION['user_id']);
+        $this->assertSame('scorer', $_SESSION['user_role']);
+    }
+
+    public function testDeactivatedAccountSessionIsRevoked(): void
+    {
+        $_SESSION['user_id'] = 7;
+        $_SESSION['username'] = 'inactive';
+        $_SESSION['user_role'] = 'admin';
+        $this->dbMock->expects($this->once())
+            ->method('fetchOne')
+            ->with('SELECT role FROM staff WHERE row_id = ? AND is_active = 1', [7])
+            ->willReturn(null);
+
+        $this->assertFalse($this->authService->isLoggedIn());
+        $this->assertEmpty($_SESSION);
     }
 
     public function testHasRoleWhenNotLoggedIn(): void
@@ -103,7 +170,7 @@ class AuthServiceTest extends TestCase
 
         $this->dbMock->expects($this->once())
             ->method('fetchOne')
-            ->with($this->stringContains('FROM staff'), [7])
+            ->with('SELECT role FROM staff WHERE row_id = ? AND is_active = 1', [7])
             ->willReturn(['role' => 'scorer']);
 
         $this->assertEquals('scorer', $this->authService->getStoredRole());

@@ -20,7 +20,7 @@ class AuthService
     public function login(string $username, string $password): bool
     {
         $staff = $this->db->fetchOne(
-            'SELECT row_id, username, password_hash, role FROM staff WHERE username = ?',
+            'SELECT row_id, username, password_hash, role FROM staff WHERE username = ? AND is_active = 1',
             [$username]
         );
         
@@ -55,7 +55,9 @@ class AuthService
         }
         
         // Destroy session
-        session_destroy();
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_destroy();
+        }
     }
 
     public function isLoggedIn(): bool
@@ -72,6 +74,16 @@ class AuthService
                 return false;
             }
         }
+
+        $staff = $this->db->fetchOne(
+            'SELECT role FROM staff WHERE row_id = ? AND is_active = 1',
+            [$_SESSION['user_id']]
+        );
+        if (!$staff) {
+            $this->logout();
+            return false;
+        }
+        $_SESSION['user_role'] = $staff['role'];
 
         return true;
     }
@@ -106,12 +118,7 @@ class AuthService
             return null;
         }
 
-        $staff = $this->db->fetchOne(
-            'SELECT role FROM staff WHERE row_id = ? AND is_active = 1',
-            [$_SESSION['user_id']]
-        );
-
-        return $staff['role'] ?? null;
+        return $_SESSION['user_role'] ?? null;
     }
 
     public function hasRole(string $role): bool

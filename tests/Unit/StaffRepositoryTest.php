@@ -11,6 +11,52 @@ use PHPUnit\Framework\TestCase;
 #[AllowMockObjectsWithoutExpectations]
 class StaffRepositoryTest extends TestCase
 {
+    public function testFindByIdIncludesInactiveStaff(): void
+    {
+        $database = $this->createMock(Database::class);
+        $database->expects($this->once())
+            ->method('fetchOne')
+            ->with('SELECT * FROM staff WHERE row_id = ?', [8])
+            ->willReturn([
+                'row_id' => 8,
+                'username' => 'inactive',
+                'password_hash' => 'hash',
+                'first_name' => 'Inactive',
+                'last_name' => 'User',
+                'role' => 'scorer',
+                'is_active' => 0,
+            ]);
+
+        $staff = (new StaffRepository($database))->findById(8);
+
+        $this->assertInstanceOf(Staff::class, $staff);
+        $this->assertFalse($staff->isActive());
+    }
+
+    public function testFindAllIncludesInactiveStaff(): void
+    {
+        $database = $this->createMock(Database::class);
+        $database->expects($this->once())
+            ->method('fetchAll')
+            ->with('SELECT * FROM staff ORDER BY row_id')
+            ->willReturn([
+                [
+                    'row_id' => 8,
+                    'username' => 'inactive',
+                    'password_hash' => 'hash',
+                    'first_name' => 'Inactive',
+                    'last_name' => 'User',
+                    'role' => 'scorer',
+                    'is_active' => 0,
+                ],
+            ]);
+
+        $staff = (new StaffRepository($database))->findAll();
+
+        $this->assertCount(1, $staff);
+        $this->assertFalse($staff[0]->isActive());
+    }
+
     public function testSaveAssignsIdentityToNewStaff(): void
     {
         $database = $this->createMock(Database::class);

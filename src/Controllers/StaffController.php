@@ -64,7 +64,7 @@ class StaffController extends BaseController
             }
             
             // Check if username already exists
-            $existingStaff = $this->staffRepository->findByUsername($data['username']);
+            $existingStaff = $this->staffRepository->findByUsername((string) ($data['username'] ?? ''));
             if ($existingStaff) {
                 $errors['username'] = 'Username already exists';
             }
@@ -94,7 +94,18 @@ class StaffController extends BaseController
                 null
             );
             
-            $staffId = $this->staffRepository->save($newStaff, (string) ($_SESSION['username'] ?? 'system'));
+            try {
+                $staffId = $this->staffRepository->save($newStaff, (string) ($_SESSION['username'] ?? 'system'));
+            } catch (\RuntimeException $e) {
+                if (!$this->isDuplicateUsernameError($e)) {
+                    throw $e;
+                }
+
+                $this->flash->error(['username' => 'Username already exists.']);
+                $this->flash->setOld($data);
+                $this->redirect('/staff');
+                return;
+            }
             
             if ($staffId) {
                 $this->logger->logConfig('staff_added', [
@@ -156,9 +167,13 @@ class StaffController extends BaseController
             if (empty($data['role'])) {
                 $errors['role'] = 'Role is required';
             }
+
+            if (!in_array($data['is_active'] ?? null, ['0', '1', 0, 1], true)) {
+                $errors['is_active'] = 'Status must be active or inactive';
+            }
             
             // Check if username already exists (excluding current staff)
-            $existingStaff = $this->staffRepository->findByUsername($data['username']);
+            $existingStaff = $this->staffRepository->findByUsername((string) ($data['username'] ?? ''));
             if ($existingStaff && $existingStaff->getStaffId() != $staffId) {
                 $errors['username'] = 'Username already exists';
             }
@@ -177,10 +192,18 @@ class StaffController extends BaseController
                 $this->redirect('/staff');
                 return;
             }
+
+            if ($staff->getUsername() === ($_SESSION['username'] ?? '') && (string) $data['is_active'] === '0') {
+                $this->flash->error(['is_active' => 'You cannot deactivate your own account.']);
+                $this->flash->setOld($data);
+                $this->redirect("/staff/edit/{$staffId}");
+                return;
+            }
             
             // Update staff member
             $staff->setUsername($data['username']);
             $staff->setRole($data['role']);
+            $staff->setIsActive((string) $data['is_active'] === '1');
             
             // Update first and last name if provided
             if (!empty($data['first_name'])) {
@@ -196,7 +219,18 @@ class StaffController extends BaseController
                 $staff->setPasswordHash($passwordHash);
             }
             
-            $this->staffRepository->save($staff, (string) ($_SESSION['username'] ?? 'system'));
+            try {
+                $this->staffRepository->save($staff, (string) ($_SESSION['username'] ?? 'system'));
+            } catch (\RuntimeException $e) {
+                if (!$this->isDuplicateUsernameError($e)) {
+                    throw $e;
+                }
+
+                $this->flash->error(['username' => 'Username already exists.']);
+                $this->flash->setOld($data);
+                $this->redirect("/staff/edit/{$staffId}");
+                return;
+            }
             $success = true;
             
             if ($success) {
@@ -236,7 +270,7 @@ class StaffController extends BaseController
             $this->redirect('/staff');
             return;
         }
-        
+
         // Logical deletion - mark as inactive
         $staff->deactivate();
         $this->staffRepository->save($staff, (string) ($_SESSION['username'] ?? 'system'));
@@ -257,5 +291,26 @@ class StaffController extends BaseController
         }
         
         $this->redirect('/staff');
+    }
+
+    private function isDuplicateUsernameError(\Throwable $exception): bool
+    {
+        for ($current = $exception; $current !== null; $current = $current->getPrevious()) {
+            if (!$current instanceof \PDOException) {
+                continue;
+            }
+
+            $driverCode = $current->errorInfo[1] ?? null;
+            $message = strtolower($current->getMessage());
+            if ($driverCode === 1062 || (
+                (string) $current->getCode() === '23000'
+                && str_contains($message, 'username')
+                && (str_contains($message, 'duplicate') || str_contains($message, 'unique'))
+            )) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
